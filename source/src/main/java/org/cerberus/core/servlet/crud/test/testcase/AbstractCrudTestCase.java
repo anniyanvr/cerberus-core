@@ -1,5 +1,5 @@
 /**
- * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * Cerberus Copyright (C) 2013 - 2025 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -109,7 +109,7 @@ public abstract class AbstractCrudTestCase extends HttpServlet {
             tc.setImplementer(ParameterParserUtil.parseStringParamAndDecodeAndSanitize(request.getParameter("implementer"), tc.getImplementer(), charset));
             tc.setExecutor(ParameterParserUtil.parseStringParamAndDecodeAndSanitize(request.getParameter("executor"), tc.getExecutor(), charset));
             tc.setExecutor(ParameterParserUtil.parseStringParamAndDecodeAndSanitize(request.getParameter("executor"), tc.getExecutor(), charset));
-            tc.setUsrCreated(ParameterParserUtil.parseStringParamAndDecodeAndSanitize(request.getUserPrincipal().getName(), "", charset));
+            tc.setUsrCreated(request.getUserPrincipal().getName());
             tc.setApplication(ParameterParserUtil.parseStringParamAndDecodeAndSanitize(request.getParameter("application"), tc.getApplication(), charset));
             tc.setActiveQA(ParameterParserUtil.parseBooleanParam(request.getParameter("isActiveQA"), tc.isActiveQA()));
             tc.setActiveUAT(ParameterParserUtil.parseBooleanParam(request.getParameter("isActiveUAT"), tc.isActiveUAT()));

@@ -1,5 +1,5 @@
 /*
- * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * Cerberus Copyright (C) 2013 - 2025 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -23,19 +23,42 @@ import com.fasterxml.jackson.annotation.JsonView;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiResponse;
+import java.security.Principal;
+import java.util.List;
+import java.util.stream.Collectors;
+import javax.servlet.http.HttpServletRequest;
+import javax.validation.Valid;
 import lombok.AllArgsConstructor;
-import lombok.EqualsAndHashCode;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.cerberus.core.api.controllers.wrappers.ResponseWrapper;
-import org.cerberus.core.api.dto.v001.ApplicationDTOV001;
-import org.cerberus.core.api.dto.v001.TestcaseDTOV001;
-import org.cerberus.core.api.dto.v001.TestcaseSimplifiedCreationDTOV001;
+import org.cerberus.core.api.dto.testcase.TestcaseDTOV001;
+import org.cerberus.core.api.dto.testcase.TestcaseMapperV001;
+import org.cerberus.core.api.dto.testcase.TestcaseSimplifiedCreationDTOV001;
 import org.cerberus.core.api.dto.views.View;
-import org.cerberus.core.api.mappers.v001.TestcaseMapperV001;
 import org.cerberus.core.api.services.PublicApiAuthenticationService;
+import org.cerberus.core.crud.entity.Application;
+import org.cerberus.core.crud.entity.CountryEnvironmentParameters;
+import org.cerberus.core.crud.entity.Invariant;
+import org.cerberus.core.crud.entity.LogEvent;
+import org.cerberus.core.crud.entity.Parameter;
+import org.cerberus.core.crud.entity.TestCase;
+import org.cerberus.core.crud.entity.TestCaseCountry;
+import org.cerberus.core.crud.entity.TestCaseStep;
+import org.cerberus.core.crud.entity.TestCaseStepAction;
+import org.cerberus.core.crud.entity.TestCaseStepActionControl;
+import org.cerberus.core.crud.service.IApplicationService;
+import org.cerberus.core.crud.service.ICountryEnvironmentParametersService;
+import org.cerberus.core.crud.service.IInvariantService;
+import org.cerberus.core.crud.service.ILogEventService;
+import org.cerberus.core.crud.service.IParameterService;
+import org.cerberus.core.crud.service.ITestCaseCountryService;
+import org.cerberus.core.crud.service.ITestCaseService;
+import org.cerberus.core.crud.service.ITestCaseStepActionControlService;
+import org.cerberus.core.crud.service.ITestCaseStepActionService;
+import org.cerberus.core.crud.service.ITestCaseStepService;
+import static org.cerberus.core.engine.execution.enums.ConditionOperatorEnum.CONDITIONOPERATOR_ALWAYS;
 import org.cerberus.core.exception.CerberusException;
-import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.springframework.http.HttpStatus;
@@ -50,30 +73,6 @@ import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
-
-import javax.validation.Valid;
-import java.security.Principal;
-import java.sql.Timestamp;
-import java.util.List;
-import java.util.stream.Collectors;
-import org.cerberus.core.crud.entity.Application;
-import org.cerberus.core.crud.entity.CountryEnvironmentParameters;
-import org.cerberus.core.crud.entity.Invariant;
-import org.cerberus.core.crud.entity.Parameter;
-import org.cerberus.core.crud.entity.TestCase;
-import org.cerberus.core.crud.entity.TestCaseCountry;
-import org.cerberus.core.crud.entity.TestCaseStep;
-import org.cerberus.core.crud.entity.TestCaseStepAction;
-import org.cerberus.core.crud.entity.TestCaseStepActionControl;
-import org.cerberus.core.crud.service.IApplicationService;
-import org.cerberus.core.crud.service.ICountryEnvironmentParametersService;
-import org.cerberus.core.crud.service.IInvariantService;
-import org.cerberus.core.crud.service.IParameterService;
-import org.cerberus.core.crud.service.ITestCaseCountryService;
-import org.cerberus.core.crud.service.ITestCaseService;
-import org.cerberus.core.crud.service.ITestCaseStepActionControlService;
-import org.cerberus.core.crud.service.ITestCaseStepActionService;
-import org.cerberus.core.crud.service.ITestCaseStepService;
 
 /**
  * @author MorganLmd
@@ -98,9 +97,10 @@ public class TestcaseController {
     private final TestcaseMapperV001 testcaseMapper;
     private final IParameterService parameterService;
     private final PublicApiAuthenticationService apiAuthenticationService;
+    private final ILogEventService logEventService;
     private static final Logger LOG = LogManager.getLogger(TestcaseController.class);
 
-    @ApiOperation("Get all testcases filtered by test")
+    @ApiOperation("Get all testcases by test folder")
     @ApiResponse(code = 200, message = "ok", response = TestcaseDTOV001.class, responseContainer = "List")
     @JsonView(View.Public.GET.class)
     @ResponseStatus(HttpStatus.OK)
@@ -108,8 +108,12 @@ public class TestcaseController {
     public ResponseWrapper<List<TestcaseDTOV001>> findTestcasesByTest(
             @PathVariable("testFolderId") String testFolderId,
             @RequestHeader(name = API_KEY, required = false) String apiKey,
+            HttpServletRequest request,
             Principal principal) {
-        this.apiAuthenticationService.authenticate(principal, apiKey);
+
+        String login = this.apiAuthenticationService.authenticateLogin(principal, apiKey);
+        logEventService.createForPublicCalls("/public/testcases", "CALL-GET", LogEvent.STATUS_INFO, String.format("API /testcases called with URL: %s", request.getRequestURL()), request, login);
+
         return ResponseWrapper.wrap(
                 this.testCaseService.findTestCaseByTest(testFolderId)
                         .stream()
@@ -118,7 +122,7 @@ public class TestcaseController {
         );
     }
 
-    @ApiOperation("Get a testcase filtered by testFolderId and testCaseFolderId")
+    @ApiOperation("Get a testcase filtered by its FolderId and testCaseId")
     @ApiResponse(code = 200, message = "ok", response = TestcaseDTOV001.class)
     @JsonView(View.Public.GET.class)
     @ResponseStatus(HttpStatus.OK)
@@ -127,8 +131,12 @@ public class TestcaseController {
             @PathVariable("testFolderId") String testFolderId,
             @PathVariable("testcaseId") String testcaseId,
             @RequestHeader(name = API_KEY, required = false) String apiKey,
+            HttpServletRequest request,
             Principal principal) throws CerberusException {
-        this.apiAuthenticationService.authenticate(principal, apiKey);
+
+        String login = this.apiAuthenticationService.authenticateLogin(principal, apiKey);
+        logEventService.createForPublicCalls("/public/testcases", "CALL-GET", LogEvent.STATUS_INFO, String.format("API /testcases called with URL: %s", request.getRequestURL()), request, login);
+
         return ResponseWrapper.wrap(
                 this.testcaseMapper
                         .toDTO(
@@ -145,8 +153,11 @@ public class TestcaseController {
     public ResponseWrapper<TestcaseDTOV001> createTestcase(
             @Valid @JsonView(View.Public.POST.class) @RequestBody TestcaseDTOV001 newTestcase,
             @RequestHeader(name = API_KEY, required = false) String apiKey,
+            HttpServletRequest request,
             Principal principal) throws CerberusException {
-        this.apiAuthenticationService.authenticate(principal, apiKey);
+
+        String login = this.apiAuthenticationService.authenticateLogin(principal, apiKey);
+        logEventService.createForPublicCalls("/public/testcases", "CALL-POST", LogEvent.STATUS_INFO, String.format("API /testcases called with URL: %s", request.getRequestURL()), request, login);
 
         return ResponseWrapper.wrap(
                 this.testcaseMapper.toDTO(
@@ -164,7 +175,12 @@ public class TestcaseController {
     @PostMapping(path = "/create", headers = {API_VERSION_1}, produces = MediaType.APPLICATION_JSON_VALUE)
     public String createSimplifiedTestcase(
             @Valid @JsonView(View.Public.POST.class) @RequestBody TestcaseSimplifiedCreationDTOV001 newTestcase,
+            @RequestHeader(name = API_KEY, required = false) String apiKey,
+            HttpServletRequest request,
             Principal principal) throws CerberusException {
+
+        String login = this.apiAuthenticationService.authenticateLogin(principal, apiKey);
+        logEventService.createForPublicCalls("/public/testcases", "CALL-POST", LogEvent.STATUS_INFO, String.format("API /testcases/create called with URL: %s", request.getRequestURL()), request, login);
 
         JSONObject jsonResponse = new JSONObject();
 
@@ -178,10 +194,10 @@ public class TestcaseController {
                             .type(newTestcase.getType())
                             .system(newTestcase.getSystem())
                             .subsystem("")
-                            .svnurl("")
+                            .repoUrl("")
                             .bugTrackerNewUrl("")
                             .bugTrackerNewUrl("")
-                            .UsrCreated(principal.getName())
+                            .usrCreated(login)
                             .build());
 
             this.countryEnvironmentParametersService.create(
@@ -191,6 +207,8 @@ public class TestcaseController {
                             .environment(newTestcase.getEnvironment())
                             .application(newTestcase.getApplication())
                             .ip(newTestcase.getUrl())
+                            .mobileActivity("")
+                            .mobilePackage("")
                             .domain("")
                             .url("")
                             .urlLogin("")
@@ -198,6 +216,7 @@ public class TestcaseController {
                             .var2("")
                             .var3("")
                             .var4("")
+                            .usrCreated(login)
                             .build());
         }
 
@@ -208,17 +227,17 @@ public class TestcaseController {
                         .application(newTestcase.getApplication())
                         .description(newTestcase.getDescription())
                         .priority(1)
-                        .status("WORKING")
-                        .conditionOperator("always")
+                        .status(invariantService.convert(invariantService.readFirstByIdName(Invariant.IDNAME_TCSTATUS)).getValue())
+                        .conditionOperator(CONDITIONOPERATOR_ALWAYS.getCondition())
                         .conditionValue1("")
                         .conditionValue2("")
                         .conditionValue3("")
-                        .type("AUTOMATED")
+                        .type(TestCase.TESTCASE_TYPE_AUTOMATED)
                         .isActive(true)
                         .isActivePROD(true)
                         .isActiveQA(true)
                         .isActiveUAT(true)
-                        .usrCreated(principal.getName())
+                        .usrCreated(login)
                         .build());
 
         List<Invariant> countryInvariantList = this.invariantService.readByIdName("COUNTRY");
@@ -229,7 +248,7 @@ public class TestcaseController {
                             .test(newTestcase.getTestFolderId())
                             .testcase(newTestcase.getTestcaseId())
                             .country(countryInvariant.getValue())
-                            .usrCreated(principal.getName())
+                            .usrCreated(login)
                             .build());
         }
 
@@ -243,10 +262,10 @@ public class TestcaseController {
                             .sort(1)
                             .isUsingLibraryStep(false)
                             .libraryStepStepId(0)
-                            .loop("onceIfConditionTrue")
-                            .conditionOperator("always")
+                            .loop(TestCaseStep.LOOP_ONCEIFCONDITIONTRUE)
+                            .conditionOperator(CONDITIONOPERATOR_ALWAYS.getCondition())
                             .description("Go to the homepage and take a screenshot")
-                            .usrCreated(principal.getName())
+                            .usrCreated(login)
                             .build());
 
             this.testCaseStepActionService.create(
@@ -256,7 +275,7 @@ public class TestcaseController {
                             .stepId(0)
                             .actionId(0)
                             .sort(1)
-                            .conditionOperator("always")
+                            .conditionOperator(CONDITIONOPERATOR_ALWAYS.getCondition())
                             .conditionValue1("")
                             .conditionValue2("")
                             .conditionValue3("")
@@ -265,8 +284,8 @@ public class TestcaseController {
                             .value2("")
                             .value3("")
                             .description("Open the homepage")
-                            .conditionOperator("always")
-                            .usrCreated(principal.getName())
+                            .conditionOperator(CONDITIONOPERATOR_ALWAYS.getCondition())
+                            .usrCreated(login)
                             .build());
 
             this.testCaseStepActionControlService.create(
@@ -277,7 +296,7 @@ public class TestcaseController {
                             .actionId(0)
                             .controlId(0)
                             .sort(1)
-                            .conditionOperator("always")
+                            .conditionOperator(CONDITIONOPERATOR_ALWAYS.getCondition())
                             .conditionValue1("")
                             .conditionValue2("")
                             .conditionValue3("")
@@ -286,7 +305,7 @@ public class TestcaseController {
                             .value2("")
                             .value3("")
                             .description("Take a screenshot")
-                            .usrCreated(principal.getName())
+                            .usrCreated(login)
                             .build());
 
         }
@@ -297,7 +316,7 @@ public class TestcaseController {
             jsonResponse.put("messageType", "OK");
             jsonResponse.put("message", "success");
         } catch (JSONException e) {
-            e.printStackTrace();
+            LOG.error(e, e);
         }
 
         return jsonResponse.toString();
@@ -313,9 +332,11 @@ public class TestcaseController {
             @PathVariable("testFolderId") String testFolderId,
             @Valid @JsonView(View.Public.PUT.class) @RequestBody TestcaseDTOV001 testcaseToUpdate,
             @RequestHeader(name = API_KEY, required = false) String apiKey,
+            HttpServletRequest request,
             Principal principal) throws CerberusException {
 
-        this.apiAuthenticationService.authenticate(principal, apiKey);
+        String login = this.apiAuthenticationService.authenticateLogin(principal, apiKey);
+        logEventService.createForPublicCalls("/public/testcases", "CALL-PUT", LogEvent.STATUS_INFO, String.format("API /testcases called with URL: %s", request.getRequestURL()), request, login);
 
         return ResponseWrapper.wrap(
                 this.testcaseMapper.toDTO(

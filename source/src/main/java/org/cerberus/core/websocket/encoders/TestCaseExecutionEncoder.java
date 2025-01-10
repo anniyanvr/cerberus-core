@@ -1,5 +1,5 @@
 /**
- * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * Cerberus Copyright (C) 2013 - 2025 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -30,14 +30,14 @@ import javax.websocket.EndpointConfig;
 /**
  * Created by corentin on 31/10/16.
  */
-public class TestCaseExecutionEncoder  implements Encoder.Text<TestCaseExecution>  {
+public class TestCaseExecutionEncoder implements Encoder.Text<TestCaseExecution> {
 
     @Autowired
     ITestCaseStepExecutionService testCaseStepExecutionService;
 
     @Override
     public String encode(TestCaseExecution testCaseExecution) throws EncodeException {
-        return  testCaseExecution.toJson(true).toString();
+        return testCaseExecution.toJson(true).toString();
     }
 
     @Override

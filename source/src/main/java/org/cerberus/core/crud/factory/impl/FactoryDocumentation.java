@@ -1,5 +1,5 @@
 /**
- * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * Cerberus Copyright (C) 2013 - 2025 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -38,9 +38,9 @@ public class FactoryDocumentation implements IFactoryDocumentation {
         documentation.setDocValue(docValue);
         documentation.setDocLabel(docLabel);
         documentation.setDocDesc(docDesc);
-        documentation.setHavedocDesc(!(StringUtil.isEmpty(docDesc)));
+        documentation.setHavedocDesc(!(StringUtil.isEmptyOrNull(docDesc)));
         documentation.setDocAnchor(docAnchor);
-        documentation.setHaveDocAnchor(!(StringUtil.isEmpty(docAnchor)));
+        documentation.setHaveDocAnchor(!(StringUtil.isEmptyOrNull(docAnchor)));
         return documentation;
     }
 

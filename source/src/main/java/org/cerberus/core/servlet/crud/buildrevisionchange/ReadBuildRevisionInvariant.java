@@ -1,5 +1,5 @@
 /**
- * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * Cerberus Copyright (C) 2013 - 2025 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -19,7 +19,6 @@
  */
 package org.cerberus.core.servlet.crud.buildrevisionchange;
 
-import com.google.common.base.Strings;
 import com.google.gson.Gson;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -41,6 +40,7 @@ import org.cerberus.core.engine.entity.MessageEvent;
 import org.cerberus.core.enums.MessageEventEnum;
 import org.cerberus.core.exception.CerberusException;
 import org.cerberus.core.util.ParameterParserUtil;
+import org.cerberus.core.util.StringUtil;
 import org.cerberus.core.util.answer.AnswerItem;
 import org.cerberus.core.util.answer.AnswerList;
 import org.cerberus.core.util.answer.AnswerUtil;
@@ -121,7 +121,7 @@ public class ReadBuildRevisionInvariant extends HttpServlet {
             msg.setDescription(msg.getDescription().replace("%REASON%", "id must be an integer value."));
             seqid_error = true;
         }
-        List<String> system = ParameterParserUtil.parseListParamAndDecodeAndDeleteEmptyValue(request.getParameterValues("system"), Arrays.asList("DEFAULT"), "UTF-8");
+        List<String> system = ParameterParserUtil.parseListParamAndDeleteEmptyValue(request.getParameterValues("system"), Arrays.asList("DEFAULT"), "UTF-8");
         String systemUnic = policy.sanitize(request.getParameter("system"));
         String columnName = ParameterParserUtil.parseStringParam(request.getParameter("columnName"), "");
 
@@ -136,7 +136,7 @@ public class ReadBuildRevisionInvariant extends HttpServlet {
             if ((request.getParameter("system") != null) && (request.getParameter("level") != null) && !(lvlid_error) && (request.getParameter("seq") != null) && !(seqid_error)) { // ID parameter is specified so we return the unique record of object.
                 answer = findBuildRevisionInvariantByKey(systemUnic, lvlid, seqid, appContext, userHasPermissions);
                 jsonResponse = (JSONObject) answer.getItem();
-            } else if (!Strings.isNullOrEmpty(columnName)) {
+            } else if (!StringUtil.isEmptyOrNull(columnName)) {
                 answer = findDistinctValuesOfColumn(system, appContext, request, columnName);
                 jsonResponse = (JSONObject) answer.getItem();
             } else { // Default behaviour, we return the list of objects.

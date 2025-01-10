@@ -1,5 +1,5 @@
 /**
- * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * Cerberus Copyright (C) 2013 - 2025 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -19,7 +19,6 @@
  */
 package org.cerberus.core.servlet.crud.countryenvironment;
 
-import com.google.common.base.Strings;
 import com.google.gson.Gson;
 import org.cerberus.core.engine.entity.MessageEvent;
 import org.cerberus.core.crud.entity.SqlLibrary;
@@ -48,6 +47,7 @@ import java.util.*;
 import javax.servlet.annotation.WebServlet;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.cerberus.core.util.StringUtil;
 
 /**
  * @author bcivel
@@ -101,10 +101,10 @@ public class ReadSqlLibrary extends HttpServlet {
 
             String system;
 
-            if (request.getParameter("name") == null && Strings.isNullOrEmpty(columnName)) {
+            if (request.getParameter("name") == null && StringUtil.isEmptyOrNull(columnName)) {
                 answer = findSqlLibraryList(appContext, userHasPermissions, request);
                 jsonResponse = (JSONObject) answer.getItem();
-            } else if (!Strings.isNullOrEmpty(columnName)) {
+            } else if (!StringUtil.isEmptyOrNull(columnName)) {
                 answer = findDistinctValuesOfColumn(appContext, request, columnName);
                 jsonResponse = (JSONObject) answer.getItem();
             } else {

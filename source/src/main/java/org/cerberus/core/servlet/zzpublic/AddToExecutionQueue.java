@@ -1,5 +1,5 @@
 /**
- * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * Cerberus Copyright (C) 2013 - 2025 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -34,6 +34,7 @@ import javax.servlet.http.HttpServletResponse;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.LogManager;
 import org.cerberus.core.crud.entity.CampaignParameter;
+import org.cerberus.core.crud.entity.LogEvent;
 import org.cerberus.core.crud.entity.TestCase;
 import org.cerberus.core.crud.entity.TestCaseExecutionQueue;
 import org.cerberus.core.crud.service.ICampaignParameterService;
@@ -180,7 +181,7 @@ public class AddToExecutionQueue extends HttpServlet {
          * Adding Log entry.
          */
         ILogEventService logEventService = appContext.getBean(ILogEventService.class);
-        logEventService.createForPublicCalls("/AddToExecutionQueue", "CALL", "AddToExecutionQueue called : " + request.getRequestURL(), request);
+        logEventService.createForPublicCalls("/AddToExecutionQueue", "CALL", LogEvent.STATUS_INFO, "AddToExecutionQueue called : " + request.getRequestURL(), request);
 
         // Parsing all parameters.
         String tag = ParameterParserUtil.parseStringParam(request.getParameter(PARAMETER_TAG), "");
@@ -207,7 +208,7 @@ public class AddToExecutionQueue extends HttpServlet {
             if (!error) {
 
                 // Create Tag when exist.
-                if (!StringUtil.isEmpty(tag)) {
+                if (!StringUtil.isEmptyOrNull(tag)) {
                     // We create or update it.
                     ITagService tagService = appContext.getBean(ITagService.class);
                     tagService.createAuto(tag, "", "", null, null);
@@ -224,11 +225,18 @@ public class AddToExecutionQueue extends HttpServlet {
                     LOG.warn(ex);
                 }
 
+                Map<String, TestCaseExecutionQueue> testCasesInserted = new HashMap<>();
+                for (TestCaseExecutionQueue toInsert : toInserts) {
+                    if (!testCasesInserted.containsKey(inQueueService.getUniqKey(toInsert.getTest(), toInsert.getTestCase(), toInsert.getCountry(), toInsert.getEnvironment()))) {
+                        testCasesInserted.put(inQueueService.getUniqKey(toInsert.getTest(), toInsert.getTestCase(), toInsert.getCountry(), toInsert.getEnvironment()), toInsert);
+                    }
+                }
+
                 // Part 2: Try to insert all these test cases to the execution queue.
                 List<String> errorMessages = new ArrayList<>();
                 for (TestCaseExecutionQueue toInsert : toInserts) {
                     try {
-                        inQueueService.convert(inQueueService.create(toInsert, true, 0, TestCaseExecutionQueue.State.QUEUED));
+                        inQueueService.convert(inQueueService.create(toInsert, true, 0, TestCaseExecutionQueue.State.QUEUED, testCasesInserted));
                     } catch (CerberusException e) {
                         String errorMessage = "Unable to insert " + toInsert.toString() + " due to " + e.getMessage();
                         LOG.warn(errorMessage);

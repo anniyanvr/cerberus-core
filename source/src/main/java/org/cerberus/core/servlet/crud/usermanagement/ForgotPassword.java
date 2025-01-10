@@ -1,5 +1,5 @@
 /**
- * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * Cerberus Copyright (C) 2013 - 2025 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -26,6 +26,7 @@ import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import org.cerberus.core.crud.entity.LogEvent;
 import org.cerberus.core.crud.entity.User;
 import org.cerberus.core.crud.service.ILogEventService;
 import org.cerberus.core.crud.service.IParameterService;
@@ -124,7 +125,7 @@ public class ForgotPassword extends HttpServlet {
              * Adding Log entry.
              */
             ILogEventService logEventService = appContext.getBean(ILogEventService.class);
-            logEventService.createForPrivateCalls("/ForgotPassword", "CREATE", "User : " + login + " asked for password recovery", request);
+            logEventService.createForPrivateCalls("/ForgotPassword", "CREATE", LogEvent.STATUS_INFO, "User : " + login + " asked for password recovery", request);
 
             /**
              * Build Response Message

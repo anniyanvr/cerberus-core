@@ -1,5 +1,5 @@
 /**
- * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * Cerberus Copyright (C) 2013 - 2025 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -19,11 +19,15 @@
  */
 package org.cerberus.core.api.services;
 
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 import lombok.AllArgsConstructor;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.cerberus.core.api.dto.v001.TestcaseStepDTOV001;
+import org.cerberus.core.api.dto.testcasestep.TestcaseStepDTOV001;
 import org.cerberus.core.api.exceptions.EntityNotFoundException;
 import org.cerberus.core.crud.dao.ITestCaseStepDAO;
 import org.cerberus.core.crud.entity.Invariant;
@@ -34,11 +38,6 @@ import org.cerberus.core.crud.service.IInvariantService;
 import org.cerberus.core.crud.service.ITestCaseCountryPropertiesService;
 import org.cerberus.core.exception.CerberusException;
 import org.springframework.stereotype.Service;
-
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
 
 /**
  * @author mlombard

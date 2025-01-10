@@ -1,5 +1,5 @@
 /**
- * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * Cerberus Copyright (C) 2013 - 2025 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -41,4 +41,11 @@ public interface IConditionService {
      * @return
      */
     AnswerItem<Boolean> evaluateCondition(String conditionOperator, String conditionValue1, String conditionValue2, String conditionValue3, TestCaseExecution tCExecution, JSONArray options);
+
+    String cleanValue1(String condition, String value1);
+
+    String cleanValue2(String condition, String value2);
+
+    String cleanValue3(String condition, String value3);
+
 }

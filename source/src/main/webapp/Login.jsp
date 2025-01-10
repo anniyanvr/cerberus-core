@@ -1,6 +1,6 @@
 <%--
 
-    Cerberus Copyright (C) 2013 - 2017 cerberustesting
+    Cerberus Copyright (C) 2013 - 2025 cerberustesting
     DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 
     This file is part of Cerberus.
@@ -28,6 +28,7 @@
 <%@page import="org.cerberus.core.crud.service.IParameterService"%>
 <%@page import="org.springframework.web.context.support.WebApplicationContextUtils"%>
 <%@page import="org.springframework.context.ApplicationContext"%>
+<%@ page import="org.cerberus.core.crud.entity.LogEvent" %>
 
 <%@page contentType="text/html" pageEncoding="UTF-8"%>
 <!DOCTYPE html>
@@ -66,7 +67,7 @@
                      */
                     ILogEventService logEventService = appContext.getBean(LogEventService.class);
                     IFactoryLogEvent factoryLogEvent = appContext.getBean(FactoryLogEvent.class);
-                    logEventService.create(factoryLogEvent.create(0, 0, request.getParameter("j_username"), null, "/Login.jsp", "LOGINERROR", "Invalid Password for : " + request.getParameter("j_username"), request.getRemoteAddr(), request.getLocalAddr()));
+                    logEventService.create(factoryLogEvent.create(0, 0, request.getParameter("j_username"), null, "/Login.jsp", "LOGINERROR", LogEvent.STATUS_ERROR, "Invalid Password for : " + request.getParameter("j_username"), request.getRemoteAddr(), request.getLocalAddr()));
                 }
         %>
 

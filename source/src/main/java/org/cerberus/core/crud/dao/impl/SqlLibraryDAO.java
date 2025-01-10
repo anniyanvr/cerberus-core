@@ -1,5 +1,5 @@
 /**
- * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * Cerberus Copyright (C) 2013 - 2025 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -534,7 +534,7 @@ public class SqlLibraryDAO implements ISqlLibraryDAO {
 
         query.append(" WHERE 1=1");
 
-        if (!StringUtil.isEmpty(searchTerm)) {
+        if (!StringUtil.isEmptyOrNull(searchTerm)) {
             searchSQL.append(" and (`sql`.Name like ?");
             searchSQL.append(" or `sql`.Type like ?");
             searchSQL.append(" or `sql`.Database like ?");
@@ -557,7 +557,7 @@ public class SqlLibraryDAO implements ISqlLibraryDAO {
 
         query.append(searchSQL);
 
-        if (!StringUtil.isEmpty(column)) {
+        if (!StringUtil.isEmptyOrNull(column)) {
             query.append(" order by `sql`.").append(column).append(" ").append(dir);
         }
 
@@ -577,7 +577,7 @@ public class SqlLibraryDAO implements ISqlLibraryDAO {
             try {
                 int i = 1;
 
-                if (!StringUtil.isEmpty(searchTerm)) {
+                if (!StringUtil.isEmptyOrNull(searchTerm)) {
                     preStat.setString(i++, "%" + searchTerm + "%");
                     preStat.setString(i++, "%" + searchTerm + "%");
                     preStat.setString(i++, "%" + searchTerm + "%");
@@ -722,7 +722,7 @@ public class SqlLibraryDAO implements ISqlLibraryDAO {
         query.append(" as distinctValues FROM sqllibrary `sql`");
         query.append(" where 1=1");
 
-        if (!StringUtil.isEmpty(searchTerm)) {
+        if (!StringUtil.isEmptyOrNull(searchTerm)) {
             searchSQL.append(" and (`sql`.Name like ?");
             searchSQL.append(" or `sql`.Type like ?");
             searchSQL.append(" or `sql`.Database like ?");
@@ -751,7 +751,7 @@ public class SqlLibraryDAO implements ISqlLibraryDAO {
              Statement stm = connection.createStatement();) {
 
             int i = 1;
-            if (!StringUtil.isEmpty(searchTerm)) {
+            if (!StringUtil.isEmptyOrNull(searchTerm)) {
                 preStat.setString(i++, "%" + searchTerm + "%");
                 preStat.setString(i++, "%" + searchTerm + "%");
                 preStat.setString(i++, "%" + searchTerm + "%");

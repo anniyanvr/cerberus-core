@@ -1,5 +1,5 @@
 /**
- * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * Cerberus Copyright (C) 2013 - 2025 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -34,6 +34,7 @@ import org.cerberus.core.crud.entity.Campaign;
 import org.cerberus.core.crud.entity.CampaignLabel;
 import org.cerberus.core.crud.entity.CampaignParameter;
 import org.cerberus.core.crud.entity.EventHook;
+import org.cerberus.core.crud.entity.LogEvent;
 import org.cerberus.core.crud.entity.ScheduleEntry;
 import org.cerberus.core.crud.factory.IFactoryCampaign;
 import org.cerberus.core.crud.factory.IFactoryCampaignLabel;
@@ -119,7 +120,7 @@ public class CreateCampaign extends HttpServlet {
         String priority = ParameterParserUtil.parseStringParam(request.getParameter("Priority"), "");
         String manualExecution = ParameterParserUtil.parseStringParam(request.getParameter("ManualExecution"), "");
 
-        if (StringUtil.isEmpty(campaignName)) {
+        if (StringUtil.isEmptyOrNull(campaignName)) {
             msg = new MessageEvent(MessageEventEnum.DATA_OPERATION_ERROR_EXPECTED);
             msg.setDescription(msg.getDescription().replace("%ITEM%", "Campaign")
                     .replace("%OPERATION%", "Create")
@@ -145,7 +146,7 @@ public class CreateCampaign extends HttpServlet {
                  * Adding Log entry.
                  */
                 ILogEventService logEventService = appContext.getBean(LogEventService.class);
-                logEventService.createForPrivateCalls("/CreateCampaign", "CREATE", "Create Campaign : ['" + camp.getCampaign() + "']", request);
+                logEventService.createForPrivateCalls("/CreateCampaign", "CREATE", LogEvent.STATUS_INFO, "Create Campaign : ['" + camp.getCampaign() + "']", request);
                 IFactoryLogEvent factoryLogEvent = appContext.getBean(FactoryLogEvent.class);
 
                 if (request.getParameter("ScheduledEntries") != null) {
@@ -203,7 +204,7 @@ public class CreateCampaign extends HttpServlet {
                     ArrayList<CampaignLabel> arr = new ArrayList<>();
                     for (int i = 0; i < labels.length(); i++) {
                         JSONArray bat = labels.getJSONArray(i);
-                        CampaignLabel co = factoryCampaignLabel.create(0, bat.getString(0), Integer.valueOf(bat.getString(2)), request.getRemoteUser(), null, request.getRemoteUser(), null);
+                        CampaignLabel co = factoryCampaignLabel.create(0, bat.getString(0), bat.getInt(2), request.getRemoteUser(), null, request.getRemoteUser(), null);
                         arr.add(co);
                     }
                     ans = campaignLabelService.compareListAndUpdateInsertDeleteElements(campaignName, arr);
@@ -240,21 +241,21 @@ public class CreateCampaign extends HttpServlet {
             String cronExpression = policy.sanitize(tcsaJson.getString("cronDefinition"));
             String active = policy.sanitize(tcsaJson.getString("isActive"));
             String desc = policy.sanitize(tcsaJson.getString("description"));
-            String strId = tcsaJson.getString("id");
+            long id = tcsaJson.getLong("id");
             String type = "CAMPAIGN";
             String name = campaign;
 
-            int id;
-            if (strId.isEmpty()) {
-                id = 0;
-            } else {
-                try {
-                    id = Integer.parseInt(strId);
-                } catch (NumberFormatException e) {
-                    LOG.warn("Unable to parse pool size: " + strId + ". Applying default value");
-                    id = 0;
-                }
-            }
+//            int id;
+//            if (strId.isEmpty()) {
+//                id = 0;
+//            } else {
+//                try {
+//                    id = Integer.parseInt(strId);
+//                } catch (NumberFormatException e) {
+//                    LOG.warn("Unable to parse pool size: " + strId + ". Applying default value");
+//                    id = 0;
+//                }
+//            }
 
             Timestamp timestampfactice = new Timestamp(System.currentTimeMillis());
 
@@ -284,19 +285,19 @@ public class CreateCampaign extends HttpServlet {
             String description = policy.sanitize(objJson.getString("description"));
             boolean isActive = objJson.getBoolean("isActive");
             String hookChannel = policy.sanitize(objJson.getString("hookChannel"));
-            String strId = objJson.getString("id");
+            int id = objJson.getInt("id");
 
-            int id;
-            if (strId.isEmpty()) {
-                id = 0;
-            } else {
-                try {
-                    id = Integer.parseInt(strId);
-                } catch (NumberFormatException e) {
-                    LOG.warn("Unable to parse pool size: " + strId + ". Applying default value");
-                    id = 0;
-                }
-            }
+//            int id;
+//            if (strId.isEmpty()) {
+//                id = 0;
+//            } else {
+//                try {
+//                    id = Integer.parseInt(strId);
+//                } catch (NumberFormatException e) {
+//                    LOG.warn("Unable to parse pool size: " + strId + ". Applying default value");
+//                    id = 0;
+//                }
+//            }
 
             Timestamp timestampfactice = new Timestamp(System.currentTimeMillis());
 

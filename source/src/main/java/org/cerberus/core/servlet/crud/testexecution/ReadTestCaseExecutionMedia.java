@@ -1,5 +1,5 @@
 /**
- * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * Cerberus Copyright (C) 2013 - 2025 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -19,7 +19,6 @@
  */
 package org.cerberus.core.servlet.crud.testexecution;
 
-import com.google.common.io.Files;
 import com.mortennobel.imagescaling.DimensionConstrain;
 import com.mortennobel.imagescaling.ResampleOp;
 import java.awt.image.BufferedImage;
@@ -50,7 +49,6 @@ import org.cerberus.core.util.ParameterParserUtil;
 import org.cerberus.core.util.StringUtil;
 import org.cerberus.core.util.answer.AnswerList;
 import org.cerberus.core.util.servlet.ServletUtil;
-import org.jfree.util.Log;
 import org.springframework.context.ApplicationContext;
 import org.springframework.web.context.support.WebApplicationContextUtils;
 
@@ -109,7 +107,8 @@ public class ReadTestCaseExecutionMedia extends HttpServlet {
 
         TestCaseExecutionFile tceFile = null;
         if (!(fileName.isEmpty())) {
-
+            // Secure that you cannot access unnecessary folders
+            fileName = fileName.replace("..", ".");
             IFactoryTestCaseExecutionFile factoryTestCaseExecutionFile = appContext.getBean(IFactoryTestCaseExecutionFile.class);
             tceFile = factoryTestCaseExecutionFile.create(0, 0, "", fileDesc, fileName, fileType, "", null, "", null);
 
@@ -164,6 +163,15 @@ public class ReadTestCaseExecutionMedia extends HttpServlet {
             } else {
                 pathString = parameterService.getParameterStringByKey("cerberus_exemanualmedia_path", "", "");
             }
+            int nb = tceFile.getFileName().split("/").length;
+            String filenameDownload = "";
+            if (nb > 1) {
+                filenameDownload = String.valueOf(tceFile.getFileName().split("/")[nb - 2]) + "-" + tceFile.getFileName().split("/")[nb - 1];
+            } else if (nb > 0) {
+                filenameDownload = tceFile.getFileName().split("/")[nb - 1];
+            } else {
+                filenameDownload = tceFile.getFileName();
+            }
 
             switch (tceFile.getFileType()) {
                 case "JPG":
@@ -171,46 +179,68 @@ public class ReadTestCaseExecutionMedia extends HttpServlet {
                     if (autoContentType) {
                         response.setContentType("image/jpeg");
                     }
+                    response.setHeader("Content-Disposition", "filename=" + filenameDownload);
                     returnImage(request, response, tceFile, pathString);
                     break;
                 case "PNG":
                     if (autoContentType) {
                         response.setContentType("image/png");
                     }
+                    response.setHeader("Content-Disposition", "filename=" + filenameDownload);
                     returnImage(request, response, tceFile, pathString);
                     break;
                 case "GIF":
                     if (autoContentType) {
                         response.setContentType("image/gif");
                     }
+                    response.setHeader("Content-Disposition", "filename=" + filenameDownload);
                     returnImage(request, response, tceFile, pathString);
-                    break;
-                case "HTML":
-                    if (autoContentType) {
-                        response.setContentType("text/html");
-                    }
-                    returnFile(request, response, tceFile, pathString);
                     break;
                 case "XML":
                     if (autoContentType) {
                         response.setContentType("application/xml");
                     }
+                    response.setHeader("Content-Disposition", "filename=" + filenameDownload);
                     returnFile(request, response, tceFile, pathString);
                     break;
                 case "JSON":
                     if (autoContentType) {
                         response.setContentType("application/json");
                     }
+                    response.setHeader("Content-Disposition", "filename=" + filenameDownload);
                     returnFile(request, response, tceFile, pathString);
                     break;
                 case "TXT":
+                    if (autoContentType) {
+                        response.setContentType("application/txt");
+                    }
+                    response.setHeader("Content-Disposition", "filename=" + filenameDownload);
                     returnFile(request, response, tceFile, pathString);
                     break;
                 case "PDF":
+                    if (autoContentType) {
+                        response.setContentType("application/pdf");
+                    }
+                    response.setHeader("Content-Disposition", "filename=" + filenameDownload);
                     returnPDF(request, response, tceFile, pathString);
+                    break;
+                case "HTML":
+                    if (autoContentType) {
+                        response.setContentType("text/html");
+                    }
+                    response.setHeader("Content-Disposition", "filename=" + filenameDownload);
+                    returnDownloadTXTFile(request, response, tceFile, pathString);
+                    break;
+                case "BIN":
+                    response.setHeader("Content-Disposition", "filename=" + filenameDownload);
+                    returnDownloadBinFile(request, response, tceFile, pathString);
+                    break;
                 case "MP4":
+                    response.setHeader("Content-Disposition", "filename=" + filenameDownload);
                     returnMP4(request, response, tceFile, pathString);
+                    break;
                 default:
+                    response.setHeader("Content-Disposition", "filename=" + filenameDownload);
                     returnNotSupported(request, response, tceFile, pathString);
             }
 
@@ -270,7 +300,7 @@ public class ReadTestCaseExecutionMedia extends HttpServlet {
         sdf.applyPattern("dd MMM yyyy HH:mm:ss z");
 
         response.setHeader("Last-Modified", sdf.format(DateUtils.addDays(Calendar.getInstance().getTime(), 2 * 360)));
-        response.setHeader("Expires", sdf.format(DateUtils.addDays(Calendar.getInstance().getTime(), 2 * 360)));
+        response.setDateHeader("Expires", 0);
         response.setHeader("Type", "PNG");
         response.setHeader("Description", tc.getFileDesc());
 
@@ -285,9 +315,9 @@ public class ReadTestCaseExecutionMedia extends HttpServlet {
         response.setContentType("application/pdf");
         response.setContentLength((int) pdfFile.length());
         try {
-            Files.copy(pdfFile, response.getOutputStream());
+            FileUtils.copyFile(pdfFile, response.getOutputStream());
         } catch (IOException e) {
-            Log.warn(e);
+            LOG.warn(e);
         }
 
     }
@@ -299,37 +329,82 @@ public class ReadTestCaseExecutionMedia extends HttpServlet {
         mp4File = new File(filePath + tc.getFileName());
         response.setContentType("video/mp4");
         response.setContentLength((int) mp4File.length());
-        response.setHeader("Content-Range",  "bytes start-end/length");
+        response.setHeader("Content-Range", "bytes start-end/length");
         try {
-            Files.copy(mp4File, response.getOutputStream());
+            FileUtils.copyFile(mp4File, response.getOutputStream());
         } catch (IOException e) {
-            Log.warn(e);
+            LOG.warn(e);
         }
 
     }
 
     private void returnFile(HttpServletRequest request, HttpServletResponse response, TestCaseExecutionFile tc, String filePath) {
-        String everything = "";
-        filePath = StringUtil.addSuffixIfNotAlready(filePath, File.separator);
-        File file = new File(filePath + tc.getFileName());
-        LOG.debug("Accessing File : " + filePath + tc.getFileName());
-        try (FileInputStream inputStream = FileUtils.openInputStream(file);) {
-            everything = IOUtils.toString(inputStream, "UTF-8");
-            response.setCharacterEncoding("UTF-8");
-            response.getWriter().print(everything);
-        } catch (FileNotFoundException e) {
-
-        } catch (IOException e) {
-
-        }
         SimpleDateFormat sdf = new SimpleDateFormat();
         sdf.setTimeZone(new SimpleTimeZone(0, "GMT"));
         sdf.applyPattern("dd MMM yyyy HH:mm:ss z");
-
         response.setHeader("Last-Modified", sdf.format(DateUtils.addDays(Calendar.getInstance().getTime(), 2 * 360)));
-        response.setHeader("Expires", sdf.format(DateUtils.addDays(Calendar.getInstance().getTime(), 2 * 360)));
+        response.setDateHeader("Expires", 0);
         response.setHeader("Type", tc.getFileType());
         response.setHeader("Description", tc.getFileDesc());
+
+        filePath = StringUtil.addSuffixIfNotAlready(filePath, File.separator);
+        File file = new File(filePath + tc.getFileName());
+        LOG.debug("Accessing File : " + filePath + tc.getFileName());
+        try {
+            FileUtils.copyFile(file, response.getOutputStream());
+        } catch (FileNotFoundException e) {
+            LOG.warn(e);
+        } catch (IOException e) {
+            LOG.warn(e);
+        }
+
+    }
+
+    private void returnDownloadTXTFile(HttpServletRequest request, HttpServletResponse response, TestCaseExecutionFile tc, String filePath) {
+
+        SimpleDateFormat sdf = new SimpleDateFormat();
+        sdf.setTimeZone(new SimpleTimeZone(0, "GMT"));
+        sdf.applyPattern("dd MMM yyyy HH:mm:ss z");
+        response.setHeader("Last-Modified", sdf.format(DateUtils.addDays(Calendar.getInstance().getTime(), 2 * 360)));
+        response.setDateHeader("Expires", 0);
+        response.setHeader("Type", tc.getFileType());
+        response.setHeader("Description", tc.getFileDesc());
+
+        filePath = StringUtil.addSuffixIfNotAlready(filePath, File.separator);
+        File file = new File(filePath + tc.getFileName());
+        LOG.debug("Accessing File : " + filePath + tc.getFileName());
+        try {
+            FileUtils.copyFile(file, response.getOutputStream());
+        } catch (FileNotFoundException e) {
+            LOG.warn(e);
+        } catch (IOException e) {
+            LOG.warn(e);
+        }
+
+    }
+
+    private void returnDownloadBinFile(HttpServletRequest request, HttpServletResponse response, TestCaseExecutionFile tc, String filePath) {
+        LOG.debug("Accessing File : " + filePath + tc.getFileName());
+
+        SimpleDateFormat sdf = new SimpleDateFormat();
+        sdf.setTimeZone(new SimpleTimeZone(0, "GMT"));
+        sdf.applyPattern("dd MMM yyyy HH:mm:ss z");
+        response.setHeader("Last-Modified", sdf.format(DateUtils.addDays(Calendar.getInstance().getTime(), 2 * 360)));
+        response.setDateHeader("Expires", 0);
+        response.setHeader("Type", tc.getFileType());
+        response.setHeader("Description", tc.getFileDesc());
+
+        filePath = StringUtil.addSuffixIfNotAlready(filePath, File.separator);
+        File file = new File(filePath + tc.getFileName());
+        LOG.debug("Accessing File : " + filePath + tc.getFileName());
+        try {
+            FileUtils.copyFile(file, response.getOutputStream());
+        } catch (FileNotFoundException e) {
+            LOG.error(e, e);
+        } catch (IOException e) {
+            LOG.error(e, e);
+        }
+
     }
 
     private void returnText(HttpServletRequest request, HttpServletResponse response, TestCaseExecutionFile tc, String filePath) {
@@ -339,7 +414,7 @@ public class ReadTestCaseExecutionMedia extends HttpServlet {
         sdf.applyPattern("dd MMM yyyy HH:mm:ss z");
 
         response.setHeader("Last-Modified", sdf.format(DateUtils.addDays(Calendar.getInstance().getTime(), 2 * 360)));
-        response.setHeader("Expires", sdf.format(DateUtils.addDays(Calendar.getInstance().getTime(), 2 * 360)));
+        response.setDateHeader("Expires", 0);
         response.setHeader("Type", tc.getFileType());
         response.setHeader("Description", tc.getFileDesc());
     }

@@ -1,5 +1,5 @@
 /*
- * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * Cerberus Copyright (C) 2013 - 2025 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -22,11 +22,11 @@
  * Open the modal.
  * @returns {null}
  */
-function openModalExecutionSimple(application, test, testcase, description) {
+function openModalExecutionSimple(application, test, testcase, description, country, environment, robot) {
 
     // We only load the Labels and bind the events once for performance optimisations.
     if ($('#testCaseSimpleExecutionModal').data("initLabel") === undefined) {
-        initModalTestCaseSimpleExecution(application, test, testcase);
+        initModalTestCaseSimpleExecution(application, test, testcase, country, environment, robot);
         $('#testCaseSimpleExecutionModal').data("initLabel", true);
     }
 
@@ -55,7 +55,7 @@ function openModalExecutionSimple(application, test, testcase, description) {
 }
 
 //Init Modal label & combo
-function initModalTestCaseSimpleExecution(application, test, testcase) {
+function initModalTestCaseSimpleExecution(application, test, testcase, country, environment, robot) {
     var doc = new Doc();
 
     $("[name='robotField']").html(doc.getDocOnline("testcaseexecution", "Robot"));
@@ -74,8 +74,8 @@ function initModalTestCaseSimpleExecution(application, test, testcase) {
     $("#linkToRunPageWithInformation").attr("href", "./RunTests.jsp?test=" + encodeURI(test) + "&testcase=" + encodeURI(testcase));
 
 //Feed ApplicationEnvironment and Robot List
-    displayRobotList("robotList", "ROBOTLIST", true);
-    displayApplicationIpList("environmentList", "", application);
+    displayRobotList("robotList", "ROBOTLIST", true, robot);
+    displayApplicationIpList("environmentList", "", application, country, environment);
 
     $("#testToExecuteLabel").html('<span class="card-img-top glyphicon glyphicon-edit" style="font-size:15px;"></span>  ' + doc.getDocLabel("page_testcaseexecutionmodal", "testToExecuteLabel"));
     $("#chooseEnvLabel").html('<span class="card-img-top glyphicon glyphicon-list" style="font-size:15px;"></span>  ' + doc.getDocLabel("page_testcaseexecutionmodal", "chooseEnvLabel"));
@@ -226,7 +226,7 @@ function handleAddToQueueResponse(data, doRedirect) {
         data.message = data.message + "<br><a href='TestCaseExecution.jsp?executionQueueId=" + data.queueList[0].queueId + "'><button class='btn btn-primary' id='goToExecution'>Open Execution</button></a>";
     }
     if (data.nbExe > 1) {
-        data.message = data.message + "<br><a href='ReportingExecutionByTag.jsp?Tag=" + data.tag + "'><button class='btn btn-primary' id='goToTagReport'>Report by Tag</button></a>"
+        data.message = data.message + "<br><a href='ReportingExecutionByTag.jsp?Tag=" + encodeURIComponent(data.tag) + "'><button class='btn btn-primary' id='goToTagReport'>Report by Tag</button></a>"
     }
 
     if ((data.nbExe === 1) && doRedirect) {

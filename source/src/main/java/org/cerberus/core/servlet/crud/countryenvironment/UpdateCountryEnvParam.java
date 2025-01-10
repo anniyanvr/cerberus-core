@@ -1,5 +1,5 @@
 /**
- * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * Cerberus Copyright (C) 2013 - 2025 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -34,7 +34,7 @@ import org.cerberus.core.crud.entity.CountryEnvLink;
 import org.cerberus.core.crud.entity.CountryEnvParam;
 import org.cerberus.core.crud.entity.CountryEnvironmentDatabase;
 import org.cerberus.core.crud.entity.CountryEnvironmentParameters;
-import org.cerberus.core.engine.entity.MessageEvent;
+import org.cerberus.core.crud.entity.LogEvent;
 import org.cerberus.core.crud.factory.IFactoryCountryEnvDeployType;
 import org.cerberus.core.crud.factory.IFactoryCountryEnvLink;
 import org.cerberus.core.crud.factory.IFactoryCountryEnvironmentDatabase;
@@ -46,6 +46,7 @@ import org.cerberus.core.crud.service.ICountryEnvironmentDatabaseService;
 import org.cerberus.core.crud.service.ICountryEnvironmentParametersService;
 import org.cerberus.core.crud.service.ILogEventService;
 import org.cerberus.core.crud.service.impl.LogEventService;
+import org.cerberus.core.engine.entity.MessageEvent;
 import org.cerberus.core.enums.MessageEventEnum;
 import org.cerberus.core.exception.CerberusException;
 import org.cerberus.core.util.ParameterParserUtil;
@@ -154,21 +155,21 @@ public class UpdateCountryEnvParam extends HttpServlet {
         /**
          * Checking all constrains before calling the services.
          */
-        if (StringUtil.isEmpty(system)) {
+        if (StringUtil.isEmptyOrNull(system)) {
             msg = new MessageEvent(MessageEventEnum.DATA_OPERATION_ERROR_EXPECTED);
             msg.setDescription(msg.getDescription().replace("%ITEM%", OBJECT_NAME)
                     .replace("%OPERATION%", "Update")
                     .replace("%REASON%", "System is missing"));
             ans.setResultMessage(msg);
             finalAnswer = AnswerUtil.agregateAnswer(finalAnswer, ans);
-        } else if (StringUtil.isEmpty(country)) {
+        } else if (StringUtil.isEmptyOrNull(country)) {
             msg = new MessageEvent(MessageEventEnum.DATA_OPERATION_ERROR_EXPECTED);
             msg.setDescription(msg.getDescription().replace("%ITEM%", OBJECT_NAME)
                     .replace("%OPERATION%", "Update")
                     .replace("%REASON%", "Country is missing"));
             ans.setResultMessage(msg);
             finalAnswer = AnswerUtil.agregateAnswer(finalAnswer, ans);
-        } else if (StringUtil.isEmpty(environment)) {
+        } else if (StringUtil.isEmptyOrNull(environment)) {
             msg = new MessageEvent(MessageEventEnum.DATA_OPERATION_ERROR_EXPECTED);
             msg.setDescription(msg.getDescription().replace("%ITEM%", OBJECT_NAME)
                     .replace("%OPERATION%", "Update")
@@ -182,7 +183,7 @@ public class UpdateCountryEnvParam extends HttpServlet {
             ICountryEnvParamService cepService = appContext.getBean(ICountryEnvParamService.class);
 
             AnswerItem resp = cepService.readByKey(system, country, environment);
-            if (!(resp.isCodeEquals(MessageEventEnum.DATA_OPERATION_OK.getCode()) && resp.getItem()!=null)) {
+            if (!(resp.isCodeEquals(MessageEventEnum.DATA_OPERATION_OK.getCode()) && resp.getItem() != null)) {
                 /**
                  * Object could not be found. We stop here and report the error.
                  */
@@ -215,7 +216,7 @@ public class UpdateCountryEnvParam extends HttpServlet {
                      * Update was successful. Adding Log entry.
                      */
                     ILogEventService logEventService = appContext.getBean(LogEventService.class);
-                    logEventService.createForPrivateCalls("/UpdateCountryEnvParam", "UPDATE", "Updated CountryEnvParam : ['" + system + "','" + country + "','" + environment + "']", request);
+                    logEventService.createForPrivateCalls("/UpdateCountryEnvParam", "UPDATE", LogEvent.STATUS_INFO, "Updated CountryEnvParam : ['" + system + "','" + country + "','" + environment + "']", request);
                 }
 
                 // Update the Database with the new list.
@@ -275,6 +276,7 @@ public class UpdateCountryEnvParam extends HttpServlet {
 
             boolean delete = tcsaJson.getBoolean("toDelete");
             String application = tcsaJson.getString("application");
+            boolean isActive = tcsaJson.getBoolean("isActive");
             String ip = tcsaJson.getString("ip");
             String domain = tcsaJson.getString("domain");
             String url = tcsaJson.getString("url");
@@ -283,24 +285,14 @@ public class UpdateCountryEnvParam extends HttpServlet {
             String var2 = tcsaJson.getString("var2");
             String var3 = tcsaJson.getString("var3");
             String var4 = tcsaJson.getString("var4");
-            String strPoolSize = tcsaJson.getString("poolSize");
+            String secret1 = tcsaJson.getString("secret1");
+            String secret2 = tcsaJson.getString("secret2");
+            int poolSize = tcsaJson.getInt("poolSize");
             String mobileActivity = tcsaJson.getString("mobileActivity");
             String mobilePackage = tcsaJson.getString("mobilePackage");
-            int poolSize;
-            if (strPoolSize.isEmpty()) {
-                poolSize = CountryEnvironmentParameters.DEFAULT_POOLSIZE;
-            }
-            else {
-                try {
-                    poolSize = Integer.parseInt(strPoolSize);
-                } catch (NumberFormatException e) {
-                    LOG.warn("Unable to parse pool size: " + strPoolSize + ". Applying default value");
-                    poolSize = CountryEnvironmentParameters.DEFAULT_POOLSIZE;
-                }
-            }
 
             if (!delete) {
-                CountryEnvironmentParameters cea = ceaFactory.create(system, country, environment, application, ip, domain, url, urlLogin, var1, var2, var3, var4, poolSize, mobileActivity, mobilePackage);
+                CountryEnvironmentParameters cea = ceaFactory.create(system, country, environment, application, isActive, ip, domain, url, urlLogin, var1, var2, var3, var4, secret1, secret2, poolSize, mobileActivity, mobilePackage, request.getRemoteUser(), null, request.getRemoteUser(), null);
                 ceaList.add(cea);
             }
         }
@@ -364,7 +356,7 @@ public class UpdateCountryEnvParam extends HttpServlet {
         } catch (CerberusException ex) {
             LOG.warn(ex);
         } catch (JSONException ex) {
-            LOG.warn(ex);
+            LOG.warn(ex, ex);
         }
     }
 
@@ -385,7 +377,7 @@ public class UpdateCountryEnvParam extends HttpServlet {
         } catch (CerberusException ex) {
             LOG.warn(ex);
         } catch (JSONException ex) {
-            LOG.warn(ex);
+            LOG.warn(ex, ex);
         }
     }
 

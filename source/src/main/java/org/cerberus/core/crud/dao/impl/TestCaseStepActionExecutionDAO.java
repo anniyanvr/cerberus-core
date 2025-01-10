@@ -1,5 +1,5 @@
 /**
- * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * Cerberus Copyright (C) 2013 - 2025 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -115,7 +115,7 @@ public class TestCaseStepActionExecutionDAO implements ITestCaseStepActionExecut
         List<TestCaseStepActionExecution> list = new ArrayList<>();
         StringBuilder query = new StringBuilder();
         query.append("SELECT * FROM testcasestepactionexecution exa ");
-        query.append("where exa.id = ? and exa.test = ? and exa.testcase = ? and exa.step = ? and exa.index = ? ");
+        query.append("where exa.id = ? and exa.test = ? and exa.testcase = ? and exa.step = ? and exa.index = ? order by `sort`");
         // Debug message on SQL.
         if (LOG.isDebugEnabled()) {
             LOG.debug("SQL : " + query.toString());
@@ -446,7 +446,7 @@ public class TestCaseStepActionExecutionDAO implements ITestCaseStepActionExecut
                 preStat.setString(i++, df.format(testCaseStepActionExecution.getEnd()));
                 preStat.setString(i++, testCaseStepActionExecution.getReturnCode());
                 preStat.setString(i++, StringUtil.secureFromSecrets(StringUtil.getLeftString(testCaseStepActionExecution.getReturnMessage(), 65000), secrets));
-                preStat.setString(i++, StringUtil.secureFromSecrets(StringUtil.getLeftString(testCaseStepActionExecution.getDescription(), 65000), secrets));
+                preStat.setString(i++, StringUtil.secureFromSecrets(StringUtil.getLeftString(testCaseStepActionExecution.getDescription(), 150), secrets));
                 preStat.setInt(i++, testCaseStepActionExecution.getSort());
                 preStat.setString(i++, StringUtil.secureFromSecrets(StringUtil.getLeftString(testCaseStepActionExecution.getValue1Init(), 65000), secrets));
                 preStat.setString(i++, StringUtil.secureFromSecrets(StringUtil.getLeftString(testCaseStepActionExecution.getValue2Init(), 65000), secrets));

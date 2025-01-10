@@ -1,5 +1,5 @@
 /**
- * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * Cerberus Copyright (C) 2013 - 2025 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -32,10 +32,12 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 
 import java.sql.Timestamp;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
+import org.cerberus.core.engine.entity.ExecutionLog;
 
 /**
  * @author bcivel
@@ -69,6 +71,7 @@ public class TestCaseExecution {
     private long start;
     private long end;
     private String controlStatus;
+    private boolean falseNegative;
     private String controlMessage;
     private String application;
     private String url;
@@ -128,7 +131,9 @@ public class TestCaseExecution {
     private TestCase testCaseObj;
     private Tag tagObj;
     private CountryEnvParam countryEnvParam;
-    private CountryEnvironmentParameters countryEnvironmentParameters;
+    private String currentApplication; // Allow to move the application environment context in case of a call to a service.
+    private CountryEnvironmentParameters countryEnvApplicationParam; // Main value from application of the testcase.
+    private HashMap<String, CountryEnvironmentParameters> countryEnvApplicationParams; // All applications values from all application existing on the same env/system and linked to main environement of the testcase.
     private Invariant environmentObj;
     private Invariant environmentDataObj;
     private Invariant priorityObj;
@@ -136,6 +141,7 @@ public class TestCaseExecution {
     private List<TestCaseExecutionFile> fileList;
     // Host the list of Steps that will be executed (both pre tests and main test)
     private List<TestCaseStepExecution> testCaseStepExecutionList;
+    private TestCaseStepExecution testCaseStepInExecution;
     // Host the full list of data calculated during the execution.
     private TreeMap<String, TestCaseExecutionData> testCaseExecutionDataMap;
     // This is used to keep track of all property calculated within a step/action/control. It is reset each time we enter a step/action/control and the property name is added to the list each time it gets calculated. In case it was already asked for calculation, we stop the execution with FA message.
@@ -166,6 +172,7 @@ public class TestCaseExecution {
     private Integer nbExecutions; // Has the nb of execution that was necessary to execute the testcase.
     // Global parameters.
     private Integer cerberus_action_wait_default;
+    // Websocket management parameters
     private boolean cerberus_featureflipping_activatewebsocketpush;
     private long cerberus_featureflipping_websocketpushperiod;
     private long lastWebsocketPush;
@@ -179,6 +186,7 @@ public class TestCaseExecution {
     // Http Stats
     private TestCaseExecutionHttpStat httpStat;
     private List<NetworkTrafficIndex> networkTrafficIndexList;
+    private List<ExecutionLog> executionLog;
 
     /**
      * Invariant PROPERTY TYPE String.
@@ -216,9 +224,7 @@ public class TestCaseExecution {
 
     public enum ControlStatus {
         OK, KO, FA, NA, NE, WE, PE, CA, QU, QE
-    }
-
-    ;
+    };
 
     public static final String MANUAL_Y = "Y";
     public static final String MANUAL_N = "N";
@@ -229,28 +235,20 @@ public class TestCaseExecution {
     public static final String ROBOTPROVIDER_LAMBDATEST = "LAMBDATEST";
     public static final String ROBOTPROVIDER_NONE = "NONE";
 
-
-    public void appendNetworkTrafficIndexList(NetworkTrafficIndex newIndex) {
-        this.networkTrafficIndexList.add(newIndex);
-    }
-
-    public void appendSecret(String secret) {
-        if (secret != null) {
-            this.secrets.put(secret, "");
-        }
-    }
-
-    public void appendSecrets(List<String> secrets) {
-        secrets.forEach(secret -> {
-            this.secrets.put(secret, "");
-        });
-    }
-
     public void setResultMessage(MessageGeneral resultMessage) {
         this.resultMessage = resultMessage;
         if (resultMessage != null) {
             this.setControlMessage(resultMessage.getDescription());
             this.setControlStatus(resultMessage.getCodeString());
+        }
+    }
+
+    public void addExecutionLog(String status, String message) {
+        if (executionLog == null) {
+            executionLog = new ArrayList<>();
+        }
+        if (executionLog != null) {
+            this.executionLog.add(ExecutionLog.builder().message(StringUtil.secureFromSecrets(message, this.getSecrets())).status(status).datetime(new Timestamp(System.currentTimeMillis())).build());
         }
     }
 
@@ -282,6 +280,94 @@ public class TestCaseExecution {
         }
     }
 
+    public void addTestCaseCountryPropertyList(TestCaseCountryProperties property) {
+        if (testCaseCountryPropertyList == null) {
+            testCaseCountryPropertyList = new ArrayList<>();
+        }
+        if (property != null) {
+            this.testCaseCountryPropertyList.add(property);
+        }
+    }
+
+    public void addTestCaseCountryPropertyList(List<TestCaseCountryProperties> propertyList) {
+        if (testCaseCountryPropertyList == null) {
+            testCaseCountryPropertyList = new ArrayList<>();
+        }
+        if (propertyList != null) {
+            for (TestCaseCountryProperties property : propertyList) {
+                this.testCaseCountryPropertyList.add(property);
+            }
+        }
+    }
+
+    public void addNetworkTrafficIndexList(NetworkTrafficIndex newIndex) {
+        this.networkTrafficIndexList.add(newIndex);
+    }
+
+    public void addSecret(String secret) {
+        if (secret != null && (!"".equals(secret))) {
+            this.secrets.put(secret, "");
+        }
+    }
+
+    public void addSecrets(List<String> secrets) {
+        secrets.forEach(secret -> {
+            this.secrets.put(secret, "");
+        });
+    }
+
+    public void addcountryEnvApplicationParam(CountryEnvironmentParameters countryEnvApplication) {
+        if (countryEnvApplication != null) {
+            this.countryEnvApplicationParams.put(countryEnvApplication.getApplication(), countryEnvApplication);
+        }
+    }
+
+    public void addcountryEnvApplicationParams(List<CountryEnvironmentParameters> countryEnvApplications) {
+        LOG.debug(countryEnvApplications);
+        countryEnvApplications.forEach(countryEnvApplication -> {
+            LOG.debug(countryEnvApplication);
+            this.countryEnvApplicationParams.put(countryEnvApplication.getApplication(), countryEnvApplication);
+        });
+    }
+
+    public TestCaseStepExecution getTestCaseStepExecutionBySortId(int sortID) {
+        for (TestCaseStepExecution tcse : this.testCaseStepExecutionList) {
+            if (sortID == tcse.getTestCaseStep().getSort()) {
+                return tcse;
+            }
+        }
+        return null;
+    }
+
+    public TestCaseStepExecution getTestCaseStepExecutionByStepId(int stepId) {
+        TestCaseStepExecution tcsee = this.getTestCaseStepInExecution();
+        //If step executing if from library, return the step from the library instead
+        if (tcsee.isUsingLibraryStep()){
+            for (TestCaseStepExecution tcse : this.testCaseStepExecutionList) {
+                if (stepId == tcse.getTestCaseStep().getLibraryStepStepId()) {
+                    return tcse;
+                }
+            }
+            return tcsee;
+        } else {
+            for (TestCaseStepExecution tcse : this.testCaseStepExecutionList) {
+                if (stepId == tcse.getTestCaseStep().getStepId()) {
+                    return tcse;
+                }
+            }
+        }
+        return null;
+    }
+
+    public TestCaseStepExecution getTestCaseStepExecutionExecuting() {
+        for (TestCaseStepExecution tcse : this.testCaseStepExecutionList) {
+            if ("PE".equals(tcse.getReturnCode())) {
+                return tcse;
+            }
+        }
+        return null;
+    }
+
     /**
      * Convert the current TestCaseExecution into JSON format
      *
@@ -307,6 +393,7 @@ public class TestCaseExecution {
             result.put("start", this.getStart());
             result.put("end", this.getEnd());
             result.put("controlStatus", this.getControlStatus());
+            result.put("falseNegative", this.isFalseNegative());
             result.put("controlMessage", StringUtil.secureFromSecrets(this.getControlMessage(), this.getSecrets()));
             result.put("application", this.getApplication());
             result.put("robot", this.getRobot());
@@ -409,12 +496,12 @@ public class TestCaseExecution {
      * Convert the current TestCaseExecution into a public JSON format.
      *
      * @param cerberusURL
-     * @param prioritiesList   : send the invariant list of priorities to the
-     *                         method (this is to avoid getting value from database for every entries)
-     * @param countriesList    : send the invariant list of countries to the method
-     *                         (this is to avoid getting value from database for every entries)
+     * @param prioritiesList : send the invariant list of priorities to the
+     * method (this is to avoid getting value from database for every entries)
+     * @param countriesList : send the invariant list of countries to the method
+     * (this is to avoid getting value from database for every entries)
      * @param environmentsList : send the invariant list of environments to the
-     *                         method (this is to avoid getting value from database for every entries)
+     * method (this is to avoid getting value from database for every entries)
      * @return TestCaseExecution in JSONObject format
      */
     public JSONObject toJsonV001(String cerberusURL, List<Invariant> prioritiesList, List<Invariant> countriesList, List<Invariant> environmentsList) {
@@ -488,6 +575,7 @@ public class TestCaseExecution {
             result.put("durationInMs", this.getEnd() - this.getStart());
             result.put("controlStatus", this.getControlStatus());
             result.put("controlMessage", StringUtil.secureFromSecrets(this.getControlMessage(), this.getSecrets()));
+            result.put("falseNegative", this.isFalseNegative());
             result.put("application", this.getApplication());
             JSONObject robotLocal = new JSONObject();
 
@@ -523,6 +611,35 @@ public class TestCaseExecution {
             LOG.error(ex.toString(), ex);
         }
         return result;
+    }
+
+    public String getColor(String controlStatus) {
+        String color = null;
+
+        if ("OK".equals(controlStatus)) {
+            color = TestCaseExecution.CONTROLSTATUS_OK_COL_EXT;
+        } else if ("KO".equals(controlStatus)) {
+            color = TestCaseExecution.CONTROLSTATUS_KO_COL_EXT;
+        } else if ("FA".equals(controlStatus)) {
+            color = TestCaseExecution.CONTROLSTATUS_FA_COL_EXT;
+        } else if ("CA".equals(controlStatus)) {
+            color = TestCaseExecution.CONTROLSTATUS_CA_COL_EXT;
+        } else if ("NA".equals(controlStatus)) {
+            color = TestCaseExecution.CONTROLSTATUS_NA_COL_EXT;
+        } else if ("NE".equals(controlStatus)) {
+            color = TestCaseExecution.CONTROLSTATUS_NE_COL_EXT;
+        } else if ("WE".equals(controlStatus)) {
+            color = TestCaseExecution.CONTROLSTATUS_WE_COL_EXT;
+        } else if ("PE".equals(controlStatus)) {
+            color = TestCaseExecution.CONTROLSTATUS_PE_COL_EXT;
+        } else if ("QU".equals(controlStatus)) {
+            color = TestCaseExecution.CONTROLSTATUS_QU_COL_EXT;
+        } else if ("QE".equals(controlStatus)) {
+            color = TestCaseExecution.CONTROLSTATUS_QE_COL_EXT;
+        } else {
+            color = "#000000";
+        }
+        return color;
     }
 
 }

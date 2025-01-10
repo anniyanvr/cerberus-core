@@ -1,5 +1,5 @@
 /**
- * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * Cerberus Copyright (C) 2013 - 2025 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -19,7 +19,6 @@
  */
 package org.cerberus.core.servlet.crud.testexecution;
 
-import com.google.common.base.Strings;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.cerberus.core.crud.entity.Invariant;
@@ -59,6 +58,7 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -68,6 +68,8 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.TimeZone;
+import org.cerberus.core.util.StringUtil;
 
 /**
  * @author cerberus
@@ -84,15 +86,16 @@ public class ReadTestCaseExecution extends HttpServlet {
     private IApplicationService applicationService;
 
     private static final Logger LOG = LogManager.getLogger(ReadTestCaseExecution.class);
+    private static final String DATE_FORMAT = "yyyy-MM-dd'T'HH:mm:ss.S'Z'";
 
     /**
      * Processes requests for both HTTP <code>GET</code> and <code>POST</code>
      * methods.
      *
-     * @param request  servlet request
+     * @param request servlet request
      * @param response servlet response
-     * @throws ServletException                              if a servlet-specific error occurs
-     * @throws IOException                                   if an I/O error occurs
+     * @throws ServletException if a servlet-specific error occurs
+     * @throws IOException if an I/O error occurs
      * @throws org.cerberus.core.exception.CerberusException
      */
     protected void processRequest(HttpServletRequest request, HttpServletResponse response)
@@ -103,6 +106,7 @@ public class ReadTestCaseExecution extends HttpServlet {
         response.setCharacterEncoding("utf8");
 
         testCaseExecutionService = appContext.getBean(ITestCaseExecutionService.class);
+        testCaseService = appContext.getBean(ITestCaseService.class);
 
         // Calling Servlet Transversal Util.
         ServletUtil.servletStart(request);
@@ -116,7 +120,7 @@ public class ReadTestCaseExecution extends HttpServlet {
                 String value = ParameterParserUtil.parseStringParam(request.getParameter("sSearch"), "");
                 String test = ParameterParserUtil.parseStringParam(request.getParameter("test"), "");
                 String testCase = ParameterParserUtil.parseStringParam(request.getParameter("testCase"), "");
-                List<String> system = ParameterParserUtil.parseListParamAndDecodeAndDeleteEmptyValue(request.getParameterValues("system"), Arrays.asList("DEFAULT"), "UTF-8");
+                List<String> system = ParameterParserUtil.parseListParamAndDeleteEmptyValue(request.getParameterValues("system"), Arrays.asList("DEFAULT"), "UTF-8");
                 long executionId = ParameterParserUtil.parseLongParam(request.getParameter("executionId"), 0);
                 boolean likeColumn = ParameterParserUtil.parseBooleanParam(request.getParameter("likeColumn"), false);
                 // Switch Parameters.
@@ -124,7 +128,7 @@ public class ReadTestCaseExecution extends HttpServlet {
                 String columnName = ParameterParserUtil.parseStringParam(request.getParameter("columnName"), "");
                 boolean byColumns = ParameterParserUtil.parseBooleanParam(request.getParameter("byColumns"), false);
 
-                if (!Strings.isNullOrEmpty(columnName)) {
+                if (!StringUtil.isEmptyOrNull(columnName)) {
                     //If columnName is present, then return the distinct value of this column.
                     answer = findValuesForColumnFilter(system, test, appContext, request, columnName);
                     jsonResponse = (JSONObject) answer.getItem();
@@ -143,14 +147,20 @@ public class ReadTestCaseExecution extends HttpServlet {
                         result.put("id", lastExec.getId());
                         result.put("queueId", lastExec.getQueueID());
                         result.put("controlStatus", lastExec.getControlStatus());
+
                         result.put("env", lastExec.getEnvironment());
                         result.put("country", lastExec.getCountry());
-                        result.put("end", new Date(lastExec.getEnd())).toString();
+                        Date d = new Date(lastExec.getEnd());
+                        TimeZone tz = TimeZone.getTimeZone("UTC");
+                        DateFormat df = new SimpleDateFormat(DATE_FORMAT);
+                        df.setTimeZone(tz);
+                        result.put("end", df.format(d)).toString();
                     }
                     jsonResponse.put("contentTable", result);
                 } else if (executionId != 0 && !executionWithDependency) {
                     answer = testCaseExecutionService.readByKeyWithDependency(executionId);
                     TestCaseExecution tce = (TestCaseExecution) answer.getItem();
+                    tce.getTestCaseObj().setRefOrigineUrl(testCaseService.getRefOriginUrl(tce.getTestCaseObj().getOrigine(), tce.getTestCaseObj().getRefOrigine(), tce.getTestCaseObj().getSystem()));
                     jsonResponse.put("testCaseExecution", tce.toJson(true));
                 } else if (executionId != 0 && executionWithDependency) {
 
@@ -182,14 +192,13 @@ public class ReadTestCaseExecution extends HttpServlet {
     }
 
     // <editor-fold defaultstate="collapsed" desc="HttpServlet methods. Click on the + sign on the left to edit the code.">
-
     /**
      * Handles the HTTP <code>GET</code> method.
      *
-     * @param request  servlet request
+     * @param request servlet request
      * @param response servlet response
      * @throws ServletException if a servlet-specific error occurs
-     * @throws IOException      if an I/O error occurs
+     * @throws IOException if an I/O error occurs
      */
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
@@ -206,10 +215,10 @@ public class ReadTestCaseExecution extends HttpServlet {
     /**
      * Handles the HTTP <code>POST</code> method.
      *
-     * @param request  servlet request
+     * @param request servlet request
      * @param response servlet response
      * @throws ServletException if a servlet-specific error occurs
-     * @throws IOException      if an I/O error occurs
+     * @throws IOException if an I/O error occurs
      */
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
@@ -448,7 +457,7 @@ public class ReadTestCaseExecution extends HttpServlet {
         String columnToSort[] = sColumns.split(",");
         String columnName = columnToSort[columnToSortParameter];
         String sort = ParameterParserUtil.parseStringParam(request.getParameter("sSortDir_0"), "asc");
-        List<String> system = ParameterParserUtil.parseListParamAndDecodeAndDeleteEmptyValue(request.getParameterValues("system"), Arrays.asList("DEFAULT"), "UTF-8");
+        List<String> system = ParameterParserUtil.parseListParamAndDeleteEmptyValue(request.getParameterValues("system"), Arrays.asList("DEFAULT"), "UTF-8");
 
         Map<String, List<String>> individualSearch = new HashMap<>();
         List<String> individualLike = new ArrayList<>(Arrays.asList(ParameterParserUtil.parseStringParam(request.getParameter("sLike"), "").split(",")));
@@ -660,23 +669,23 @@ public class ReadTestCaseExecution extends HttpServlet {
             case "exe.country":
             case "exe.environment":
                 try {
-                    /**
-                     *
-                     */
-                    List<Invariant> invariantList = invariantService.readByIdName(columnName.replace("exe.", ""));
-                    List<String> stringResult = new ArrayList<>();
-                    for (Invariant inv : invariantList) {
-                        stringResult.add(inv.getValue());
-                    }
-                    values.setDataList(stringResult);
-                    values.setTotalRows(invariantList.size());
-                    msg = new MessageEvent(MessageEventEnum.DATA_OPERATION_OK_GENERIC);
-                    values.setResultMessage(msg);
-
-                } catch (CerberusException ex) {
-                    LOG.error(ex);
+                /**
+                 *
+                 */
+                List<Invariant> invariantList = invariantService.readByIdName(columnName.replace("exe.", ""));
+                List<String> stringResult = new ArrayList<>();
+                for (Invariant inv : invariantList) {
+                    stringResult.add(inv.getValue());
                 }
-                break;
+                values.setDataList(stringResult);
+                values.setTotalRows(invariantList.size());
+                msg = new MessageEvent(MessageEventEnum.DATA_OPERATION_OK_GENERIC);
+                values.setResultMessage(msg);
+
+            } catch (CerberusException ex) {
+                LOG.error(ex);
+            }
+            break;
             /**
              * For columns build, revision get values from
              * buildrevisioninvariant

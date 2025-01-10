@@ -1,5 +1,5 @@
 /*
- * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * Cerberus Copyright (C) 2013 - 2025 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -26,32 +26,52 @@ function openModalAppService(service, mode, page = undefined) {
         $('#editSoapLibraryModal').data("initLabel", true);
     }
 
+    $("#callSoapLibraryButton").off("click");
+    $("#callSoapLibraryButton").click(function () {
+        confirmAppServiceModalHandler(mode, page, true);
+    });
+
+    reloadCollections();
+
+    initBeforePerformCall();
+
     if (mode === "EDIT") {
+        $('#callSoapLibraryButton').show();
         editAppServiceClick(service, page);
+
     } else if (mode === "ADD") {
+        $('#callSoapLibraryButton').hide();
         addAppServiceClick(service, page);
+
     } else {
+        $('#callSoapLibraryButton').hide();
         duplicateAppServiceClick(service);
 }
+
 }
 
 function initModalAppService() {
     var doc = new Doc();
 
-    displayInvariantList("type", "SRVTYPE", false, "REST");
-    displayInvariantList("method", "SRVMETHOD", false, "GET");
-    displayApplicationList("application", "", "", "");
-    displayAppServiceList("parentContentService", "", "", "");
+    displayInvariantList("type", "SRVTYPE", false, "REST", undefined, undefined, undefined, "editServiceModal");
+    displayInvariantList("method", "SRVMETHOD", false, "GET", undefined, undefined, undefined, "editServiceModal");
+    displayInvariantList("bodyType", "SRVBODYTYPE", false, "raw", undefined, undefined, undefined, "editServiceModal");
+    displayAppServiceList("parentContentService", "", "");
+    displayInvariantList("callSystem", "SYSTEM", false, undefined, undefined, undefined, undefined, "editServiceModal");
+    displayInvariantList("authType", "AUTHTYPE", false, undefined, undefined, undefined, undefined, "editServiceModal");
+    displayInvariantList("authAddTo", "AUTHADDTO", false, undefined, undefined, undefined, undefined, "editServiceModal");
 
     $("[name='buttonEdit']").html(doc.getDocLabel("page_global", "buttonEdit"));
+    $("[name='buttonCall']").html(doc.getDocLabel("page_global", "buttonCall"));
     $("[name='addEntryField']").html(doc.getDocLabel("page_global", "btn_add"));
     $("[name='confirmationField']").html(doc.getDocLabel("page_global", "btn_delete"));
     $("[name='editEntryField']").html(doc.getDocLabel("page_global", "btn_edit"));
     $("[name='applicationField']").html(doc.getDocOnline("page_applicationObject", "Application"));
     $("[name='soapLibraryField']").html(doc.getDocLabel("appservice", "service"));
-    $("[name='groupField']").html(doc.getDocLabel("appservice", "group"));
+    $("[name='collectionField']").html(doc.getDocLabel("appservice", "collection"));
     $("[name='typeField']").html(doc.getDocLabel("appservice", "type"));
     $("[name='descriptionField']").html(doc.getDocLabel("appservice", "description"));
+    $("[name='bodyTypeField']").html(doc.getDocOnline("appservice", "bodyType"));
     $("[name='servicePathField']").html(doc.getDocOnline("appservice", "servicePath"));
     $("[name='methodField']").html(doc.getDocLabel("appservice", "method"));
     $("[name='buttonClose']").html(doc.getDocLabel("page_appservice", "close_btn"));
@@ -62,14 +82,66 @@ function initModalAppService() {
     $("[name='lbl_lastModified']").html(doc.getDocOnline("transversal", "DateModif"));
     $("[name='lbl_lastModifier']").html(doc.getDocOnline("transversal", "UsrModif"));
 
+
+    /**
+     * 
+     * Trigger all autocomple events.
+     * 
+     */
+
     var configs = {
         'system': true,
         'object': false,
-        'propertie': false,
-        'identifier': false
-    }
+        'property': false,
+        'identifier': "none"
+    };
 
     initAutocompleteWithTags([$("[name='servicePath']")], configs, null);
+
+
+    function modifyAutocomplete(e) {
+//            console.log("modify feed autocomplete on input (generic).")
+//            console.log("trigger settingsButton.");
+        $(this).trigger("settingsButton");
+    }
+
+
+    function initAutocompleteElementHeader(e) {
+//            console.log("start feed autocomplete on focus (element).");
+        configs.identifier = "header";
+        initAutocompleteWithTags($(this), configs, null);
+    }
+
+    function initAutocompleteElementHeaderValue(e) {
+//            console.log("start feed autocomplete on focus (element).");
+        configs.identifier = "headervalue";
+        initAutocompleteWithTags($(this), configs, null);
+    }
+
+    function initAutocompleteElementVariable(e) {
+//            console.log("start feed autocomplete on focus (element).");
+        configs.identifier = "none";
+        initAutocompleteWithTags($(this), configs, null);
+    }
+
+    // Adding Autocomplete on all fields. ##### crb-autocomplete-XXXX  #####
+    $(document).on('focus', "input.crb-autocomplete-header:not([readonly])", initAutocompleteElementHeader);
+    $(document).on('input', "input.crb-autocomplete-header:not([readonly])", modifyAutocomplete);
+
+    $(document).on('focus', "textarea.crb-autocomplete-variable:not([readonly])", initAutocompleteElementVariable);
+    $(document).on('input', "textarea.crb-autocomplete-variable:not([readonly])", modifyAutocomplete);
+    $(document).on('focus', "input.crb-autocomplete-variable:not([readonly])", initAutocompleteElementVariable);
+    $(document).on('input', "input.crb-autocomplete-variable:not([readonly])", modifyAutocomplete);
+
+    $(document).on('focus', "textarea.crb-autocomplete-headervalue:not([readonly])", initAutocompleteElementHeaderValue);
+    $(document).on('input', "textarea.crb-autocomplete-headervalue:not([readonly])", modifyAutocomplete);
+
+    /**
+     * 
+     * End of autocomple configuration.
+     * 
+     */
+
 
     $('[data-toggle="popover"]').popover({
         'placement': 'auto',
@@ -106,7 +178,6 @@ function initModalAppService() {
     }).on("focus", function () {
         $(this).autocomplete("search", "");
     });
-
 
 }
 
@@ -150,6 +221,11 @@ function duplicateAppServiceClick(service) {
         confirmAppServiceModalHandler("DUPLICATE", undefined);
     });
 
+    $('.nav-tabs a[href="#tabsSimul-4"]').tab('show');
+    $('#resmessage').html("");
+    $('#resmessage').removeClass("alert-danger");
+    $('#resmessage').hide();
+
     // Prepare all Events handler of the modal.
     prepareAppServiceModal();
 
@@ -188,7 +264,6 @@ function addAppServiceClick(service, page) {
     feedAppServiceModal(service, "editSoapLibraryModal", "ADD");
     srv_listennerForInputTypeFile('#editSoapLibraryModal')
     srv_pasteListennerForClipboardPicture('#editSoapLibraryModal');
-    $('#service').val("");
 
 }
 
@@ -201,7 +276,8 @@ function prepareAppServiceModal() {
     // when type is changed we enable / disable type field.
     $("#editSoapLibraryModal #type").off("change");
     $("#editSoapLibraryModal #type").change(function () {
-        refreshDisplayOnTypeChange();
+        updateMethod_and_refreshDisplayOnTypeChange();
+//        refreshDisplayOnTypeChange();
     });
 
     $("#editSoapLibraryModal #isAvroEnable").off("change");
@@ -219,36 +295,79 @@ function prepareAppServiceModal() {
         refreshDisplayOnTypeChange();
     });
 
-
     $("#editSoapLibraryModal #method").off("change");
     $("#editSoapLibraryModal #method").change(function () {
         refreshDisplayOnTypeChange();
 
     });
 
+    $("#editSoapLibraryModal #bodyType").off("change");
+    $("#editSoapLibraryModal #bodyType").change(function () {
+        refreshDisplayOnTypeChange();
+
+    });
+
+    $("#editSoapLibraryModal #authType").off("change");
+    $("#editSoapLibraryModal #authType").change(function () {
+        refreshAuthorDisplayOnAnyChange();
+    });
 
     // Adding rows in edit Modal.
     $('#addContent').off("click");
     $("#addContent").click(addNewContentRow);
     $('#addHeader').off("click");
     $("#addHeader").click(addNewHeaderRow);
+    $('#addcallProp').off("click");
+    $("#addcallProp").click(addNewCallPropRow);
 
 
 }
 
+function refreshAuthorDisplayOnAnyChange() {
+    $('#editSoapLibraryModalForm #authUserSection').show();
+    $('#editSoapLibraryModalForm #authKeyField').text("User");
+    $('#editSoapLibraryModalForm #authValField').text("Password");
+    switch ($('#editSoapLibraryModalForm #authType').val()) {
+        case "none":
+            $('#editSoapLibraryModalForm #authInfoSection').hide();
+            $('#editSoapLibraryModalForm #authAddToSection').hide();
+            break;
+        case "API Key":
+            $('#editSoapLibraryModalForm #authInfoSection').show();
+            $('#editSoapLibraryModalForm #authKeyField').text("Key");
+            $('#editSoapLibraryModalForm #authValField').text("Value");
+            $('#editSoapLibraryModalForm #authAddToSection').show();
+            break;
+        case "Bearer Token":
+            $('#editSoapLibraryModalForm #authInfoSection').show();
+            $('#editSoapLibraryModalForm #authUserSection').hide();
+            $('#editSoapLibraryModalForm #authValField').text("Token");
+            $('#editSoapLibraryModalForm #authAddToSection').hide();
+            break;
+        case "Basic Auth":
+            $('#editSoapLibraryModalForm #authInfoSection').show();
+            $('#editSoapLibraryModalForm #authAddToSection').hide();
+            break;
+        default:
+            break;
+    }
+}
 
 /***
  * Function that support the modal confirmation. Will call servlet to comit the transaction.
  * @param {String} mode - either ADD, EDIT or DUPLICATE in order to define the purpose of the modal.
  * @returns {null}
  */
-function confirmAppServiceModalHandler(mode, page) {
+function confirmAppServiceModalHandler(mode, page, doCall = false) {
     clearResponseMessage($('#editSoapLibraryModal'));
 
-    var serviceName = $('#service').val();
-    $('#service').val($.trim(serviceName));
+    var serviceName = $('#editServiceModal #service').val();
+    $('#editServiceModal #service').val($.trim(serviceName));
+    serviceName = $('#editServiceModal #service').val();
 
     var formEdit = $('#editSoapLibraryModal #editSoapLibraryModalForm');
+
+    initBeforePerformCall();
 
     showLoaderInModal('#editSoapLibraryModal');
 
@@ -316,6 +435,17 @@ function confirmAppServiceModalHandler(mode, page) {
         formData.append("isAvroEnableValue", 0);
     }
 
+    let callCountry = $('#callCountry').val();
+    let callSystem = $('#callSystem').val();
+    let callEnv = $('#callEnv').val();
+
+    formData.append("callCountry", callCountry);
+    formData.append("callEnvironment", callEnv);
+    formData.append("callSystem", callSystem);
+
+    let callData = getCallParam();
+    formData.append("callInfo", JSON.stringify(callData));
+
     var temp = data.service;
 
     $.ajax({
@@ -326,29 +456,42 @@ function confirmAppServiceModalHandler(mode, page) {
         processData: false,
         contentType: false,
         success: function (data) {
+
+            hideLoaderInModal('#editSoapLibraryModal');
+//            console.info("hide loader");
+
+            // Update the original Service value.
+//            console.info($('#editServiceModal #service').val());
+            $('#editSoapLibraryModal #originalService').prop("value", $('#editServiceModal #service').val());
+
             data = JSON.parse(data);
 
             if (getAlertType(data.messageType) === "success") {
-                if (page === "TestCase") {
-                    var Tags = getTags();
-                    for (var i = 0; i < Tags.length; i++) {
-                        if (Tags[i].regex == null) {
-                            Tags[i].array.push(temp);
-                        }
-                    }
-                    $("." + temp).parent().find("input").trigger("input", ['first']);
+                if (doCall) {
+
+                    performCall(serviceName);
+
                 } else {
-                    var oTable = $("#soapLibrarysTable").dataTable();
-                    oTable.fnDraw(false);
+                    if (page === "TestCase") {
+                        var Tags = getTags();
+                        for (var i = 0; i < Tags.length; i++) {
+                            if (Tags[i].regex == null) {
+                                Tags[i].array.push(temp);
+                            }
+                        }
+                        $("." + temp).parent().find("input").trigger("input", ['first']);
+                    } else {
+                        var oTable = $("#soapLibrarysTable").dataTable();
+                        oTable.fnDraw(false);
+                    }
+                    $('#editSoapLibraryModal').data("Saved", true);
+                    $('#editSoapLibraryModal').modal('hide');
+                    showMessage(data);
                 }
-                $('#editSoapLibraryModal').data("Saved", true);
-                $('#editSoapLibraryModal').modal('hide');
-                showMessage(data);
             } else {
                 showMessage(data, $('#editSoapLibraryModal'));
             }
 
-            hideLoaderInModal('#editSoapLibraryModal');
         },
         error: showUnexpectedError
     });
@@ -358,19 +501,298 @@ function confirmAppServiceModalHandler(mode, page) {
 
 }
 
-function refreshDisplayOnTypeChange(newValueType, newValueMethod) {
+function reloadCollections() {
 
-    newValueMethod = $("#editSoapLibraryModal #method").val();
-    newValueType = $("#editSoapLibraryModal #type").val();
+    var availableCollection = getCollectionArray(true);
+    $('#editServiceModal input#collection').autocomplete({
+        source: availableCollection,
+        minLength: 0,
+        messages: {
+            noResults: '',
+            results: function (amount) {
+                return '';
+            }
+        }
+    }).on("focus", function () {
+        $(this).autocomplete("search", "");
+    });
+
+}
+
+function getCallParam() {
+    let callCountry = $('#callCountry').val();
+    let callSystem = $('#callSystem').val();
+    let callEnv = $('#callEnv').val();
+    let callApp = $('#editSoapLibraryModalForm #application').val();
+    let callTimeout = $('#callTimeout').val();
+    let callKafkaNb = $('#callKafkaNb').val();
+    let callKafkaTime = $('#callKafkaTime').val();
+    // Getting Data from Header TAB
+    var table3 = $("#callPropTableBody tr");
+    var table_callProp = [];
+    for (var i = 0; i < table3.length; i++) {
+        table_callProp.push($(table3[i]).data("callProp"));
+    }
+    let dataCall = {
+        'country': callCountry,
+        'system': callSystem,
+        'environment': callEnv,
+        'application': callApp,
+        'timeout': callTimeout,
+        'kafkanb': callKafkaNb,
+        'kafkaTime': callKafkaTime,
+        'props': table_callProp
+    };
+
+    return dataCall;
+}
+
+function performCall(service) {
+
+//    console.info("now CALL " + service);
+
+//    console.info(dataCall);
+
+// TODO Show waithing icon.
+//    console.info("show");
+
+    $('#callStatus').show();
+    $('#callStatus').removeClass("spin glyphicon-minus").removeClass("glyphicon-ok").removeClass("glyphicon-remove").addClass("spin glyphicon-refresh");
+    $('#callStatusCode').html("");
+
+
+    let callData = getCallParam();
+
+    $.ajax({
+        url: "api/public/services/call/" + encodeURIComponent(service),
+        async: false,
+        method: "POST",
+        headers: {'X-API-VERSION': 1},
+        dataType: 'json',
+        contentType: 'application/json',
+        data: JSON.stringify(callData),
+//        processData: false,
+//        contentType: false,
+        success: function (data) {
+
+            let CallContent = JSON.parse(data.data);
+
+//            console.info(CallContent);
+            $('#resmessage').html(CallContent.message);
+            if (CallContent.messageCode === "OK") {
+                $('#resmessage').addClass("alert-info");
+            } else {
+                $('#resmessage').addClass("alert-danger");
+            }
+            $('#resmessage').show();
+
+
+
+            if ((CallContent.messageCode !== "OK")) {
+
+                // Show Parameters and Message Tab
+                $('.nav-tabs a[href="#tabsSimul-4"]').tab('show');
+
+                $('#callStatus').removeClass("spin glyphicon-refresh").addClass("glyphicon-remove");
+
+            } else {
+
+                $('#callStatus').removeClass("spin glyphicon-refresh").addClass("glyphicon-ok");
+
+            }
+
+
+
+            if (CallContent.hasOwnProperty('call')) {
+
+
+                if (CallContent.call.hasOwnProperty('Response')) {
+
+                    // Response code and duration
+                    if ((CallContent.call.Response.hasOwnProperty('HTTP-ReturnCode')) && (CallContent.call.Response["HTTP-ReturnCode"] > 0)) {
+                        if ((CallContent.call.Response["HTTP-ReturnCode"] < 300)) {
+                            $('#callStatusCode').attr('style', 'font-size: small; text-align: center; background-color: rgb(0,210,122);');
+                        } else if ((CallContent.call.Response["HTTP-ReturnCode"] < 500)) {
+                            $('#callStatusCode').attr('style', 'font-size: small; text-align: center; background-color: rgb(245,128,62);');
+                        } else {
+                            $('#callStatusCode').attr('style', 'font-size: small; text-align: center; background-color: rgb(230,55,87);');
+                        }
+                        $('#callStatusCode').html(CallContent.call.Response["HTTP-ReturnCode"]);
+                        $('#callStatusCode').show();
+                        $('#callStatus').hide();
+                    } else {
+                        $('#callStatus').show();
+                    }
+                    if ((CallContent.call.Response.timings.hasOwnProperty('durationMs')) && (CallContent.call.Response.timings.durationMs > 0)) {
+                        $('#callTiming').html(CallContent.call.Response.timings.durationMs + " ms");
+                        $('#callTiming').show();
+                    }
+
+
+                    // Response detail
+                    ace.edit($("#editSoapLibraryModal #srvResponseDet")[0]).destroy();
+                    $('#editSoapLibraryModal  #srvResponseDet').text(JSON.stringify(CallContent.call.Response, null, '\t'));
+                    //Highlight envelop on modal loading
+                    var editorResponse = ace.edit($('#editSoapLibraryModal  #srvResponseDet')[0]);
+                    editorResponse.setTheme("ace/theme/chrome");
+                    editorResponse.getSession().setMode(defineAceMode(editorResponse.getSession().getDocument().getValue()));
+                    editorResponse.setOptions({
+                        maxLines: 50
+                    });
+                    $($("#editSoapLibraryModal #srvResponseDet").get(0)).keyup(function () {
+                        if (editorResponse.getSession().getMode().$id === "ace/mode/text") {
+                            editorResponse.getSession().setMode(defineAceMode(editorResponse.getSession().getDocument().getValue()));
+                        }
+                    });
+
+                    $('#htmlDisplay').hide();
+                    document.getElementById("htmlDisplay").innerHTML = "";
+
+                    if (CallContent.call.Response.hasOwnProperty('HTTP-ResponseBody')) {
+                        // Response
+                        ace.edit($("#editSoapLibraryModal #srvResponse")[0]).destroy();
+                        if (CallContent.call.Response["HTTP-ResponseContentType"] === "JSON") {
+                            $('#editSoapLibraryModal  #srvResponse').text(JSON.stringify(CallContent.call.Response["HTTP-ResponseBody"], null, '\t'));
+                        } else if (CallContent.call.Response["HTTP-ResponseContentType"] === "XML") {
+                            $('#editSoapLibraryModal  #srvResponse').text(vkbeautify.xml(CallContent.call.Response["HTTP-ResponseBody"]));
+                        } else if (CallContent.call.Response["HTTP-ResponseContentType"] === "HTML") {
+                            $('#editSoapLibraryModal  #srvResponse').text(CallContent.call.Response["HTTP-ResponseBody"].replace(/<[^>]*>?/gm, ''));
+                            // TODO SECURE that HTML does not change the page layout
+//                            document.getElementById("htmlDisplay").innerHTML = CallContent.call.Response["HTTP-ResponseBody"];
+//                            $('#htmlDisplay').show();
+                        } else {
+                            $('#editSoapLibraryModal  #srvResponse').text(CallContent.call.Response["HTTP-ResponseBody"]);
+                        }
+                        //Highlight envelop on modal loading
+                        var editorResponse = ace.edit($('#editSoapLibraryModal  #srvResponse')[0]);
+                        editorResponse.setTheme("ace/theme/chrome");
+                        editorResponse.getSession().setMode(defineAceMode(editorResponse.getSession().getDocument().getValue()));
+                        editorResponse.setOptions({
+                            maxLines: 50
+                        });
+                        $($("#editSoapLibraryModal #srvResponse").get(0)).keyup(function () {
+                            if (editorResponse.getSession().getMode().$id === "ace/mode/text") {
+                                editorResponse.getSession().setMode(defineAceMode(editorResponse.getSession().getDocument().getValue()));
+                            }
+                        });
+
+                        // Show Response Tab
+                        $('.nav-tabs a[href="#tabsSimul-1"]').tab('show');
+
+                    } else {
+
+                        // Show Parameters and Message Tab
+                        $('.nav-tabs a[href="#tabsSimul-4"]').tab('show');
+
+                    }
+
+                } else {
+
+                    // Show Parameters and Message Tab
+                    $('.nav-tabs a[href="#tabsSimul-4"]').tab('show');
+
+                }
+
+                if (CallContent.call.hasOwnProperty('Request')) {
+
+                    // Request detail
+                    ace.edit($("#editSoapLibraryModal #srvRequestDet")[0]).destroy();
+                    $('#editSoapLibraryModal  #srvRequestDet').text(JSON.stringify(CallContent.call.Request, null, '\t'));
+                    //Highlight envelop on modal loading
+                    var editorResponse = ace.edit($('#editSoapLibraryModal  #srvRequestDet')[0]);
+                    editorResponse.setTheme("ace/theme/chrome");
+                    editorResponse.getSession().setMode(defineAceMode(editorResponse.getSession().getDocument().getValue()));
+                    editorResponse.setOptions({
+                        maxLines: 50
+                    });
+                    $($("#editSoapLibraryModal #srvRequestDet").get(0)).keyup(function () {
+                        if (editorResponse.getSession().getMode().$id === "ace/mode/text") {
+                            editorResponse.getSession().setMode(defineAceMode(editorResponse.getSession().getDocument().getValue()));
+                        }
+                    });
+
+                    // Request
+                    ace.edit($("#editSoapLibraryModal #srvCallRequest")[0]).destroy();
+                    if (CallContent.call.Request.ServiceType === "SOAP") {
+                        $('#editSoapLibraryModal  #srvCallRequest').text(CallContent.call.Request["HTTP-Request"], null, '\t');
+                    } else {
+                        $('#editSoapLibraryModal  #srvCallRequest').text(JSON.stringify(CallContent.call.Request["HTTP-Request"], null, '\t'));
+                    }
+                    //Highlight envelop on modal loading
+                    var editorResponse = ace.edit($('#editSoapLibraryModal  #srvCallRequest')[0]);
+                    editorResponse.setTheme("ace/theme/chrome");
+                    editorResponse.getSession().setMode(defineAceMode(editorResponse.getSession().getDocument().getValue()));
+                    editorResponse.setOptions({
+                        maxLines: 50
+                    });
+                    $($("#editSoapLibraryModal #srvCallRequest").get(0)).keyup(function () {
+                        if (editorResponse.getSession().getMode().$id === "ace/mode/text") {
+                            editorResponse.getSession().setMode(defineAceMode(editorResponse.getSession().getDocument().getValue()));
+                        }
+                    });
+
+                }
+            } else {
+
+                // Show Parameters and Message Tab
+                $('.nav-tabs a[href="#tabsSimul-4"]').tab('show');
+
+
+            }
+
+//            console.info("hide");
+//            $('#callStatus').removeClass("spin glyphicon-refresh").addClass("glyphicon-ok").addClass("glyphicon-remove");
+            // TODO Hide  waiting icon.
+
+        },
+        error: showUnexpectedError
+    });
+
+}
+
+
+function initBeforePerformCall() {
+
+    $('#editSoapLibraryModal').find("#srvResponse").text("");
+
+    $('#editSoapLibraryModal').find("#srvResponseDet").text("");
+
+    $('#editSoapLibraryModal').find("#srvCallRequest").text("");
+
+    $('#editSoapLibraryModal').find("#srvRequestDet").text("");
+
+    $('#resmessage').html("");
+    $('#resmessage').removeClass("alert-danger");
+    $('#resmessage').hide();
+
+    $('#callStatus').hide();
+
+    $('#callStatusCode').html("");
+    $('#callStatusCode').hide();
+
+    $('#callTiming').hide();
+
+
+    document.getElementById("htmlDisplay").innerHTML = " ";
+    $('#htmlDisplay').hide();
+
+}
+
+
+function refreshDisplayOnTypeChange() {
+
+    let newValueMethod = $("#editSoapLibraryModal #method").val();
+    let newValueType = $("#editSoapLibraryModal #type").val();
+    let newValueBodyType = $("#editSoapLibraryModal #bodyType").val();
 
     $('#editSoapLibraryModal #typeLogo').attr('src', './images/logo-' + newValueType + '.png').attr('alt', newValueType);
 
-    $("#editSoapLibraryModal #tab2Text").show();
-    $("#editSoapLibraryModal #tab3Text").show();
-    $("#editSoapLibraryModal #tab4Text").show();
+    $("#editSoapLibraryModal #tabRequest").show();
+    $("#editSoapLibraryModal #tabRequestDetail").show();
+    $("#editSoapLibraryModal #tabHeader").show();
     $("#editSoapLibraryModal #srvRequest").parent().parent().find("label").html("Service Request");
     $("label[name='operationField']").html("Operation");
-
+    $("#editSoapLibraryModal #tabAuthor").hide();
 
     if (newValueType === "SOAP") {
         // If SOAP service, no need to feed the method.
@@ -381,18 +803,21 @@ function refreshDisplayOnTypeChange(newValueType, newValueMethod) {
         $("label[name='attachementurlField']").parent().show();
 //        $("input[name='attachementurl']").show();
         $('#editSoapLibraryModal #method').prop("disabled", true);
+        $('#editSoapLibraryModal #bodyType').parent().hide();
         $('#editSoapLibraryModal #addContent').prop("disabled", true);
         $('#editSoapLibraryModal #addHeader').prop("disabled", false);
         $("label[name='kafkaTopicField']").parent().hide();
         $("label[name='kafkaKeyField']").parent().hide();
         $("label[name='kafkaFilterField']").hide();
         $("#editSoapLibraryModal #kafkaFilter").hide();
+        $("#editSoapLibraryModal #tabFilters").hide();
         $("label[name='avroField']").hide();
         $("#editSoapLibraryModal #avro").hide();
         $("#editSoapLibraryModal #avrSchemaKeyDiv").hide();
         $("#editSoapLibraryModal #avrSchemaValueDiv").hide();
         $("label[name='isFollowRedirField']").parent().hide();
-        $('#editSoapLibraryModal #tab3Text').text("Request Detail");
+        $('#editSoapLibraryModal #tabRequestDetail').text("Request Detail");
+        $("#editSoapLibraryModal #tabRequestDetail").hide();
 
     } else if (newValueType === "FTP") {
         $('#editSoapLibraryModal #method').prop("disabled", false);
@@ -404,6 +829,7 @@ function refreshDisplayOnTypeChange(newValueType, newValueMethod) {
         $('#editSoapLibraryModal #method option[value="SEARCH"]').css("display", "none");
         $('#editSoapLibraryModal #method option[value="PRODUCE"]').css("display", "none");
         $('#editSoapLibraryModal #method option[value="FIND"]').css("display", "none");
+        $('#editSoapLibraryModal #bodyType').parent().hide();
         $('#editSoapLibraryModal #addContent').prop("disabled", true);
         $('#editSoapLibraryModal #addHeader').prop("disabled", true);
         $('.upload-drop-zone').show();
@@ -416,18 +842,21 @@ function refreshDisplayOnTypeChange(newValueType, newValueMethod) {
         $("label[name='kafkaKeyField']").parent().hide();
         $("label[name='kafkaFilterField']").hide();
         $("#editSoapLibraryModal #kafkaFilter").hide();
+        $("#editSoapLibraryModal #tabFilters").hide();
         $("label[name='avroField']").hide();
         $("#editSoapLibraryModal #avro").hide();
         $("#editSoapLibraryModal #avrSchemaKeyDiv").hide();
         $("#editSoapLibraryModal #avrSchemaValueDiv").hide();
         $("label[name='isFollowRedirField']").parent().hide();
-        $('#editSoapLibraryModal #tab3Text').text("Request Detail");
+        $('#editSoapLibraryModal #tabRequestDetail').text("Request Detail");
         if (newValueMethod == "GET") {
             $("#editSoapLibraryModal #srvRequestDiv").hide();
         } else {
             $("#editSoapLibraryModal #srvRequest").parent().parent().find("label").html("File Content");
             $("#editSoapLibraryModal #srvRequestDiv").show();
         }
+        $("#editSoapLibraryModal #tabHeader").hide();
+        $("#editSoapLibraryModal #tabRequestDetail").hide();
 
     } else if (newValueType === "KAFKA") {
         $("#editSoapLibraryModal #srvRequest").parent().parent().find("label").html("Kafka Value");
@@ -441,6 +870,7 @@ function refreshDisplayOnTypeChange(newValueType, newValueMethod) {
         $('#editSoapLibraryModal #method option[value="SEARCH"]').css("display", "block");
         $('#editSoapLibraryModal #method option[value="PRODUCE"]').css("display", "block");
         $('#editSoapLibraryModal #method option[value="FIND"]').css("display", "none");
+        $('#editSoapLibraryModal #bodyType').parent().hide();
         $('#editSoapLibraryModal #addContent').prop("disabled", false);
         $('#editSoapLibraryModal #addHeader').prop("disabled", false);
         $('.upload-drop-zone').hide();
@@ -451,16 +881,21 @@ function refreshDisplayOnTypeChange(newValueType, newValueMethod) {
 //        $("input[name='attachementurl']").hide();
         $("label[name='kafkaTopicField']").parent().show();
         $("label[name='kafkaKeyField']").parent().show();
-        $("label[name='kafkaFilterField']").show();
         $("#editSoapLibraryModal #kafkaFilter").show();
+        $("label[name='kafkaFilterField']").show();
+        $("#editSoapLibraryModal #tabFilters").show();
         $("label[name='avroField']").show();
         $("#editSoapLibraryModal #avro").show();
         if (newValueMethod === "SEARCH") {
-            $("#editSoapLibraryModal #tab2Text").hide();
+            $("#editSoapLibraryModal #tabRequest").hide();
             $("#editSoapLibraryModal #kafkaFilter").show();
+            $("label[name='kafkaFilterField']").show();
+            $("#editSoapLibraryModal #tabFilters").show();
         } else {
-            $("#editSoapLibraryModal #tab2Text").show();
+            $("#editSoapLibraryModal #tabRequest").show();
             $("#editSoapLibraryModal #kafkaFilter").hide();
+            $("label[name='kafkaFilterField']").hide();
+            $("#editSoapLibraryModal #tabFilters").hide();
         }
         isAvro = $("#editSoapLibraryModal #isAvroEnable")[0].checked;
         if (isAvro) {
@@ -485,7 +920,7 @@ function refreshDisplayOnTypeChange(newValueType, newValueMethod) {
             $("#editSoapLibraryModal #avrSchemaValueDiv").hide();
         }
         $("label[name='isFollowRedirField']").parent().hide();
-        $('#editSoapLibraryModal #tab3Text').text("KAFKA Props");
+        $('#editSoapLibraryModal #tabRequestDetail').text("KAFKA Props");
 
     } else if (newValueType === "MONGODB") {
         $("#editSoapLibraryModal #srvRequest").parent().parent().find("label").html("MongoDB Query");
@@ -499,12 +934,13 @@ function refreshDisplayOnTypeChange(newValueType, newValueMethod) {
         $('#editSoapLibraryModal #method option[value="SEARCH"]').css("display", "none");
         $('#editSoapLibraryModal #method option[value="PRODUCE"]').css("display", "none");
         $('#editSoapLibraryModal #method option[value="FIND"]').css("display", "block");
+        $('#editSoapLibraryModal #bodyType').parent().hide();
         $('#editSoapLibraryModal #addContent').prop("disabled", true);
         $('#editSoapLibraryModal #addHeader').prop("disabled", true);
         $('.upload-drop-zone').hide();
-        $("#editSoapLibraryModal #tab2Text").show();
-        $("#editSoapLibraryModal #tab3Text").hide();
-        $("#editSoapLibraryModal #tab4Text").hide();
+        $("#editSoapLibraryModal #tabRequest").show();
+        $("#editSoapLibraryModal #tabRequestDetail").hide();
+        $("#editSoapLibraryModal #tabHeader").hide();
         $("label[name='screenshotfilenameField']").hide();
         $("label[name='operationField']").parent().show();
         $("label[name='operationField']").html("Database.Collection");
@@ -515,14 +951,16 @@ function refreshDisplayOnTypeChange(newValueType, newValueMethod) {
         $("label[name='kafkaKeyField']").parent().hide();
         $("label[name='kafkaFilterField']").hide();
         $("#editSoapLibraryModal #kafkaFilter").hide();
+        $("#editSoapLibraryModal #tabFilters").hide();
         $("label[name='avroField']").hide();
         $("#editSoapLibraryModal #avro").hide();
         $("#editSoapLibraryModal #avrSchemaKeyDiv").hide();
         $("#editSoapLibraryModal #avrSchemaValueDiv").hide();
         $("label[name='isFollowRedirField']").parent().hide();
-        $('#editSoapLibraryModal #tab3Text').text("Request Detail");
+        $('#editSoapLibraryModal #tabRequestDetail').text("Request Detail");
 
     } else { // REST
+        $("#editSoapLibraryModal #tabAuthor").show();
         $('#editSoapLibraryModal #method').prop("disabled", false);
         $('#editSoapLibraryModal #method option[value="DELETE"]').css("display", "block");
         $('#editSoapLibraryModal #method option[value="PUT"]').css("display", "block");
@@ -532,6 +970,7 @@ function refreshDisplayOnTypeChange(newValueType, newValueMethod) {
         $('#editSoapLibraryModal #method option[value="SEARCH"]').css("display", "none");
         $('#editSoapLibraryModal #method option[value="PRODUCE"]').css("display", "none");
         $('#editSoapLibraryModal #method option[value="FIND"]').css("display", "none");
+        $('#editSoapLibraryModal #bodyType').parent().show();
         $('#editSoapLibraryModal #addContent').prop("disabled", false);
         $('#editSoapLibraryModal #addHeader').prop("disabled", false);
         $('.upload-drop-zone').hide();
@@ -544,15 +983,61 @@ function refreshDisplayOnTypeChange(newValueType, newValueMethod) {
         $("label[name='kafkaKeyField']").parent().hide();
         $("label[name='kafkaFilterField']").hide();
         $("#editSoapLibraryModal #kafkaFilter").hide();
+        $("#editSoapLibraryModal #tabFilters").hide();
         $("label[name='avroField']").hide();
         $("#editSoapLibraryModal #avro").hide();
         $("#editSoapLibraryModal #avrSchemaKeyDiv").hide();
         $("#editSoapLibraryModal #avrSchemaValueDiv").hide();
         $("label[name='isFollowRedirField']").parent().show();
-        $('#editSoapLibraryModal #tab3Text').text("Request Detail");
+        if ((newValueBodyType === "form-data") || (newValueBodyType === "form-urlencoded")) {
+            //  form-data form-urlencoded
+            $("#editSoapLibraryModal #tabRequest").hide();
+            $("#editSoapLibraryModal #tabRequestDetail").show();
+        } else if (newValueBodyType === "raw") {
+            // raw
+            $("#editSoapLibraryModal #tabRequest").show();
+            $("#editSoapLibraryModal #tabRequestDetail").hide();
+        } else {
+            // none
+            $("#editSoapLibraryModal #tabRequest").hide();
+            $("#editSoapLibraryModal #tabRequestDetail").hide();
+        }
+        $('#editSoapLibraryModal #tabRequestDetail').text("Request Detail");
     }
 }
 
+// if couple Type / Method is not consistent, we force it to be.
+function updateMethod_and_refreshDisplayOnTypeChange() {
+    let lMethod = $('#editSoapLibraryModal #method').prop("value");
+    let lType = $('#editSoapLibraryModal #type').prop("value");
+
+    if (lType === "SOAP") {
+        if (lMethod !== "") {
+            $('#editSoapLibraryModal #method').prop("value", "");
+        }
+    } else if (lType === "FTP") {
+        if ((lMethod !== "GET") && (lMethod !== "POST")) {
+            $('#editSoapLibraryModal #method').prop("value", "GET");
+        }
+
+    } else if (lType === "KAFKA") {
+        if ((lMethod !== "PRODUCE") && (lMethod !== "SEARCH")) {
+            $('#editSoapLibraryModal #method').prop("value", "SEARCH");
+        }
+
+    } else if (lType === "MONGODB") {
+        if (lMethod !== "FIND") {
+            $('#editSoapLibraryModal #method').prop("value", "FIND");
+        }
+
+    } else {
+        if ((lMethod !== "GET") && (lMethod !== "POST") && (lMethod !== "DELETE") && (lMethod !== "PUT") && (lMethod !== "PATCH")) {
+            $('#editSoapLibraryModal #method').prop("value", "GET");
+        }
+
+    }
+    refreshDisplayOnTypeChange();
+}
 
 /***
  * Feed the TestCase modal with all the data from the TestCase.
@@ -578,13 +1063,16 @@ function feedAppServiceModal(serviceName, modalId, mode) {
 
                     // Feed the data to the screen and manage authorities.
                     var service = data.contentTable;
-                    feedAppServiceModalData(service, modalId, mode, service.hasPermissions);
+                    feedAppServiceModalData(service, modalId, mode, service.hasPermissions, data.extraInformation);
 
                     // Force a change event on method field.
-                    refreshDisplayOnTypeChange(service.type);
+                    refreshDisplayOnTypeChange();
+
+                    // Force a change event on author field.
+                    refreshAuthorDisplayOnAnyChange();
 
                     //initialize the select2
-                    $('#editSoapLibraryModal #application').select2(getComboConfigApplicationList());
+                    $('#editSoapLibraryModal #application').select2();
                     // set it with the service value
                     $("#editSoapLibraryModal #application").val(service.application).trigger('change');
 
@@ -608,6 +1096,7 @@ function feedAppServiceModal(serviceName, modalId, mode) {
         serviceObj1.application = "";
         serviceObj1.type = "REST";
         serviceObj1.method = "GET";
+        serviceObj1.bodyType = "raw";
         serviceObj1.servicePath = "";
         serviceObj1.kafkaTopic = "";
         serviceObj1.kafkaKey = "";
@@ -618,7 +1107,7 @@ function feedAppServiceModal(serviceName, modalId, mode) {
         serviceObj1.operation = "";
         serviceObj1.attachementurl = "";
         serviceObj1.description = "";
-        serviceObj1.group = "";
+        serviceObj1.collection = "";
         serviceObj1.serviceRequest = "";
         serviceObj1.contentList = "";
         serviceObj1.headerList = "";
@@ -631,9 +1120,27 @@ function feedAppServiceModal(serviceName, modalId, mode) {
         serviceObj1.isAvroEnableValue = true;
         serviceObj1.avroSchemaValue = "";
         serviceObj1.parentContentService = "";
-
+        serviceObj1.authType = "none";
+        serviceObj1.authKey = "";
+        serviceObj1.authVal = "";
+        serviceObj1.authAddTo = "Header";
+        serviceObj1.simulationParameters = {
+            "country": "",
+            "environment": "",
+            "system": "",
+            "application": "",
+            "kafkanb": "",
+            "timeout": "",
+            "kafkaTime": "",
+            "props": []
+        };
         feedAppServiceModalData(serviceObj1, modalId, mode, hasPermissions);
-        refreshDisplayOnTypeChange(serviceObj1.type);
+
+        // Force a change event on method field.
+        refreshDisplayOnTypeChange();
+        // Force a change event on author field.
+        refreshAuthorDisplayOnAnyChange();
+
         formEdit.modal('show');
 
     }
@@ -649,7 +1156,7 @@ function feedAppServiceModal(serviceName, modalId, mode) {
  * @param {String} hasPermissionsUpdate - boolean if premition is granted.
  * @returns {null}
  */
-function feedAppServiceModalData(service, modalId, mode, hasPermissionsUpdate) {
+function feedAppServiceModalData(service, modalId, mode, hasPermissionsUpdate, extraInfo) {
     var formEdit = $('#' + modalId);
     var doc = new Doc();
 
@@ -689,8 +1196,9 @@ function feedAppServiceModalData(service, modalId, mode, hasPermissionsUpdate) {
         formEdit.find("#originalService").prop("value", "");
         formEdit.find("#application").prop("value", "");
         formEdit.find("#type").prop("value", "REST");
-        refreshDisplayOnTypeChange("REST");
+        refreshDisplayOnTypeChange();
         formEdit.find("#method").prop("value", "GET");
+        formEdit.find("#bodyType").prop("value", "raw");
         formEdit.find("#servicePath").prop("value", "");
         formEdit.find("#isFollowRedir").prop("checked", true);
         formEdit.find("#attachementurl").prop("value", "");
@@ -703,7 +1211,7 @@ function feedAppServiceModalData(service, modalId, mode, hasPermissionsUpdate) {
         formEdit.find("#isAvroEnableValue").prop("checked", false);
         formEdit.find("#schemaRegistryUrl").prop("value", "");
         formEdit.find("#parentContentService").prop("value", "");
-        formEdit.find("#group").prop("value", "");
+        formEdit.find("#collection").prop("value", "");
         formEdit.find("#operation").prop("value", "");
         formEdit.find("#description").prop("value", "");
         formEdit.find("#Filename").val("Drag and drop Files");
@@ -713,10 +1221,21 @@ function feedAppServiceModalData(service, modalId, mode, hasPermissionsUpdate) {
         formEdit.find("#kafkaFilterValue").prop("value", "");
         formEdit.find("#kafkaFilterHeaderPath").prop("value", "");
         formEdit.find("#kafkaFilterHeaderValue").prop("value", "");
+        formEdit.find("#callTimeout").prop("value", "");
+        formEdit.find("#callKafkaNb").prop("value", "");
+        formEdit.find("#callKafkaTime").prop("value", "");
+        formEdit.find("#callCountry").prop("value", "");
+        formEdit.find("#callEnv").prop("value", "");
+        formEdit.find("#callSystem").prop("value", "");
+        formEdit.find("#authType").prop("value", "none");
+        formEdit.find("#authKey").prop("value", "");
+        formEdit.find("#authVal").prop("value", "");
+        formEdit.find("#authAddTo").prop("value", "Header");
     } else {
         formEdit.find("#application").val(service.application);
         formEdit.find("#type").val(service.type);
         formEdit.find("#method").val(service.method);
+        formEdit.find("#bodyType").val(service.bodyType);
         formEdit.find("#servicePath").prop("value", service.servicePath);
         formEdit.find("#isFollowRedir").prop("checked", service.isFollowRedir);
         formEdit.find("#isAvroEnable").prop("checked", service.isAvroEnable);
@@ -729,7 +1248,7 @@ function feedAppServiceModalData(service, modalId, mode, hasPermissionsUpdate) {
         formEdit.find("#kfkKey").text(service.kafkaKey);
         formEdit.find("#avrSchemaKey").text(service.avroSchemaKey);
         formEdit.find("#avrSchemaValue").text(service.avroSchemaValue);
-        formEdit.find("#group").prop("value", service.group);
+        formEdit.find("#collection").prop("value", service.collection);
         formEdit.find("#operation").prop("value", service.operation);
         formEdit.find("#description").prop("value", service.description);
         formEdit.find("#kafkaTopic").prop("value", service.kafkaTopic);
@@ -737,11 +1256,36 @@ function feedAppServiceModalData(service, modalId, mode, hasPermissionsUpdate) {
         formEdit.find("#kafkaFilterValue").prop("value", service.kafkaFilterValue);
         formEdit.find("#kafkaFilterHeaderPath").prop("value", service.kafkaFilterHeaderPath);
         formEdit.find("#kafkaFilterHeaderValue").prop("value", service.kafkaFilterHeaderValue);
+        formEdit.find("#authType").prop("value", service.authType);
+        formEdit.find("#authKey").prop("value", service.authUser);
+        formEdit.find("#authVal").prop("value", service.authPassword);
+        formEdit.find("#authAddTo").prop("value", service.authAddTo);
         if (service.fileName === "") {
             srv_updateDropzone("Drag and drop Files", "#" + modalId);
         } else {
             srv_updateDropzone(service.fileName, "#" + modalId);
         }
+        formEdit.find("#callTimeout").prop("value", service.simulationParameters.timeout);
+        formEdit.find("#callKafkaNb").prop("value", service.simulationParameters.kafkanb);
+        formEdit.find("#callKafkaTime").prop("value", service.simulationParameters.kafkaTime);
+        if (extraInfo !== undefined) {
+            formEdit.find("#callSystem").val(extraInfo.system);
+            $("[name='callCountry']").empty();
+            displayListFromData("callCountry", extraInfo.countries, service.simulationParameters.country);
+            $("[name='callEnv']").empty();
+            displayListFromData("callEnv", extraInfo.environments, service.simulationParameters.environment);
+        } else {
+            formEdit.find("#callSystem").val(service.simulationParameters.system);
+            $("[name='callCountry']").empty();
+            displayInvariantList("callCountry", "COUNTRY", false);
+            $("[name='callEnv']").empty();
+            displayInvariantList("callEnv", "ENVIRONMENT", false);
+            formEdit.find("#callCountry").val(service.simulationParameters.country);
+            formEdit.find("#callEnv").val(service.simulationParameters.environment);
+        }
+
+        // Feed the simulation parameters.
+        feedAppServiceModalDataCallProp(service.simulationParameters.props);
 
         // Feed the content table.
         feedAppServiceModalDataContent(service.contentList);
@@ -749,30 +1293,31 @@ function feedAppServiceModalData(service, modalId, mode, hasPermissionsUpdate) {
         // Feed the header table.
         feedAppServiceModalDataHeader(service.headerList);
     }
+
     //Highlight envelop on modal loading
     var editor = ace.edit($("#editSoapLibraryModal #srvRequest")[0]);
     editor.setTheme("ace/theme/chrome");
     editor.getSession().setMode(defineAceMode(editor.getSession().getDocument().getValue()));
     editor.setOptions({
-        maxLines: Infinity
+        maxLines: 50
     });
     var editorKey = ace.edit($("#editSoapLibraryModal #kfkKey")[0]);
     editorKey.setTheme("ace/theme/chrome");
     editorKey.getSession().setMode(defineAceMode(editorKey.getSession().getDocument().getValue()));
     editorKey.setOptions({
-        maxLines: Infinity
+        maxLines: 50
     });
     var editorSchemaKey = ace.edit($("#editSoapLibraryModal #avrSchemaKey")[0]);
     editorSchemaKey.setTheme("ace/theme/chrome");
     editorSchemaKey.getSession().setMode(defineAceMode(editor.getSession().getDocument().getValue()));
     editorSchemaKey.setOptions({
-        maxLines: Infinity
+        maxLines: 50
     });
     var editorSchemaValue = ace.edit($("#editSoapLibraryModal #avrSchemaValue")[0]);
     editorSchemaValue.setTheme("ace/theme/chrome");
     editorSchemaValue.getSession().setMode(defineAceMode(editor.getSession().getDocument().getValue()));
     editorSchemaValue.setOptions({
-        maxLines: Infinity
+        maxLines: 50
     });
 
     //On ADD, try to autodetect Ace mode until it is defined
@@ -814,10 +1359,11 @@ function feedAppServiceModalData(service, modalId, mode, hasPermissionsUpdate) {
         formEdit.find("#type").prop("disabled", "disabled");
         formEdit.find("#isFollowRedir").prop("disabled", "disabled");
         formEdit.find("#method").prop("disabled", "disabled");
+        formEdit.find("#bodyType").prop("disabled", "disabled");
         formEdit.find("#addContent").prop("disabled", "disabled");
         formEdit.find("#addHeader").prop("disabled", "disabled");
         formEdit.find("#servicePath").prop("readonly", true);
-        formEdit.find("#group").prop("readonly", true);
+        formEdit.find("#collection").prop("readonly", true);
         formEdit.find("#attachementurl").prop("readonly", true);
         formEdit.find("#srvRequest").prop("readonly", "readonly");
         formEdit.find("#kfkKey").prop("readonly", "readonly");
@@ -838,10 +1384,11 @@ function feedAppServiceModalData(service, modalId, mode, hasPermissionsUpdate) {
         formEdit.find("#type").removeProp("disabled");
         formEdit.find("#isFollowRedir").removeProp("disabled");
         formEdit.find("#method").removeProp("disabled");
+        formEdit.find("#bodyType").removeProp("disabled");
         formEdit.find("#addContent").removeProp("disabled");
         formEdit.find("#addHeader").removeProp("disabled");
         formEdit.find("#servicePath").prop("readonly", false);
-        formEdit.find("#group").prop("readonly", false);
+        formEdit.find("#collection").prop("readonly", false);
         formEdit.find("#attachementurl").prop("readonly", false);
         formEdit.find("#srvRequest").removeProp("readonly");
         formEdit.find("#kfkKey").removeProp("readonly");
@@ -855,13 +1402,26 @@ function feedAppServiceModalData(service, modalId, mode, hasPermissionsUpdate) {
         formEdit.find("#kafkaFilterValue").removeProp("disabled");
     }
 
-
 }
 
 function appendApplicationListServiceModal(defaultValue) {
     $('#editServiceModal [name="application"]').select2(getComboConfigApplicationList());
-    var myoption = $('<option></option>').text(defaultValue).val(defaultValue);
-    $("#editServiceModal [name='application']").append(myoption).trigger('change'); // append the option and update Select2
+//    console.info($("#editServiceModal [name='application']")[0].options);
+//    console.info(defaultValue);
+    const select = $("#editServiceModal [name='application']")[0];
+    const optionLabels = Array.from(select.options).map((opt) => opt.value);
+    const hasOption = optionLabels.includes(defaultValue);
+
+    if (!hasOption) {
+        var myoption = $('<option></option>').text(defaultValue).val(defaultValue);
+        $("#editServiceModal [name='application']").append(myoption).trigger('change'); // append the option and update Select2
+    }
+
+    $("#editSoapLibraryModal #editApplication").off("click");
+    $("#editSoapLibraryModal #editApplication").click(function () {
+        openModalApplication($("#editSoapLibraryModal #application").val(), "EDIT");
+    });
+
 }
 
 function appendAppServiceListServiceModal(defaultValue) {
@@ -889,20 +1449,21 @@ function appendContentRow(content) {
         var ro = 'readonly ';
         var deleteBtn = "";
     }
-    var activeSelect = getSelectInvariant("APPSERVICECONTENTACT", false, false);
+    var activeSelect = $("<input type=\"checkbox\"></button>").addClass("form-control input-sm").prop("checked", content.isActive);
+//    var activeSelect = getSelectInvariant("APPSERVICECONTENTACT", false, false);
     if (content.isInherited) {
         activeSelect.prop("disabled", "disabled");
     }
 
     var sortInput = $("<input " + ro + "maxlength=\"4\" placeholder=\"-- " + doc.getDocLabel("appservicecontent", "Sort") + " --\">").addClass("form-control input-sm").val(content.sort);
-    var keyInput = $("<input " + ro + "maxlength=\"255\" placeholder=\"-- " + doc.getDocLabel("appservicecontent", "Key") + " --\">").addClass("form-control input-sm").val(content.key);
-    var valueInput = $("<textarea " + ro + "rows='1'  placeholder=\"-- " + doc.getDocLabel("appservicecontent", "Value") + " --\"></textarea>").addClass("form-control input-sm").val(content.value);
+    var keyInput = $("<input " + ro + "maxlength=\"255\" placeholder=\"-- " + doc.getDocLabel("appservicecontent", "Key") + " --\">").addClass("form-control input-sm crb-autocomplete-variable").val(content.key);
+    var valueInput = $("<textarea " + ro + "rows='1'  placeholder=\"-- " + doc.getDocLabel("appservicecontent", "Value") + " --\"></textarea>").addClass("form-control input-sm crb-autocomplete-variable").val(content.value);
     var descriptionInput = $("<input  " + ro + "maxlength=\"200\" placeholder=\"-- " + doc.getDocLabel("appservicecontent", "Description") + " --\">").addClass("form-control input-sm").val(content.description);
     var table = $("#contentTableBody");
 
     var row = $("<tr></tr>");
     var deleteBtnRow = $("<td></td>").append(deleteBtn);
-    var isActive = $("<td></td>").append(activeSelect.val(content.isActive.toString()));
+    var isActive = $("<td></td>").append(activeSelect);
     var sortName = $("<td></td>").append(sortInput);
     var keyName = $("<td></td>").append(keyInput);
     var valueName = $("<td></td>").append(valueInput);
@@ -920,7 +1481,8 @@ function appendContentRow(content) {
         });
     }
     activeSelect.change(function () {
-        content.isActive = $(this).val();
+        content.isActive = $(this)[0].checked;
+//        console.info(content.isActive);
     });
     sortInput.change(function () {
         content.sort = $(this).val();
@@ -971,16 +1533,16 @@ function feedAppServiceModalDataHeader(headerList) {
 function appendHeaderRow(content) {
     var doc = new Doc();
     var deleteBtn = $("<button type=\"button\"></button>").addClass("btn btn-default btn-xs").append($("<span></span>").addClass("glyphicon glyphicon-trash"));
-    var activeSelect = getSelectInvariant("APPSERVICECONTENTACT", false, false);
+    var activeSelect = $("<input type=\"checkbox\"></button>").addClass("form-control input-sm").prop("checked", content.isActive);
     var sortInput = $("<input  maxlength=\"4\" placeholder=\"-- " + doc.getDocLabel("appservicecontent", "Sort") + " --\">").addClass("form-control input-sm").val(content.sort);
-    var keyInput = $("<input  maxlength=\"255\" placeholder=\"-- " + doc.getDocLabel("appservicecontent", "Key") + " --\">").addClass("form-control input-sm").val(content.key);
-    var valueInput = $("<textarea rows='1'  placeholder=\"-- " + doc.getDocLabel("appservicecontent", "Value") + " --\"></textarea>").addClass("form-control input-sm").val(content.value);
+    var keyInput = $("<input  maxlength=\"255\" placeholder=\"-- " + doc.getDocLabel("appservicecontent", "Key") + " --\">").addClass("form-control input-sm crb-autocomplete-header").val(content.key);
+    var valueInput = $("<textarea rows='1'  placeholder=\"-- " + doc.getDocLabel("appservicecontent", "Value") + " --\"></textarea>").addClass("form-control input-sm crb-autocomplete-headervalue").val(content.value);
     var descriptionInput = $("<input  maxlength=\"200\" placeholder=\"-- " + doc.getDocLabel("appservicecontent", "Description") + " --\">").addClass("form-control input-sm").val(content.description);
     var table = $("#headerTableBody");
 
     var row = $("<tr></tr>");
     var deleteBtnRow = $("<td></td>").append(deleteBtn);
-    var isActive = $("<td></td>").append(activeSelect.val(content.isActive.toString()));
+    var isActive = $("<td></td>").append(activeSelect);
     var sortName = $("<td></td>").append(sortInput);
     var keyName = $("<td></td>").append(keyInput);
     var valueName = $("<td></td>").append(valueInput);
@@ -994,14 +1556,17 @@ function appendHeaderRow(content) {
         }
     });
     activeSelect.change(function () {
-        content.isActive = $(this).val();
+        content.isActive = $(this)[0].checked;
+//        console.info(content.isActive);
     });
     sortInput.change(function () {
         content.sort = $(this).val();
     });
     keyInput.change(function () {
         content.key = $(this).val();
+//        console.info(content.key);
     });
+
     valueInput.change(function () {
         content.value = $(this).val();
     });
@@ -1016,6 +1581,8 @@ function appendHeaderRow(content) {
     row.append(descriptionName);
     row.data("header", content);
     table.append(row);
+
+
 }
 
 function addNewHeaderRow() {
@@ -1028,6 +1595,75 @@ function addNewHeaderRow() {
         toDelete: false
     };
     appendHeaderRow(newHeader);
+}
+
+function feedAppServiceModalDataCallProp(callPropList) {
+//    console.info("feed")
+    $('#callPropTableBody tr').remove();
+    if (!isEmpty(callPropList)) {
+        $.each(callPropList, function (idx, obj) {
+            if (obj.toDelete === false) {
+                appendCallPropRow(obj);
+            }
+        });
+    }
+}
+
+function appendCallPropRow(content) {
+    var doc = new Doc();
+    var deleteBtn = $("<button type=\"button\"></button>").addClass("btn btn-default btn-xs").append($("<span></span>").addClass("glyphicon glyphicon-trash"));
+    var activeSelect = $("<input type=\"checkbox\"></button>").addClass("form-control input-sm").prop("checked", content.isActive);
+//    console.info(content.isActive);
+    var keyInput = $("<input  maxlength=\"255\" placeholder=\"-- " + doc.getDocLabel("appservicecontent", "Key") + " --\">").addClass("form-control input-sm").val(content.key);
+    var valueInput = $("<textarea rows='1'  placeholder=\"-- " + doc.getDocLabel("appservicecontent", "Value") + " --\"></textarea>").addClass("form-control input-sm").val(content.value);
+    var descriptionInput = $("<input  maxlength=\"200\" placeholder=\"-- " + doc.getDocLabel("appservicecontent", "Description") + " --\">").addClass("form-control input-sm").val(content.description);
+    var table = $("#callPropTableBody");
+
+    var row = $("<tr></tr>");
+    var deleteBtnRow = $("<td></td>").append(deleteBtn);
+    var isActive = $("<td></td>").append(activeSelect.val(content.isActive.toString()));
+    var keyName = $("<td></td>").append(keyInput);
+    var valueName = $("<td></td>").append(valueInput);
+    var descriptionName = $("<td></td>").append(descriptionInput);
+    deleteBtn.click(function () {
+        content.toDelete = (content.toDelete) ? false : true;
+        if (content.toDelete) {
+            row.addClass("danger");
+        } else {
+            row.removeClass("danger");
+        }
+    });
+    activeSelect.change(function () {
+        content.isActive = $(this)[0].checked;
+//        console.info(content.isActive);
+    });
+    keyInput.change(function () {
+        content.key = $(this).val();
+    });
+    valueInput.change(function () {
+        content.value = $(this).val();
+    });
+    descriptionInput.change(function () {
+        content.description = $(this).val();
+    });
+    row.append(deleteBtnRow);
+    row.append(isActive);
+    row.append(keyName);
+    row.append(valueName);
+    row.append(descriptionName);
+    row.data("callProp", content);
+    table.append(row);
+}
+
+function addNewCallPropRow() {
+    var newCallProp = {
+        isActive: true,
+        key: "",
+        value: "",
+        description: "",
+        toDelete: false
+    };
+    appendCallPropRow(newCallProp);
 }
 
 /**

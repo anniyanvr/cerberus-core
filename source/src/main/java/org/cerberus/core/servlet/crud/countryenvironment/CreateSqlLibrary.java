@@ -1,5 +1,5 @@
 /**
- * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * Cerberus Copyright (C) 2013 - 2025 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -43,6 +43,7 @@ import java.io.IOException;
 import javax.servlet.annotation.WebServlet;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.cerberus.core.crud.entity.LogEvent;
 
 /**
  *
@@ -88,7 +89,7 @@ public class CreateSqlLibrary extends HttpServlet {
         /**
          * Checking all constrains before calling the services.
          */
-        if (StringUtil.isEmpty(name)) {
+        if (StringUtil.isEmptyOrNull(name)) {
             msg = new MessageEvent(MessageEventEnum.DATA_OPERATION_ERROR_EXPECTED);
             msg.setDescription(msg.getDescription().replace("%ITEM%", "SqlLibrary")
                     .replace("%OPERATION%", "Create")
@@ -109,7 +110,7 @@ public class CreateSqlLibrary extends HttpServlet {
                  * Adding Log entry.
                  */
                 ILogEventService logEventService = appContext.getBean(LogEventService.class);
-                logEventService.createForPrivateCalls("/CreateSqlLibrary", "CREATE", "Create SQLLibrary : ['" + name + "']", request);
+                logEventService.createForPrivateCalls("/CreateSqlLibrary", "CREATE", LogEvent.STATUS_INFO, "Create SQLLibrary : ['" + name + "']", request);
             }
         }
 

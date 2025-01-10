@@ -1,5 +1,5 @@
 /**
- * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * Cerberus Copyright (C) 2013 - 2025 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -19,9 +19,12 @@
  */
 package org.cerberus.core.engine.entity;
 
+import java.sql.Timestamp;
 import java.util.HashMap;
 import javax.annotation.PostConstruct;
 import org.cerberus.core.crud.entity.TestCaseExecution;
+import org.json.JSONArray;
+import org.json.JSONObject;
 import org.springframework.stereotype.Component;
 
 /**
@@ -32,10 +35,34 @@ import org.springframework.stereotype.Component;
 public class ExecutionUUID {
 
     private HashMap<String, TestCaseExecution> executionHashMap;
+    private int running;
+    private int queueSize;
+    private int globalLimit;
+
+    public int getRunning() {
+        return running;
+    }
+
+    public int getQueueSize() {
+        return queueSize;
+    }
+
+    public int getGlobalLimit() {
+        return globalLimit;
+    }
+
+    public void setQueueCounters(int globalLimit, int running, int queueSize) {
+        this.globalLimit = globalLimit;
+        this.running = running;
+        this.queueSize = queueSize;
+    }
 
     @PostConstruct
     public void init() {
         executionHashMap = new HashMap<>();
+        running = 0;
+        queueSize = 0;
+        globalLimit = 0;
     }
 
     public HashMap<String, TestCaseExecution> getExecutionUUIDList() {
@@ -61,5 +88,51 @@ public class ExecutionUUID {
 
     public int size() {
         return executionHashMap.size();
+    }
+
+    public JSONObject getRunningStatus() {
+        JSONObject jsonResponse = new JSONObject();
+
+        try {
+
+            /**
+             * FIXME when called from ExecutionPrivateController The method
+             * getRunningStatus unfortunately does not return the correct values.
+             * Until this is fixed, we put 0 values.
+             */
+            JSONArray executionArray = new JSONArray();
+//            for (Object ex : executionHashMap.values()) {
+//                TestCaseExecution execution = (TestCaseExecution) ex;
+//                JSONObject object = new JSONObject();
+//                object.put("id", execution.getId());
+//                object.put("test", execution.getTest());
+//                object.put("testcase", execution.getTestCase());
+//                object.put("system", execution.getApplicationObj().getSystem());
+//                object.put("application", execution.getApplication());
+//                object.put("environment", execution.getEnvironmentData());
+//                object.put("country", execution.getCountry());
+//                object.put("robotIP", execution.getSeleniumIP());
+//                object.put("tag", execution.getTag());
+//                object.put("start", new Timestamp(execution.getStart()));
+//                executionArray.put(object);
+//            }
+            jsonResponse.put("runningExecutionsList", executionArray);
+
+            JSONObject queueStatus = new JSONObject();
+//            queueStatus.put("queueSize", queueSize);
+//            queueStatus.put("globalLimit", globalLimit);
+//            queueStatus.put("running", running);
+//             FIXME Force the servlet result to 0.
+            queueStatus.put("queueSize", 0);
+            queueStatus.put("globalLimit", 0);
+            queueStatus.put("running", 0);
+            jsonResponse.put("queueStats", queueStatus);
+
+            return jsonResponse;
+
+        } catch (Exception ex) {
+//            LOG.warn(ex, ex);
+        }
+        return jsonResponse;
     }
 }

@@ -1,5 +1,5 @@
 /**
- * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * Cerberus Copyright (C) 2013 - 2025 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -49,6 +49,7 @@ import org.springframework.web.context.support.WebApplicationContextUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.cerberus.core.crud.entity.Label;
+import org.cerberus.core.crud.entity.LogEvent;
 import org.cerberus.core.crud.service.ILabelService;
 
 /**
@@ -90,7 +91,7 @@ public class GetTestCasesV002 extends HttpServlet {
          * Adding Log entry.
          */
         ILogEventService logEventService = appContext.getBean(LogEventService.class);
-        logEventService.createForPublicCalls("/GetTestCasesV002", "CALL",
+        logEventService.createForPublicCalls("/GetTestCasesV002", "CALL", LogEvent.STATUS_INFO,
                 "GetTestCasesV002 called : " + request.getRequestURL(), request);
 
         apiKeyService = appContext.getBean(IAPIKeyService.class);

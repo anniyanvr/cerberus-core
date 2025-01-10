@@ -1,6 +1,6 @@
 <%--
 
-    Cerberus Copyright (C) 2013 - 2017 cerberustesting
+    Cerberus Copyright (C) 2013 - 2025 cerberustesting
     DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 
     This file is part of Cerberus.
@@ -31,7 +31,7 @@
     <head>
         <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
         <%@ include file="include/global/dependenciesInclusions.html" %>
-        <script type="text/javascript" src="dependencies/Tinymce-4.2.6/tinymce.min.js"></script>
+        <script type="text/javascript" src="dependencies/Tinymce-6.7.0/tinymce.min.js"></script>
         <link rel="stylesheet" href="css/pages/ReportingExecutionByTag.css" type="text/css"/>
         <script type="text/javascript" src="dependencies/D3js-3.x.x/js/d3.min.js"></script>
         <script type="text/javascript" src="dependencies/D3-tip-0.6.7/js/index.js"></script>
@@ -40,6 +40,7 @@
         <script type="text/javascript" src="js/transversalobject/TestCaseExecutionQueue.js"></script>
         <script type="text/javascript" src="js/transversalobject/TestCase.js"></script>
         <script type="text/javascript" src="js/transversalobject/Campaign.js"></script>
+        <script type="text/javascript" src="js/transversalobject/Application.js"></script>
         <title id="pageTitle">Campaign Reporting</title>
     </head>
     <body>
@@ -48,10 +49,13 @@
             <%@ include file="include/global/messagesArea.html" %>
             <%@ include file="include/transversalobject/TestCaseExecutionQueue.html" %>
             <%@ include file="include/transversalobject/TestCase.html" %>
+            <%@ include file="include/transversalobject/Campaign.html" %>
+            <%@ include file="include/transversalobject/Application.html" %>
             <%@ include file="include/pages/testcampaign/viewStatcampaign.html" %>
 
             <h1 class="page-title-line" id="title">Execution reporting by tag</h1>
             <div class="row">
+
                 <div class="col-lg-6" id="FiltersPanel">
                     <div class="panel panel-default">
                         <div class="panel-heading card">
@@ -61,30 +65,34 @@
                         <div class="panel-body">
                             <div class="row">
                                 <div class="col-lg-12" id="filterContainer">
+
                                     <label for="selectTag">Tag :</label>
-                                    <div class="row" id="tagFilter">
-                                        <div class="input-group">
-                                            <select class="form-control col-lg-7" name="Tag" id="selectTag"></select>
-                                            <div class="input-group-btn">
-                                                <button type="button" class="btn btn-default" style="margin-left: 10px;"
-                                                        id="loadbutton" onclick="loadAllReports()">Load
-                                                </button>
+                                    <div class="input-group">
+                                        <select class="form-control col-lg-7" name="Tag" id="selectTag"></select>
+                                        <span class="input-group-btn">
+                                            <button type="button" class="btn btn-sm btn-default" style="margin-left: 10px;" id="loadbutton" onclick="loadAllReports()">
+                                                <span class="glyphicon glyphicon-refresh"></span> Load
+                                            </button>
+                                        </span>
+                                    </div>
+
+                                    <div class="row">
+                                        <div class="col-lg-12">
+                                            <label id="countryLabel" class="bold marginTop10">Country :</label>
+                                            <button id="countrySelectAll" class="glyphicon glyphicon-check"
+                                                    title="select all countries"></button>
+                                            <button id="countryUnselectAll" class="glyphicon glyphicon-unchecked"
+                                                    title="unselect all countries"></button>
+                                            <button class="btn pull-right marginTop10" type="button" data-toggle="collapse" data-target="#countryFilter" aria-expanded="true" aria-controls="col1">
+                                                <span class="glyphicon glyphicon-chevron-down"></span>
+                                            </button>
+
+                                            <div class="form-group collapse in" id="countryFilter">
                                             </div>
                                         </div>
                                     </div>
-                                    <div class="row" id="tagFilter">
-                                        <label id="countryLabel" class="bold">Country :</label>
-                                        <button id="countrySelectAll" class="glyphicon glyphicon-check"
-                                                title="select all countries"></button>
-                                        <button id="countryUnselectAll" class="glyphicon glyphicon-unchecked"
-                                                title="unselect all countries"></button>
-                                        <button class="btn pull-right" type="button" data-toggle="collapse" data-target="#countryFilter" aria-expanded="true" aria-controls="col1"><span class="glyphicon glyphicon-chevron-down"></span></button>
 
-                                        <div class="form-group collapse in" id="countryFilter">
-                                        </div>
-                                    </div>
-
-                                    <label id="statusLabel" class="bold">Status :</label>
+                                    <label id="statusLabel" class="bold marginTop10">Status :</label>
                                     <button id="statusSelectAll" class="glyphicon glyphicon-check"
                                             title="select all status"></button>
                                     <button id="statusUnselectAll" class="glyphicon glyphicon-unchecked"
@@ -131,12 +139,57 @@
                                             <span class="fontCA">CA</span>
                                         </label>
                                     </div>
+
+                                    <label class="bold marginTop10">Display Stats By Folder :</label>
+                                    <div class="btn-group btn-toggle marginRight10" id="displayFolder"> 
+                                        <button class="btn btn-ON btn-xs btn-default">ON</button>
+                                        <button class="btn btn-OFF btn-xs btn-info active">OFF</button>
+                                    </div>
+                                    <label class="bold marginTop10">Display Split per Env :</label>
+                                    <div class="btn-group btn-toggle marginRight10" id="displayByEnv"> 
+                                        <button class="btn btn-ON btn-xs btn-default">ON</button>
+                                        <button class="btn btn-OFF btn-xs btn-info active">OFF</button>
+                                    </div>
+                                    <label class="bold marginTop10">Display Stats By Label :</label>
+                                    <div class="btn-group btn-toggle marginRight10" id="displayByLabel"> 
+                                        <button class="btn btn-ON btn-xs btn-default">ON</button>
+                                        <button class="btn btn-OFF btn-xs btn-info active">OFF</button>
+                                    </div>
+
+                                    <div class="input-group-btn">
+                                        <a id="buttonDownloadPdfReport" class="pull-left marginTop10">
+                                            <button type="button" id="buttonDownloadPdfReportButton" class="btn btn-default marginRight10">
+                                                <span class="glyphicon glyphicon-floppy-save"></span> Download Report
+                                            </button>
+                                        </a>
+                                        <a id="buttonSeeStatsCampaign" class="pull-left marginTop10">
+                                            <button type="button" class="btn btn-default marginRight10">
+                                                <span class="glyphicon glyphicon-stats"></span> Campaign Over Time
+                                            </button>
+                                        </a>
+                                        <a id="buttonRunCampaign" class="pull-left marginTop10">
+                                            <button type="button" class="btn btn-default marginRight10">
+                                                <span class="glyphicon glyphicon-forward"></span> (Re)Run Campaign
+                                            </button>
+                                        </a>
+
+                                        <a id="buttonOpenQueue" class="pull-left marginTop10">
+                                            <button type='button' class='btn btn-default marginRight10'>
+                                                <span class='glyphicon glyphicon-list'></span> Open Queue
+                                            </button>
+                                        </a>                                        
+
+                                    </div>
+
+
+
                                 </div>
                             </div>
                         </div>
                     </div>
+
                     <div class="panel panel-default" id="BugReportByStatusPanel">
-                        <div class="panel-heading card" data-toggle="collapse" data-target="#BugReportByStatus">
+                        <div class="panel-heading card refreshButtonHeader" data-toggle="collapse" data-target="#BugReportByStatus">
                             <span class="fa fa-pie-chart fa-fw"></span>
                             <label id="bugStatus">Bug Status</label>
                             <span class="toggle glyphicon glyphicon-chevron-right pull-right"></span>
@@ -160,11 +213,12 @@
                             </div>
                         </div>
                     </div>
+
                     <div class="panel panel-default" id="ManualReportByExecutorPanel">
-                        <div class="panel-heading card" data-toggle="collapse" data-target="#ManualReportByExecutor">
+                        <div class="panel-heading card refreshButtonHeader">
                             <span class="fa fa-pie-chart fa-fw"></span>
                             <label id="bugStatus">Manual Executor Status</label>
-                            <span class="toggle glyphicon glyphicon-chevron-right pull-right"></span>
+                            <!--                            <span class="toggle glyphicon glyphicon-chevron-right pull-right"></span>-->
                         </div>
                         <div class="panel-body collapse in" id="ManualReportByExecutor">
                             <div class="row">
@@ -185,59 +239,102 @@
                             </div>
                         </div>
                     </div>
+
                 </div>
+
                 <div class="col-lg-6" id="ReportByStatusPanel">
                     <div class="panel panel-default">
-                        <div class="panel-heading card" data-toggle="collapse" data-target="#ReportByStatus">
+                        <div class="panel-heading card refreshButtonHeader">
                             <span class="fa fa-pie-chart fa-fw"></span>
                             <label id="reportStatus">Report by Status</label>
-                            <span class="toggle glyphicon glyphicon-chevron-right pull-right"></span>
+                            <!--                            <span class="toggle glyphicon glyphicon-chevron-right pull-right"></span>-->
                         </div>
                         <div class="panel-body collapse in" id="ReportByStatus">
                             <div class="row">
                                 <div class="col-xs-6" id="ReportByStatusTable"></div>
                                 <div class="col-xs-6" id="statusChart"></div>
                             </div>
+                            <div class="row">
+                                <div class="col-xs-5" id="TagcampaignCICel1">
+
+                                    <div class="row">
+                                        <div class="col-xs-7">
+                                            <label for="tagDetailCI">CI Result :</label>
+                                            <div class="marginTop10" id="tagDetailCI">
+                                            </div>
+                                    <div id="false-negative-bar" class="progress" style="height: 22px; margin-bottom: 0px; display: none;">
+                                        <div class="progress-bar statusOK" role="progressbar" style="width: 100%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
+                                            <span class="sr-only"></span>FALSE NEGATIVE
+                                        </div>
+                                    </div>
+                                        </div>
+                                        <div class="col-xs-5 marginTop20">
+                                            <span class="input-group-btn">
+                                                <button id="falseNegative" class="btn btn-default" title="Declare/Undeclare this campaign execution as a False Negative"><span class="glyphicon glyphicon-ok"></span></button>
+                                            </span>
+                                        </div>
+                                    </div>
+
+                                </div>
+                                <div class="col-xs-6">
+                                    <div class="marginTop10" id="tagDetailBar">
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
+
+
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-sm-12">
+
                     <div class="panel panel-default">
-                        <div class="panel-heading card">
+                        <div class="panel-heading card refreshButtonHeader">
                             <span class="fa fa-tag fa-fw"></span>
                             <label id="TagDetailLab">Tag Information</label>
                         </div>
                         <div class="panel-body" id="TagInfo">
                             <div class="row">
-                                <div class="col-sm-6">
-                                    <label for="startExe">Start :</label>
+                                <div class="col-sm-4">
+                                    <label for="startExe">Submitted :</label>
+                                    <input type="text" class="form-control" name="submitted" id="submitted" readonly
+                                           aria-describedby="basic-addon1">
+                                </div>
+                                <div class="col-sm-4">
+                                    <label for="startExe">Started :</label>
                                     <input type="text" class="form-control" name="startExe" id="startExe" readonly
                                            aria-describedby="basic-addon1">
                                 </div>
-                                <div class="col-sm-3">
+                                <div class="col-sm-2">
                                     <label for="endExe">End :</label>
                                     <input type="text" class="form-control" name="endExe" id="endExe" readonly
                                            aria-describedby="basic-addon1">
                                 </div>
-                                <div class="col-sm-3">
+                                <div class="col-sm-2">
                                     <label for="durExe">Dur (Min) :</label>
                                     <input type="text" class="form-control" name="durExe" id="durExe" readonly
                                            aria-describedby="basic-addon1">
                                 </div>
                             </div>
                             <div class="row">
-                                <div class="col-sm-12" id="TagDescCel">
-                                    <label for="TagDesc">Description :</label>
+                                <div class="col-sm-6" id="TagDescCel">
+                                    <label class="marginTop10" for="TagDesc">Description :</label>
                                     <div class="input-group">
-                                        <input type="text" class="form-control" name="TagDesc" id="TagDesc" readonly
-                                               aria-describedby="basic-addon1">
+                                        <textarea class="form-control wysiwyg" name="TagDesc" id="TagDesc" aria-describedby="basic-addon1"></textarea>
+                                        <!--                                        <input type="text" class="form-control" name="TagDesc" id="TagDesc" readonly
+                                                                                       aria-describedby="basic-addon1">-->
                                         <span class="input-group-btn">
-                                            <button id="editTagDesc" class="btn btn-default">Edit</button>
-                                            <button id="saveTagDesc" class="btn btn-primary" style="display : none;">Save</button>
+                                            <button id="editTagDesc" class="btn btn-default" style="display : none;">Edit</button>
+                                            <button id="saveTagDesc" class="btn btn-primary">Save</button>
                                         </span>
                                     </div>
                                     <!--                                    <input type="text" class="form-control" name="TagDesc" id="TagDesc" readonly aria-describedby="basic-addon1" >-->
                                 </div>
-                                <div class="col-sm-12" id="TagCommentCel">
-                                    <label for="TagComment">Comment :</label>
+                                <div class="col-sm-6" id="TagCommentCel">
+                                    <label class="marginTop10" for="TagComment">Comment :</label>
                                     <div class="input-group">
                                         <input type="text" class="form-control" name="TagComment" id="TagComment" readonly
                                                aria-describedby="basic-addon1">
@@ -247,46 +344,26 @@
                                         </span>
                                     </div>
                                 </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="panel panel-default">
-                        <div class="panel-heading card" data-toggle="collapse" data-target="#TagDetail">
-                            <span class="fa fa-pie-chart fa-fw"></span>
-                            <label id="TagDetailLab">Tag detail</label>
-                            <span class="toggle glyphicon glyphicon-chevron-right pull-right"></span>
-                        </div>
-                        <div class="panel-body collapse in" id="TagDetail">
 
 
-                            <div class="row" id="panelDuration">
-                                <div class="col-sm-6">
-                                    <label for="endLastExe">Last Execution :</label>
-                                    <input type="text" class="form-control" name="endLastExe" id="endLastExe" readonly
-                                           aria-describedby="basic-addon1">
-                                </div>
-                                <div class="col-sm-6">
-                                    <label for="TagUsrCreated">Created by :</label>
-                                    <input type="text" class="form-control" name="TagUsrCreated" id="TagUsrCreated" readonly
-                                           aria-describedby="basic-addon1">
-                                </div>
+
                             </div>
-                            <div class="row">
+                            <div class="row marginTop10">
                                 <div class="col-sm-6" id="TagcampaignCel1">
                                     <label for="Tagcampaign">Campaign :</label>
-                                    <input type="text" class="form-control" name="Tagcampaign" id="Tagcampaign" readonly aria-describedby="basic-addon1">
-                                </div>
-                                <div class="col-sm-6" id="TagcampaignCICel1">
-                                    <label for="tagDetailCI">CI Result :</label>
-                                    <div class="marginTop10" id="tagDetailCI">
+                                    <div class="input-group">
+                                        <input type="text" class="form-control" name="Tagcampaign" id="Tagcampaign" readonly aria-describedby="basic-addon1">
+                                        <span class="input-group-btn">
+                                            <a id="buttonEditCampaign">
+                                                <button type="button" class="btn btn-default" >
+                                                    <span class="glyphicon glyphicon-pencil"></span>
+                                                </button>
+                                            </a>
+                                        </span>
                                     </div>
                                 </div>
-                            </div>
-                            <div class="marginTop10" id="tagDetailBar">
-                            </div>
 
-                            <div class="marginTop10" class="row" id="TagcampaignCel2">
-                                <div class="col-sm-5" id="xRayTestExecutionBlock">
+                                <div class="col-sm-6" id="xRayTestExecutionBlock">
                                     <label for="xRayTestExecution">JIRA Xray :</label>
                                     <div class="input-group">
                                         <input type="text" class="form-control" name="xRayTestExecution" id="xRayTestExecution" readonly aria-describedby="basic-addon1">
@@ -299,29 +376,20 @@
                                         </span>
                                     </div>
                                 </div>
-                                <div class="col-sm-7">
-                                    <div class="input-group-btn">
-                                        <a id="buttonSeeStatsCampaign" class="pull-right">
-                                            <button type="button" class="btn btn-default" style="margin-left: 10px;">See Stats</button>
-                                        </a>
-                                        <a id="buttonRunCampaign" class="pull-right">
-                                            <button type="button" class="btn btn-default" style="margin-left: 10px;">(Re)Run Campaign</button>
-                                        </a>
-                                    </div>
-                                </div>
                             </div>
 
                         </div>
                     </div>
                 </div>
             </div>
+
             <div class="row" id="ReportByTestFolderPanel">
                 <div class="col-lg-12">
                     <div class="panel panel-default">
-                        <div class="panel-heading card" data-toggle="collapse" data-target="#testFolderChart">
+                        <div class="panel-heading card refreshButtonHeader">
                             <span class="fa fa-bar-chart fa-fw"></span>
                             <label id="reportTestFolder">Report by Test folder</label>
-                            <span class="toggle glyphicon glyphicon-chevron-right pull-right"></span>
+                            <!--                            <span class="toggle glyphicon glyphicon-chevron-right pull-right"></span>-->
                         </div>
                         <div class="panel-body collapse in" id="testFolderChart">
                             <div class="row">
@@ -331,12 +399,14 @@
                     </div>
                 </div>
             </div>
-            <div class="row">
-                <div class="col-lg-12" id="reportByEnvCountryBrowser">
+
+
+            <div class="row" id="reportByEnvCountryBrowser">
+                <div class="col-lg-12" >
                     <div class="panel panel-default">
-                        <div class="panel-heading card clearfix" data-toggle="collapse" data-target="#reportEnvCountryBrowser">
+                        <div class="panel-heading card clearfix refreshButtonHeader">
                             <label id="envCountryBrowser">Report by EnvCountryBrowser</label>
-                            <span class="toggle glyphicon glyphicon-chevron-right pull-right"></span>
+                            <!--                            <span class="toggle glyphicon glyphicon-chevron-right pull-right"></span>-->
                             <ul class="nav nav-tabs pull-right">
                                 <li class="active" id="graph"><a>Graph</a></li>
                                 <li class="" id="tab"><a>Tab</a></li>
@@ -401,12 +471,14 @@
                     </div>
                 </div>
             </div>
+
+
             <div class="row" id="reportByLabel">
                 <div class="col-lg-12">
                     <div class="panel panel-default">
-                        <div class="panel-heading card clearfix" data-toggle="collapse" data-target="#reportLabel">
+                        <div class="panel-heading card clearfix refreshButtonHeader">
                             <label id="envCountryBrowser">Report by Label</label>
-                            <span class="toggle glyphicon glyphicon-chevron-right pull-right"></span>
+                            <!--                            <span class="toggle glyphicon glyphicon-chevron-right pull-right"></span>-->
                             <ul class="nav nav-tabs pull-right">
                                 <li class="active" id="stickers"><a>Stickers</a></li>
                                 <li class="" id="requirements"><a>Requirements</a></li>
@@ -419,13 +491,14 @@
                     </div>
                 </div>
             </div>
+
+
             <div class="row">
                 <div class="col-lg-12" id="ListPanel">
                     <div class="panel panel-default">
-                        <div class="panel-heading card" data-toggle="collapse" data-target="#listReport">
+                        <div class="panel-heading card refreshButtonsHeader" id="listPanelHeader">
                             <span class="glyphicon glyphicon-list"></span>
                             <label id="List">List</label>
-                            <span class="toggle glyphicon glyphicon-chevron-right pull-right"></span>
                         </div>
                         <div class="panel-body collapse in" id="listReport">
                             <div id="tableArea">
@@ -438,9 +511,12 @@
                     </div>
                 </div>
             </div>
+
+
             <footer class="footer">
                 <div class="container-fluid" id="footer"></div>
             </footer>
+
         </div>
     </body>
 </html>

@@ -1,5 +1,5 @@
 /**
- * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * Cerberus Copyright (C) 2013 - 2025 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -55,7 +55,7 @@ public class ChatGenerationService implements IChatGenerationService {
     public JSONObject generateNotifyStartTagExecution(Tag tag) throws UnsupportedEncodingException, Exception {
 
         String cerberusUrl = parameterService.getParameterStringByKey("cerberus_gui_url", "", "");
-        if (StringUtil.isEmpty(cerberusUrl)) {
+        if (StringUtil.isEmptyOrNull(cerberusUrl)) {
             cerberusUrl = parameterService.getParameterStringByKey("cerberus_url", "", "");
         }
         cerberusUrl = StringUtil.addSuffixIfNotAlready(cerberusUrl, "/");
@@ -94,7 +94,7 @@ public class ChatGenerationService implements IChatGenerationService {
     public JSONObject generateNotifyEndTagExecution(Tag tag) throws UnsupportedEncodingException, Exception {
 
         String cerberusUrl = parameterService.getParameterStringByKey("cerberus_gui_url", "", "");
-        if (StringUtil.isEmpty(cerberusUrl)) {
+        if (StringUtil.isEmptyOrNull(cerberusUrl)) {
             cerberusUrl = parameterService.getParameterStringByKey("cerberus_url", "", "");
         }
         cerberusUrl = StringUtil.addSuffixIfNotAlready(cerberusUrl, "/");
@@ -136,10 +136,98 @@ public class ChatGenerationService implements IChatGenerationService {
     }
 
     @Override
+    public JSONObject generateNotifyEndTagExecutionV2(Tag tag) throws UnsupportedEncodingException, Exception {
+
+        int maxlines = parameterService.getParameterIntegerByKey("cerberus_notification_tagexecutionend_googlechat_maxexelines", "", 20);
+        String cerberusUrl = parameterService.getParameterStringByKey("cerberus_gui_url", "", "");
+        if (StringUtil.isEmptyOrNull(cerberusUrl)) {
+            cerberusUrl = parameterService.getParameterStringByKey("cerberus_url", "", "");
+        }
+        cerberusUrl = StringUtil.addSuffixIfNotAlready(cerberusUrl, "/");
+
+        String cerberusTagUrl = cerberusUrl + "ReportingExecutionByTag.jsp?Tag=" + URLEncoder.encode(tag.getTag(), "UTF-8");
+
+        JSONObject chatMessage = new JSONObject();
+
+        JSONArray cards = new JSONArray();
+        JSONArray cardsV2 = new JSONArray();
+        JSONObject card = new JSONObject();
+        JSONObject cardV2 = new JSONObject();
+
+        JSONObject textContent = new JSONObject();
+
+        if ("OK".equalsIgnoreCase(tag.getCiResult())) {
+            textContent.put("text", "<b><font color=\"" + TestCaseExecution.CONTROLSTATUS_OK_COL_EXT + "\">Campaign successfully Executed. CI Score = " + tag.getCiScore() + " < " + tag.getCiScoreThreshold() + "</font></b><br>" + tagService.formatResult(tag) + "<br>Click <a href='" + cerberusTagUrl + "'>here</a> for details.");
+        } else {
+            textContent.put("text", "<b><font color=\"" + TestCaseExecution.CONTROLSTATUS_KO_COL_EXT + "\">Campaign failed. CI Score = " + tag.getCiScore() + " (>= " + tag.getCiScoreThreshold() + ")</font></b><br>" + tagService.formatResult(tag) + "<br>Click <a href='" + cerberusTagUrl + "'>here</a> for details.");
+        }
+
+        JSONObject textParaContent = new JSONObject();
+        textParaContent.put("textParagraph", textContent);
+
+        JSONArray widgets = new JSONArray();
+        widgets.put(textParaContent);
+
+        String executionText = "";
+        int totaldisplayed = 0;
+        int totaltodisplay = 0;
+        int totallines = 0;
+        String cerberusExeUrl = "";
+        for (TestCaseExecution execution : tag.getExecutionsNew()) {
+            LOG.debug(execution.getControlStatus() + " - " + execution.getControlMessage() + execution.getApplication() + " - " + execution.getDescription());
+            totallines++;
+            if (!TestCaseExecution.CONTROLSTATUS_OK.equals(execution.getControlStatus()) && execution.getTestCasePriority() > 0) {
+                totaltodisplay++;
+                if (maxlines > totaldisplayed) {
+                    totaldisplayed++;
+                    if (execution.getId() == 0) {
+                        executionText += execution.getControlStatus() + " [" + execution.getApplication() + "|" + execution.getCountry() + "|" + execution.getEnvironment() + "] <i><font color=\"" + execution.getColor(execution.getControlStatus()) + "\">" + execution.getDescription() + "</font></i><br>";
+                    } else {
+                        cerberusExeUrl = cerberusUrl + "TestCaseExecution.jsp?executionId=" + execution.getId();
+                        executionText += "<a href='" + cerberusExeUrl + "'>" + execution.getControlStatus() + "</a> [" + execution.getApplication() + "|" + execution.getCountry() + "|" + execution.getEnvironment() + "] <i><font color=\"" + execution.getColor(execution.getControlStatus()) + "\">" + execution.getDescription() + "</font></i><br>";
+                    }
+                }
+            }
+
+        }
+
+        if (totaldisplayed < totaltodisplay) {
+            executionText += "... Hidden more " + (totaltodisplay - totaldisplayed) + " line(s).";
+        }
+
+        textContent = new JSONObject();
+        textContent.put("text", executionText);
+        textParaContent = new JSONObject();
+        textParaContent.put("textParagraph", textContent);
+        widgets.put(textParaContent);
+
+        JSONArray sections = new JSONArray();
+        JSONObject widget = new JSONObject();
+
+        widget.put("widgets", widgets);
+        widget.put("collapsible", true);
+        widget.put("uncollapsibleWidgetsCount", 1);
+
+        widget.put("header", "Execution Tag <b>'" + tag.getTag() + "'</b> Ended.");
+        sections.put(widget);
+        card.put("sections", sections);
+
+        cards.put(card);
+
+        cardV2.put("card", card);
+        cardsV2.put(cardV2);
+        chatMessage.put("cardsV2", cardsV2);
+
+        LOG.debug(chatMessage.toString(3));
+        return chatMessage;
+
+    }
+
+    @Override
     public JSONObject generateNotifyStartExecution(TestCaseExecution exe) throws Exception {
 
         String cerberusUrl = parameterService.getParameterStringByKey("cerberus_gui_url", "", "");
-        if (StringUtil.isEmpty(cerberusUrl)) {
+        if (StringUtil.isEmptyOrNull(cerberusUrl)) {
             cerberusUrl = parameterService.getParameterStringByKey("cerberus_url", "", "");
         }
         cerberusUrl = StringUtil.addSuffixIfNotAlready(cerberusUrl, "/");
@@ -153,7 +241,7 @@ public class ChatGenerationService implements IChatGenerationService {
         JSONObject textContent = new JSONObject();
 
         String summary = "Testcase '" + exe.getTest() + " - " + exe.getTestCase() + "' on " + exe.getEnvironment() + " - " + exe.getCountry();
-        if (StringUtil.isEmpty(exe.getRobotDecli())) {
+        if (StringUtil.isEmptyOrNull(exe.getRobotDecli())) {
             summary += exe.getRobotDecli();
         }
         textContent.put("text", "Execution <b>" + exe.getId() + "</b> Started.<br>" + summary + "<br>Click <a href='" + cerberusUrl + "'>here</a> for details.");
@@ -183,7 +271,7 @@ public class ChatGenerationService implements IChatGenerationService {
     public JSONObject generateNotifyEndExecution(TestCaseExecution exe) throws Exception {
 
         String cerberusUrl = parameterService.getParameterStringByKey("cerberus_gui_url", "", "");
-        if (StringUtil.isEmpty(cerberusUrl)) {
+        if (StringUtil.isEmptyOrNull(cerberusUrl)) {
             cerberusUrl = parameterService.getParameterStringByKey("cerberus_url", "", "");
         }
         cerberusUrl = StringUtil.addSuffixIfNotAlready(cerberusUrl, "/");
@@ -210,7 +298,7 @@ public class ChatGenerationService implements IChatGenerationService {
         JSONObject textContent = new JSONObject();
 
         String summary = "Testcase '" + exe.getTest() + " - " + exe.getTestCase() + "' on " + exe.getEnvironment() + " - " + exe.getCountry();
-        if (StringUtil.isEmpty(exe.getRobotDecli())) {
+        if (StringUtil.isEmptyOrNull(exe.getRobotDecli())) {
             summary += exe.getRobotDecli();
         }
 
@@ -245,7 +333,7 @@ public class ChatGenerationService implements IChatGenerationService {
     public JSONObject generateNotifyTestCaseChange(TestCase testCase, String eventReference) throws Exception {
 
         String cerberusUrl = parameterService.getParameterStringByKey("cerberus_gui_url", "", "");
-        if (StringUtil.isEmpty(cerberusUrl)) {
+        if (StringUtil.isEmptyOrNull(cerberusUrl)) {
             cerberusUrl = parameterService.getParameterStringByKey("cerberus_url", "", "");
         }
         cerberusUrl = StringUtil.addSuffixIfNotAlready(cerberusUrl, "/");

@@ -1,5 +1,5 @@
 /**
- * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * Cerberus Copyright (C) 2013 - 2025 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -69,7 +69,7 @@ public class ParameterService implements IParameterService {
 
     @Override
     public void purgeCacheEntry(String parameter) {
-        if (StringUtil.isEmpty(parameter)) {
+        if (StringUtil.isEmptyOrNull(parameter)) {
             cacheEntry.clear();
             LOG.debug("All Parameter cache entries purged.");
         } else {
@@ -120,7 +120,7 @@ public class ParameterService implements IParameterService {
                     && cacheEntry.get(cacheKey) != null
                     && cacheEntry.get(cacheKey).getCacheEntryCreation() != null
                     && cacheEntry.get(cacheKey).getCacheEntryCreation().plusSeconds(Parameter.CACHE_DURATION).isAfter(currentTime)) {
-                LOG.debug("Return parameter from cache Value.");
+                LOG.debug("Return parameter '" + key + "' from cache Value.");
                 return cacheEntry.get(cacheKey);
             }
         }
@@ -340,7 +340,8 @@ public class ParameterService implements IParameterService {
 
         } else if (resp.getItem() == null) {
             finalAnswer = create(object);
-        } else if (!((object.getValue()).equals(resp.getItem().getValue()))) {
+        } else if (!((object.getValue()).equals(resp.getItem().getValue())) && !StringUtil.SECRET_STRING.equals(object.getValue())) {
+            // Parameter value is modified only if different from hiddem value (XXXXXXXXXX)
             finalAnswer = update(object);
         } else {
             /**
@@ -372,7 +373,7 @@ public class ParameterService implements IParameterService {
                     || Parameter.VALUE_cerberus_exeautomedia_path.equalsIgnoreCase(parameter.getParam())
                     || Parameter.VALUE_cerberus_exemanualmedia_path.equalsIgnoreCase(parameter.getParam())
                     || Parameter.VALUE_cerberus_ftpfile_path.equalsIgnoreCase(parameter.getParam())
-                    || Parameter.VALUE_cerberus_testdatalibcsv_path.equalsIgnoreCase(parameter.getParam())
+                    || Parameter.VALUE_cerberus_testdatalibfile_path.equalsIgnoreCase(parameter.getParam())
                     || Parameter.VALUE_cerberus_gui_url.equalsIgnoreCase(parameter.getParam())
                     || Parameter.VALUE_cerberus_screenshot_max_size.equalsIgnoreCase(parameter.getParam())
                     || Parameter.VALUE_cerberus_smtp_host.equalsIgnoreCase(parameter.getParam())
@@ -382,11 +383,6 @@ public class ParameterService implements IParameterService {
                     || Parameter.VALUE_cerberus_smtp_username.equalsIgnoreCase(parameter.getParam())
                     || Parameter.VALUE_cerberus_manage_timeout.equalsIgnoreCase(parameter.getParam())
                     || Parameter.VALUE_cerberus_apikey_enable.equalsIgnoreCase(parameter.getParam())
-                    //                    || Parameter.VALUE_cerberus_apikey_value1.equalsIgnoreCase(parameter.getParam())
-                    //                    || Parameter.VALUE_cerberus_apikey_value2.equalsIgnoreCase(parameter.getParam())
-                    //                    || Parameter.VALUE_cerberus_apikey_value3.equalsIgnoreCase(parameter.getParam())
-                    //                    || Parameter.VALUE_cerberus_apikey_value4.equalsIgnoreCase(parameter.getParam())
-                    //                    || Parameter.VALUE_cerberus_apikey_value5.equalsIgnoreCase(parameter.getParam())
                     || Parameter.VALUE_cerberus_url.equalsIgnoreCase(parameter.getParam())
                     || Parameter.VALUE_cerberus_webperf_thirdpartyfilepath.equalsIgnoreCase(parameter.getParam())
                     || Parameter.VALUE_cerberus_executeCerberusCommand_password.equalsIgnoreCase(parameter.getParam())
@@ -423,9 +419,9 @@ public class ParameterService implements IParameterService {
     @Override
     public Parameter secureParameter(Parameter parameter) {
         if (isToSecureParameter(parameter)) {
-            parameter.setValue("XXXXXXXXXX");
-            if (StringUtil.isNotEmptyOrNullValue(parameter.getSystem1value())) {
-                parameter.setSystem1value("XXXXXXXXXX");
+            parameter.setValue(StringUtil.SECRET_STRING);
+            if (StringUtil.isNotEmptyOrNULLString(parameter.getSystem1value())) {
+                parameter.setSystem1value(StringUtil.SECRET_STRING);
             }
         }
         return parameter;
@@ -439,7 +435,9 @@ public class ParameterService implements IParameterService {
                 || parameter.getParam().equals("cerberus_smtp_password")
                 || parameter.getParam().equals("cerberus_executeCerberusCommand_password")
                 || parameter.getParam().equals(Parameter.VALUE_cerberus_xraycloud_clientsecret)
-                || parameter.getParam().equals(Parameter.VALUE_cerberus_xraydc_token)) {
+                || parameter.getParam().equals(Parameter.VALUE_cerberus_xraydc_token)
+                || parameter.getParam().equals(Parameter.VALUE_cerberus_jiracloud_apiuser_apitoken)
+                || parameter.getParam().equals(Parameter.VALUE_cerberus_github_apitoken)) {
             return true;
         }
         return false;

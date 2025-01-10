@@ -1,5 +1,5 @@
 /**
- * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * Cerberus Copyright (C) 2013 - 2025 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -21,6 +21,7 @@ package org.cerberus.core.servlet.crud.testexecution;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
@@ -29,6 +30,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.cerberus.core.crud.entity.LogEvent;
 import org.cerberus.core.crud.entity.TestCaseExecutionQueue;
 import org.cerberus.core.crud.service.ILogEventService;
 import org.cerberus.core.crud.service.ITestCaseExecutionQueueService;
@@ -158,7 +160,7 @@ public class CreateTestCaseExecutionQueue extends HttpServlet {
         executionThreadPoolService = appContext.getBean(IExecutionThreadPoolService.class);
 
         // Create Tag when exist.
-        if (!StringUtil.isEmpty(tag)) {
+        if (!StringUtil.isEmptyOrNull(tag)) {
             // We create or update it.
             tagService = appContext.getBean(ITagService.class);
             List<String> envList = new ArrayList<>();
@@ -252,7 +254,7 @@ public class CreateTestCaseExecutionQueue extends HttpServlet {
 
                         finalAnswer = AnswerUtil.agregateAnswer(finalAnswer, ansItem);
                         if (ansItem.isCodeEquals(MessageEventEnum.DATA_OPERATION_OK.getCode())) {
-                            ansItem = executionQueueService.create(executionQueueData, withNewDep, id, TestCaseExecutionQueue.State.QUEUED);
+                            ansItem = executionQueueService.create(executionQueueData, withNewDep, id, TestCaseExecutionQueue.State.QUEUED, new HashMap<>());
                             TestCaseExecutionQueue addedExecution = (TestCaseExecutionQueue) ansItem.getItem();
                             insertedList.add(addedExecution);
                         }
@@ -263,7 +265,7 @@ public class CreateTestCaseExecutionQueue extends HttpServlet {
                                  * Update was successful. Adding Log entry.
                                  */
                                 logEventService = appContext.getBean(LogEventService.class);
-                                logEventService.createForPrivateCalls("/CreateTestCaseExecutionQueue", "CREATE", "Created ExecutionQueue : ['" + id + "']", request);
+                                logEventService.createForPrivateCalls("/CreateTestCaseExecutionQueue", "CREATE", LogEvent.STATUS_INFO, "Created ExecutionQueue : ['" + id + "']", request);
                             }
                         }
 

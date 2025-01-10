@@ -1,5 +1,5 @@
 /**
- * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * Cerberus Copyright (C) 2013 - 2025 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -22,7 +22,6 @@ package org.cerberus.core.crud.service;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
 import org.cerberus.core.crud.entity.Application;
 import org.cerberus.core.exception.CerberusException;
 import org.cerberus.core.util.answer.Answer;
@@ -44,9 +43,24 @@ public interface IApplicationService {
 
     /**
      *
+     * @param id
+     * @return
+     * @throws org.cerberus.core.exception.CerberusException
+     */
+    Application readByKeyWithDependency(String id) throws CerberusException;
+
+    /**
+     *
      * @return
      */
     AnswerList<Application> readAll();
+
+    /**
+     *
+     * @param System
+     * @return
+     */
+    Integer getNbApplications(List<String> System);
 
     /**
      *

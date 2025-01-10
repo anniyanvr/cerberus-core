@@ -1,5 +1,5 @@
 /**
- * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * Cerberus Copyright (C) 2013 - 2025 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -42,6 +42,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import org.cerberus.core.crud.entity.TestCaseDep;
+import org.cerberus.core.crud.service.ITestCaseDepService;
+import org.cerberus.core.engine.entity.MessageEvent;
 
 /**
  * @author bcivel
@@ -52,6 +55,8 @@ public class TestCaseExecutionQueueDepService implements ITestCaseExecutionQueue
     @Autowired
     private ITestCaseExecutionQueueDepDAO testCaseExecutionQueueDepDAO;
     @Autowired
+    private ITestCaseDepService testCaseDepService;
+    @Autowired
     private ITestCaseExecutionQueueService executionQueueService;
 
     private static final Logger LOG = LogManager.getLogger("TestCaseExecutionQueueDepService");
@@ -59,8 +64,63 @@ public class TestCaseExecutionQueueDepService implements ITestCaseExecutionQueue
     private final String OBJECT_NAME = "Test Case Execution Queue Dependency";
 
     @Override
-    public AnswerItem<Integer> insertFromTestCaseDep(long queueId, String env, String country, String tag, String test, String testcase) {
-        return testCaseExecutionQueueDepDAO.insertFromTestCaseDep(queueId, env, country, tag, test, testcase);
+    public AnswerItem<Integer> insertFromTestCaseDep(long queueId, String env, String country, String tag, String test, String testcase, Map<String, TestCaseExecutionQueue> queueToInsert) {
+        AnswerItem<Integer> ans = new AnswerItem<>();
+        Integer nbInserted = 0;
+        MessageEvent msg = null;
+        try {
+            LOG.debug("toto : Quque already inserted inside context");
+            for (Map.Entry<String, TestCaseExecutionQueue> entry : queueToInsert.entrySet()) {
+                String key = entry.getKey();
+                Object val = entry.getValue();
+                LOG.debug(key);
+            }
+
+            // List of dep to insert from testcase definition.
+            List<TestCaseDep> depToInsert = testCaseDepService.readByTestAndTestcase(test, testcase);
+
+            // For each dependency we insert the queue dep.
+            for (TestCaseDep testCaseDep : depToInsert) {
+                if (testCaseDep.isActive()) {
+                    String status = TestCaseExecutionQueueDep.STATUS_WAITING;
+                    String comment = "";
+                    LOG.debug(executionQueueService.getUniqKey(testCaseDep.getDependencyTest(), testCaseDep.getDependencyTestcase(), country, env));
+                    if (!queueToInsert.containsKey(executionQueueService.getUniqKey(testCaseDep.getDependencyTest(), testCaseDep.getDependencyTestcase(), country, env))
+                            && !queueToInsert.isEmpty()) {
+                        status = TestCaseExecutionQueueDep.STATUS_IGNORED;
+                        comment = "The corresponding test Case does not exist in the context of the campaign execution";
+                    } else {
+                        // nbInserted is not incremented if Dependency is IGNORED. We count only the blocking dependencies.
+                        nbInserted++;
+                    }
+                    TestCaseExecutionQueueDep newDep = TestCaseExecutionQueueDep.builder()
+                            .comment(comment)
+                            .depTest(testCaseDep.getDependencyTest())
+                            .depTestCase(testCaseDep.getDependencyTestcase())
+                            .depEvent(testCaseDep.getDependencyEvent())
+                            .type(testCaseDep.getType())
+                            .status(status)
+                            .exeQueueId(queueId)
+                            .country(country)
+                            .environment(env)
+                            .tag(tag)
+                            .depTCDelay(testCaseDep.getDependencyTCDelay())
+                            .usrCreated("")
+                            .build();
+                    testCaseExecutionQueueDepDAO.create(newDep);
+                }
+            }
+
+            ans.setItem(nbInserted);
+            msg = new MessageEvent(MessageEventEnum.DATA_OPERATION_OK).resolveDescription("ITEM", OBJECT_NAME).resolveDescription("OPERATION", "INSERT_FROM_TESTCASE");
+            ans.setResultMessage(msg);
+
+            return ans;
+        } catch (CerberusException ex) {
+            LOG.warn("Could not insert dependency");
+        }
+        LOG.warn("{} dependency inserted in queueId {}.", nbInserted, queueId);
+        return ans;
     }
 
     @Override
@@ -71,6 +131,11 @@ public class TestCaseExecutionQueueDepService implements ITestCaseExecutionQueue
     @Override
     public AnswerItem<Integer> updateStatusToRelease(String env, String Country, String tag, String type, String test, String testCase, String comment, long exeId, long queueId) {
         return testCaseExecutionQueueDepDAO.updateStatusToRelease(env, Country, tag, type, test, testCase, comment, exeId, queueId);
+    }
+
+    @Override
+    public AnswerItem<Integer> updateStatusToRelease(long id) {
+        return testCaseExecutionQueueDepDAO.updateStatusToRelease(id);
     }
 
     @Override
@@ -109,12 +174,27 @@ public class TestCaseExecutionQueueDepService implements ITestCaseExecutionQueue
     }
 
     @Override
+    public AnswerList<TestCaseExecutionQueueDep> getWaitingDepReadytoRelease() {
+        return testCaseExecutionQueueDepDAO.getWaitingDepReadytoRelease();
+    }
+
+    @Override
+    public AnswerItem<Integer> insertNewTimingDep(String env, String Country, String tag, String test, String testCase, long exeID) {
+        return testCaseExecutionQueueDepDAO.insertNewTimingDep(env, Country, tag, test, testCase, exeID);
+    }
+
+    @Override
     public void manageDependenciesEndOfExecution(TestCaseExecution tCExecution) {
         if (tCExecution != null) {
             LOG.debug("Release dependencies of Execution : " + tCExecution.getId() + ".");
 
+            // Insert new dependency based on TIMING in case the initial dependency has a delay. Type TIMING Status WAITING
+            // TODO
+            AnswerItem ansNbDep = insertNewTimingDep(tCExecution.getEnvironment(), tCExecution.getCountry(), tCExecution.getTag(),
+                    tCExecution.getTest(), tCExecution.getTestCase(), tCExecution.getId());
+
             // Updating all dependencies of type TCEEXEEND and tCExecution.getId() to RELEASED.
-            AnswerItem ansNbDep = updateStatusToRelease(tCExecution.getEnvironment(), tCExecution.getCountry(), tCExecution.getTag(),
+            ansNbDep = updateStatusToRelease(tCExecution.getEnvironment(), tCExecution.getCountry(), tCExecution.getTag(),
                     TestCaseExecutionQueueDep.TYPE_TCEXEEND, tCExecution.getTest(), tCExecution.getTestCase(), "", tCExecution.getId(), tCExecution.getQueueID());
             int nbdep = (int) ansNbDep.getItem();
             // Only check status of each Queue Entries if we RELEASED at least 1 entry.
@@ -157,6 +237,42 @@ public class TestCaseExecutionQueueDepService implements ITestCaseExecutionQueue
         } catch (CerberusException ex) {
             LOG.error("Exception when release dep from Queue Error.", ex);
         }
+    }
+
+    @Override
+    public int manageDependenciesCheckTimingWaiting() {
+        LOG.debug("Release dependencies based on TIMING");
+        int nbReleased = 0;
+
+        try {
+            //, String environment, String country, String tag, String test, String testCase
+            // Get list of queuedep to release.
+            AnswerList<TestCaseExecutionQueueDep> depList = getWaitingDepReadytoRelease();
+            if (depList.getTotalRows() > 0) {
+                LOG.info(depList.getTotalRows() + " WAITING dependency(ies) is(are) now ready to be released.");
+
+                List<TestCaseExecutionQueueDep> listToProcess = new ArrayList<>();
+                listToProcess = depList.getDataList();
+
+                // Release them by update the WAITING queuedep to RELEASED
+                for (TestCaseExecutionQueueDep itemToProces : listToProcess) {
+                    LOG.debug("Process Queue Entry dep id : " + itemToProces.getId());
+                    updateStatusToRelease(itemToProces.getId());
+                }
+
+                // Loop on queue id and checkAndReleaseQueuedEntry on the tag
+                for (TestCaseExecutionQueueDep itemToProces : listToProcess) {
+                    if (executionQueueService.checkAndReleaseQueuedEntry(itemToProces.getExeQueueId(), itemToProces.getTag())) {
+                        nbReleased++;
+                    }
+                }
+
+            }
+
+        } catch (Exception ex) {
+            LOG.error("Exception when release TIMING dependencies.", ex);
+        }
+        return nbReleased;
     }
 
     @Override

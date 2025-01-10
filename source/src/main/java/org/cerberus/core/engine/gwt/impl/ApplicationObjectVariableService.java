@@ -1,5 +1,5 @@
 /**
- * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * Cerberus Copyright (C) 2013 - 2025 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -33,9 +33,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.io.File;
+import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
+import java.nio.file.Files;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.Iterator;
 import java.util.List;
 import java.util.regex.Matcher;
@@ -115,6 +118,16 @@ public class ApplicationObjectVariableService implements IApplicationObjectVaria
                         }
                     } else if ("value".equals(valueA[2])) {
                         val = ao.getValue();
+                    } else if ("base64".equals(valueA[2])) {
+                        String filePath = parameterService.getParameterStringByKey("cerberus_applicationobject_path", "", "") + File.separator + ao.getID() + File.separator + ao.getScreenshotFilename();
+                        try {
+                            File file = new File(filePath);
+                            byte[] fileContent = Files.readAllBytes(file.toPath());
+                            val = Base64.getEncoder().encodeToString(fileContent);
+                        } catch (IOException e) {
+                            val = "!! DECODE ERROR - could not read file :'" + filePath + "' !!";
+                            LOG.error(val, e);
+                        }
                     }
                     if (val != null) {
                         stringToDecode = stringToDecode.replace("%" + value + "%", val);

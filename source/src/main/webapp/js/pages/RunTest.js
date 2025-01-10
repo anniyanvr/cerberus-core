@@ -1,5 +1,5 @@
 /*
- * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * Cerberus Copyright (C) 2013 - 2025 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -656,7 +656,7 @@ function handleAddToQueueResponse(data, doRedirect) {
         data.message = data.message + "<br><a href='TestCaseExecution.jsp?executionQueueId=" + data.queueList[0].queueId + "'><button class='btn btn-primary' id='goToExecution'>Open Execution</button></a>";
     }
     if (data.nbExe > 1) {
-        data.message = data.message + "<br><a href='ReportingExecutionByTag.jsp?Tag=" + data.tag + "'><button class='btn btn-primary' id='goToTagReport'>Report by Tag</button></a>"
+        data.message = data.message + "<br><a href='ReportingExecutionByTag.jsp?Tag=" + encodeURIComponent(data.tag) + "'><button class='btn btn-primary' id='goToTagReport'>Report by Tag</button></a>"
     }
     var rc = getAlertType(data.messageType);
     if ((rc === "success") && (data.nbExe === 0)) {
@@ -667,7 +667,7 @@ function handleAddToQueueResponse(data, doRedirect) {
         window.location.href = "TestCaseExecution.jsp?executionQueueId=" + data.queueList[0].queueId;
     }
     if ((data.nbExe > 1) && doRedirect) {
-        window.location.href = "ReportingExecutionByTag.jsp?Tag=" + data.tag;
+        window.location.href = "ReportingExecutionByTag.jsp?Tag=" + encodeURIComponent(data.tag);
     }
 }
 
@@ -884,7 +884,7 @@ function loadRobotInfo(robot) {
                 var nbExe = 0;
                 for (var i = 0; i < data.contentTable.executors.length; i++) {
                     var curExecutor = data.contentTable.executors[i];
-                    if (curExecutor.active === "Y") {
+                    if (curExecutor.isActive) {
                         nbExe++;
                         if (nbExe < 2) {
                             ExeHost = curExecutor.host;

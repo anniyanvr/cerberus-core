@@ -1,5 +1,5 @@
 /**
- * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * Cerberus Copyright (C) 2013 - 2025 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -19,6 +19,18 @@
  */
 package org.cerberus.core.service.har.impl;
 
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Stream;
 import org.cerberus.core.crud.entity.Invariant;
 import org.cerberus.core.crud.entity.TestCaseExecutionHttpStat;
 import org.cerberus.core.crud.service.IInvariantService;
@@ -33,21 +45,6 @@ import org.json.JSONException;
 import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Paths;
-import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-import java.util.stream.Stream;
 
 /**
  * @author bcivel
@@ -231,7 +228,7 @@ public class HarService implements IHarService {
         try {
 
             String configFile = parameterService.getParameterStringByKey("cerberus_webperf_thirdpartyfilepath", "", "");
-            if (StringUtil.isEmpty(configFile)) {
+            if (StringUtil.isEmptyOrNull(configFile)) {
                 LOG.warn("Could not load config file of Web Third Party. Please define a valid parameter for cerberus_webperf_thirdpartyfilepath.");
                 return rules;
             }
@@ -312,7 +309,7 @@ public class HarService implements IHarService {
 
             // We ignore some requests.
             for (String string : ingoreRules) {
-                if ((!StringUtil.isEmpty(string)) && (myURL.getHost().toLowerCase().endsWith(string.toLowerCase()))) {
+                if ((!StringUtil.isEmptyOrNull(string)) && (myURL.getHost().toLowerCase().endsWith(string.toLowerCase()))) {
                     return PROVIDER_IGNORE;
                 }
             }
@@ -333,7 +330,7 @@ public class HarService implements IHarService {
             return PROVIDER_UNKNOWN;
 
         } catch (MalformedURLException ex) {
-            Logger.getLogger(HarService.class.getName()).log(Level.SEVERE, null, ex);
+            LOG.error(ex,ex);
         }
         return PROVIDER_UNKNOWN;
     }
@@ -411,7 +408,7 @@ public class HarService implements IHarService {
                         JSONObject pA = new JSONObject();
                         for (int i = 0; i < pData.length(); i++) {
                             pA = pData.getJSONObject(i);
-                            if ((pA.has("name")) && (!StringUtil.isEmpty(pA.getString("name").trim()))) {
+                            if ((pA.has("name")) && (!StringUtil.isEmptyOrNull(pA.getString("name").trim()))) {
                                 pD.put(pA.getString("name").trim(), pA.getString("value"));
                             }
                         }
@@ -426,7 +423,7 @@ public class HarService implements IHarService {
                     JSONObject pA = new JSONObject();
                     for (int i = 0; i < pData.length(); i++) {
                         pA = pData.getJSONObject(i);
-                        if ((pA.has("name")) && (!StringUtil.isEmpty(pA.getString("name").trim()))) {
+                        if ((pA.has("name")) && (!StringUtil.isEmptyOrNull(pA.getString("name").trim()))) {
                             pD.put(pA.getString("name").trim(), pA.getString("value"));
                         }
                     }
@@ -447,8 +444,10 @@ public class HarService implements IHarService {
                     }
                     harStat.setJsRequests(harStat.getJsRequests() + 1);
                     tempList = harStat.getJsList();
-                    tempList.add(url);
-                    harStat.setJsList(tempList);
+                    if (tempList != null) {
+                        tempList.add(url);
+                        harStat.setJsList(tempList);
+                    }
                     break;
                 case "css":
                     if (reqSize > 0) {
@@ -460,8 +459,10 @@ public class HarService implements IHarService {
                     }
                     harStat.setCssRequests(harStat.getCssRequests() + 1);
                     tempList = harStat.getCssList();
-                    tempList.add(url);
-                    harStat.setCssList(tempList);
+                    if (tempList != null) {
+                        tempList.add(url);
+                        harStat.setCssList(tempList);
+                    }
                     break;
                 case "html":
                     if (reqSize > 0) {
@@ -473,8 +474,10 @@ public class HarService implements IHarService {
                     }
                     harStat.setHtmlRequests(harStat.getHtmlRequests() + 1);
                     tempList = harStat.getHtmlList();
-                    tempList.add(url);
-                    harStat.setHtmlList(tempList);
+                    if (tempList != null) {
+                        tempList.add(url);
+                        harStat.setHtmlList(tempList);
+                    }
                     break;
                 case "img":
                     if (reqSize > 0) {
@@ -486,8 +489,10 @@ public class HarService implements IHarService {
                     }
                     harStat.setImgRequests(harStat.getImgRequests() + 1);
                     tempList = harStat.getImgList();
-                    tempList.add(url);
-                    harStat.setImgList(tempList);
+                    if (tempList != null) {
+                        tempList.add(url);
+                        harStat.setImgList(tempList);
+                    }
                     break;
                 case "content":
                     if (reqSize > 0) {
@@ -499,8 +504,10 @@ public class HarService implements IHarService {
                     }
                     harStat.setContentRequests(harStat.getContentRequests() + 1);
                     tempList = harStat.getContentList();
-                    tempList.add(url);
-                    harStat.setContentList(tempList);
+                    if (tempList != null) {
+                        tempList.add(url);
+                        harStat.setContentList(tempList);
+                    }
                     break;
                 case "font":
                     if (reqSize > 0) {
@@ -512,8 +519,10 @@ public class HarService implements IHarService {
                     }
                     harStat.setFontRequests(harStat.getFontRequests() + 1);
                     tempList = harStat.getFontList();
-                    tempList.add(url);
-                    harStat.setFontList(tempList);
+                    if (tempList != null) {
+                        tempList.add(url);
+                        harStat.setFontList(tempList);
+                    }
                     break;
                 case "media":
                     if (reqSize > 0) {
@@ -525,8 +534,10 @@ public class HarService implements IHarService {
                     }
                     harStat.setMediaRequests(harStat.getMediaRequests() + 1);
                     tempList = harStat.getMediaList();
-                    tempList.add(url);
-                    harStat.setMediaList(tempList);
+                    if (tempList != null) {
+                        tempList.add(url);
+                        harStat.setMediaList(tempList);
+                    }
                     break;
                 case "other":
                     if (reqSize > 0) {
@@ -538,8 +549,10 @@ public class HarService implements IHarService {
                     }
                     harStat.setOtherRequests(harStat.getOtherRequests() + 1);
                     tempList = harStat.getOtherList();
-                    tempList.add(url);
-                    harStat.setOtherList(tempList);
+                    if (tempList != null) {
+                        tempList.add(url);
+                        harStat.setOtherList(tempList);
+                    }
                     break;
             }
 
@@ -974,7 +987,7 @@ public class HarService implements IHarService {
     @Override
     public JSONObject removeFirstHitsandFilterURL(JSONObject har, Integer indexStart, String urlFilter) {
         LOG.debug("Remove First entries from HAR file from index " + indexStart + " and Filter using : " + urlFilter);
-        if ((indexStart < 1) && StringUtil.isEmpty(urlFilter)) {
+        if ((indexStart < 1) && StringUtil.isEmptyOrNull(urlFilter)) {
             return har;
         }
         try {
@@ -985,8 +998,8 @@ public class HarService implements IHarService {
             for (int i = 0; i < harEntries.length(); i++) {
                 if (i >= indexStart) {
                     // Only add the entries if index is reached
-                    if ((!StringUtil.isEmpty(urlFilter) && harEntries.getJSONObject(i).getJSONObject("request").getString("url").contains(urlFilter))
-                            || StringUtil.isEmpty(urlFilter)) {
+                    if ((!StringUtil.isEmptyOrNull(urlFilter) && harEntries.getJSONObject(i).getJSONObject("request").getString("url").contains(urlFilter))
+                            || StringUtil.isEmptyOrNull(urlFilter)) {
                         // Only add the entries if the url to filter is defined and url contains it.
                         newLogEntries.put(harEntries.getJSONObject(i));
                     }

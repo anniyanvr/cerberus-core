@@ -1,5 +1,5 @@
 /**
- * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * Cerberus Copyright (C) 2013 - 2025 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -39,6 +39,13 @@ public class DateUtil {
      * SimpleDateFormat use to parse SQL Date in Cerberus BO
      */
     public static final String DATE_FORMAT_TIMESTAMP = "yyyyMMddHHmmssSSS";
+
+    /**
+     * SimpleDateFormat use to display inside reports
+     */
+    public static final String DATE_FORMAT_REPORT = "MM/dd/yyyy HH:mm:ss";
+    public static final String DATE_FORMAT_REPORT_TIME = "HH:mm:ss";
+    public static final String DATE_FORMAT_REPORT_FILE = "yyMMddHHmmss";
 
     private DateUtil() {
     }

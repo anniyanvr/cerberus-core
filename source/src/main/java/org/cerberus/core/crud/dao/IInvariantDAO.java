@@ -1,5 +1,5 @@
 /**
- * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * Cerberus Copyright (C) 2013 - 2025 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -44,6 +44,15 @@ public interface IInvariantDAO {
      * @throws org.cerberus.core.exception.CerberusException
      */
     Invariant readByKey(String id, String value) throws CerberusException;
+
+    /**
+     * Get a {@link Invariant} in database
+     *
+     * @param id
+     * @return
+     * @throws org.cerberus.core.exception.CerberusException
+     */
+    Invariant readFirstByIdName(String id) throws CerberusException;
 
     /**
      * @param idName

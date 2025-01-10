@@ -1,5 +1,5 @@
 /**
- * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * Cerberus Copyright (C) 2013 - 2025 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -63,6 +63,10 @@ public class TestCaseStepActionControl {
     private boolean isFatal;
     private String description;
     private String screenshotFilename;
+    private boolean doScreenshotBefore;
+    private boolean doScreenshotAfter;
+    private int waitBefore;
+    private int waitAfter;
     @EqualsAndHashCode.Exclude
     private String usrCreated;
     @EqualsAndHashCode.Exclude
@@ -102,6 +106,7 @@ public class TestCaseStepActionControl {
     public static final String CONTROL_VERIFYELEMENTTEXTEQUAL = "verifyElementTextEqual";
     public static final String CONTROL_VERIFYELEMENTTEXTDIFFERENT = "verifyElementTextDifferent";
     public static final String CONTROL_VERIFYELEMENTTEXTCONTAINS = "verifyElementTextContains";
+    public static final String CONTROL_VERIFYELEMENTTEXTNOTCONTAINS = "verifyElementTextNotContains";
     public static final String CONTROL_VERIFYELEMENTTEXTMATCHREGEX = "verifyElementTextMatchRegex";
     public static final String CONTROL_VERIFYSTRINGARRAYCONTAINS = "verifyStringArrayContains";
     public static final String CONTROL_VERIFYNUMERICARRAYCONTAINS = "verifyNumericArrayContains";
@@ -210,6 +215,10 @@ public class TestCaseStepActionControl {
             result.put("conditionOptions", this.getConditionOptions());
             result.put("isFatal", this.isFatal());
             result.put("screenshotFilename", this.getScreenshotFilename());
+            result.put("waitBefore", this.getWaitBefore());
+            result.put("waitAfter", this.getWaitAfter());
+            result.put("doScreenshotBefore", this.isDoScreenshotBefore());
+            result.put("doScreenshotAfter", this.isDoScreenshotAfter());
             result.put("test", this.getTest());
             result.put("testcase", this.getTestcase());
 

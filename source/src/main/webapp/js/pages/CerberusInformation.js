@@ -1,5 +1,5 @@
 /*
- * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * Cerberus Copyright (C) 2013 - 2025 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -137,7 +137,7 @@ function feedContent() {
         var table = $("#exeNbTableBody");
         table.empty();
         var row = $("<tr></tr>");
-        var cel1 = $("<td></td>").append(data.simultaneous_execution);
+        var cel1 = $("<td></td>").append(data.runningExecutionsList.length);
         var cel2 = $("<td></td>").append(data.executionThreadPoolInstanceActive.toString());
         row.append(cel1);
         row.append(cel2);
@@ -147,11 +147,11 @@ function feedContent() {
         table.empty();
 
         // Sort Executions by ID.
-        let exeList = data.simultaneous_execution_list;
+        let exeList = data.runningExecutionsList;
         exeList.sort(function (a, b) {
             return a.id - b.id;
         });
-        $.each(data["simultaneous_execution_list"], function (idx, obj) {
+        $.each(data["runningExecutionsList"], function (idx, obj) {
             var row = $("<tr></tr>");
             var cel1 = $("<td></td>").append(FormatedExeId(obj.id));
             row.append(cel1);
@@ -237,7 +237,7 @@ function feedContent() {
             row.append(cel1);
             var cel1 = $("<td rowspan='2'></td>").append(obj.triggerName);
             row.append(cel1);
-            var cel1 = $("<td></td>").append(obj.triggerNextFiretime);
+            var cel1 = $("<td></td>").append(new Date(obj.triggerNextFiretime).toLocaleString());
             row.append(cel1);
             var cel1 = $("<td></td>").append(obj.triggerUserCreated);
             row.append(cel1);

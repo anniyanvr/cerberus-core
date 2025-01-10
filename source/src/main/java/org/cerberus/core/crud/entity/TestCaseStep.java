@@ -1,5 +1,5 @@
 /**
- * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * Cerberus Copyright (C) 2013 - 2025 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -43,6 +43,7 @@ import java.util.List;
 @AllArgsConstructor
 @EqualsAndHashCode
 public class TestCaseStep {
+
     @Id
     private String test;
     @Id
@@ -169,7 +170,9 @@ public class TestCaseStep {
             stepJson.put("dateCreated", this.dateCreated);
             stepJson.put("usrModif", this.usrModif);
             stepJson.put("dateModif", this.dateModif);
-
+            if (this.testcaseObj != null) {
+                stepJson.put("testcaseObj", this.testcaseObj.toJson());
+            }
             JSONArray stepsJson = new JSONArray();
             if (this.getActions() != null) {
                 for (TestCaseStepAction action : this.getActions()) {

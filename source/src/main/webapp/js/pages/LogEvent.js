@@ -1,5 +1,5 @@
 /*
- * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * Cerberus Copyright (C) 2013 - 2025 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -81,7 +81,7 @@ function editEntryClick(id) {
         var formEdit = $('#editEntryModal');
 
         formEdit.find("#logeventid").prop("value", id);
-        formEdit.find("#time").prop("value", obj["time"]);
+        formEdit.find("#time").prop("value", getDate(obj["time"]));
         formEdit.find("#remoteip").prop("value", obj["remoteIP"]);
         formEdit.find("#localip").prop("value", obj["localIP"]);
         formEdit.find("#page").prop("value", obj["page"]);
@@ -116,7 +116,7 @@ function aoColumnsFunc() {
             "data": "LogEventID",
             "like": true,
             "sName": "LogEventID",
-            "sWidth": "50px",
+            "sWidth": "40px",
             "title": doc.getDocOnline("logevent", "logeventid")
         },
         {
@@ -124,7 +124,27 @@ function aoColumnsFunc() {
             "like": true,
             "sName": "Time",
             "sWidth": "90px",
-            "title": doc.getDocOnline("logevent", "time")
+            "title": doc.getDocOnline("logevent", "time"),
+            "mRender": function (data, type, oObj) {
+                return getDate(oObj["time"]);
+            }
+        },
+        {
+            "data": "status",
+            "sName": "Status",
+            "sWidth": "30px",
+            "title": doc.getDocOnline("logevent", "status"),
+            "mRender": function (data, type, obj) {
+                let statusEntry = '<span class="alert-info">' + obj["status"] + '</span>';
+                if (obj["status"] === "WARN") {
+                    statusEntry = '<span class="alert-warning">' + obj["status"] + '</span>';
+                } else if (obj["status"] === "INFO") {
+                    statusEntry = '<span class="alert-info">' + obj["status"] + '</span>';
+                } else if (obj["status"] === "ERROR") {
+                    statusEntry = '<span class="alert-danger">' + obj["status"] + '</span>';
+                }
+                return statusEntry;
+            }
         },
         {
             "data": "login",

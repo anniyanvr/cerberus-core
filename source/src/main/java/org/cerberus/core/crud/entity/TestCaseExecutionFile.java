@@ -1,5 +1,5 @@
 /**
- * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * Cerberus Copyright (C) 2013 - 2025 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -147,6 +147,10 @@ public class TestCaseExecutionFile {
             LOG.error(ex.toString(), ex);
         }
         return result;
+    }
+
+    public boolean isImage() {
+        return (FILETYPE_GIF.equals(this.fileType) || FILETYPE_JPEG.equals(this.fileType) || FILETYPE_JPG.equals(this.fileType) || FILETYPE_PNG.equals(this.fileType));
     }
 
     @Override

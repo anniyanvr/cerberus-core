@@ -1,5 +1,5 @@
 /**
- * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * Cerberus Copyright (C) 2013 - 2025 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -99,6 +99,13 @@ public interface IAppServiceService {
     AnswerList<String> readDistinctValuesByCriteria(String searchParameter, Map<String, List<String>> individualSearch, String columnName);
 
     /**
+     *
+     * @param systems
+     * @return
+     */
+    Integer getNbServices(List<String> systems);
+
+    /**
      * @param object the {@link AppService} to Create
      * @return {@link AnswerItem}
      */
@@ -106,9 +113,10 @@ public interface IAppServiceService {
 
     /**
      * @param newAppService
+     * @param login
      * @return
      */
-    AppService createAPI(AppService newAppService);
+    AppService createAPI(AppService newAppService, String login);
 
     /**
      * @param service
@@ -118,10 +126,12 @@ public interface IAppServiceService {
     Answer update(String service, AppService object);
 
     /**
+     * @param serviceName
      * @param appServiceToUpdate
+     * @param login
      * @return
      */
-    AppService updateAPI(String serviceName, AppService appServiceToUpdate);
+    AppService updateAPI(String serviceName, AppService appServiceToUpdate, String login);
 
     /**
      * @param object the {@link AppService} to Delete
@@ -171,9 +181,10 @@ public interface IAppServiceService {
      * query string (ex : key1=value1&key2=value2&key3=value3
      *
      * @param serviceContent
+     * @param encodeParameters
      * @return
      */
-    String convertContentListToQueryString(List<AppServiceContent> serviceContent);
+    String convertContentListToQueryString(List<AppServiceContent> serviceContent, boolean encodeParameters);
 
     /**
      * this method will store local file into application server
