@@ -1,5 +1,5 @@
 /**
- * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * Cerberus Copyright (C) 2013 - 2025 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -19,7 +19,6 @@
  */
 package org.cerberus.core.crud.dao.impl;
 
-import com.google.common.base.Strings;
 import org.apache.commons.fileupload.FileItem;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -45,6 +44,7 @@ import java.io.File;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Timestamp;
@@ -155,7 +155,7 @@ public class TestDataLibDAO implements ITestDataLibDAO {
                 .append(" and (`environment` = ? or `environment` = '')")
                 .append(" and (`country` = ? or `country` = '')")
                 .append(" ORDER BY `name` DESC, `system` DESC, environment DESC, country DESC, tdl.TestDataLibID ASC")
-                .append(" LIMIT 1").toString();
+                .append(" LIMIT 0,1").toString();
 
         // Debug message on SQL.
         if (LOG.isDebugEnabled()) {
@@ -241,8 +241,8 @@ public class TestDataLibDAO implements ITestDataLibDAO {
     @Override
     public Answer uploadFile(int id, FileItem file) {
         MessageEvent msg = new MessageEvent(MessageEventEnum.DATA_OPERATION_ERROR_UNEXPECTED).resolveDescription("DESCRIPTION",
-                "cerberus_testdatalibcsv_path Parameter not found");
-        AnswerItem a = parameterService.readByKey("", "cerberus_testdatalibcsv_path");
+                "cerberus_testdatalibfile_path Parameter not found");
+        AnswerItem a = parameterService.readByKey("", Parameter.VALUE_cerberus_testdatalibfile_path);
         if (a.isCodeEquals(MessageEventEnum.DATA_OPERATION_OK.getCode())) {
             Parameter p = (Parameter) a.getItem();
             String uploadPath = p.getValue();
@@ -263,8 +263,8 @@ public class TestDataLibDAO implements ITestDataLibDAO {
                 try {
                     file.write(picture);
                     msg = new MessageEvent(MessageEventEnum.DATA_OPERATION_OK).resolveDescription("DESCRIPTION",
-                            "TestDataLib CSV file uploaded");
-                    msg.setDescription(msg.getDescription().replace("%ITEM%", "testDatalib CSV").replace("%OPERATION%", "Upload"));
+                            "TestDataLib File uploaded");
+                    msg.setDescription(msg.getDescription().replace("%ITEM%", "testDatalib File").replace("%OPERATION%", "Upload"));
                 } catch (Exception e) {
                     LOG.warn("Unable to upload testdatalib csv file: " + e.getMessage());
                     msg = new MessageEvent(MessageEventEnum.DATA_OPERATION_ERROR_UNEXPECTED).resolveDescription("DESCRIPTION",
@@ -463,7 +463,7 @@ public class TestDataLibDAO implements ITestDataLibDAO {
 
         searchSQL.append(" WHERE 1=1 ");
 
-        if (!StringUtil.isEmpty(searchTerm)) {
+        if (!StringUtil.isEmptyOrNull(searchTerm)) {
             searchSQL.append(" and (tdl.`name` like ?");
             searchSQL.append(" or tdl.`privateData` like ?");
             searchSQL.append(" or tdl.`group` like ?");
@@ -501,7 +501,7 @@ public class TestDataLibDAO implements ITestDataLibDAO {
         if (country != null) {
             searchSQL.append(" and tdl.`country` = ? ");
         }
-        if (!StringUtil.isEmpty(type)) {
+        if (!StringUtil.isEmptyOrNull(type)) {
             searchSQL.append(" and tdl.`type` = ? ");
         }
         query.append(searchSQL);
@@ -515,7 +515,7 @@ public class TestDataLibDAO implements ITestDataLibDAO {
         query.append(" AND ");
         query.append(UserSecurity.getSystemAllowForSQL("tdl.`system`"));
 
-        if (!StringUtil.isEmpty(column)) {
+        if (!StringUtil.isEmptyOrNull(column)) {
             query.append(" order by ").append(column).append(" ").append(dir);
         }
 
@@ -540,7 +540,7 @@ public class TestDataLibDAO implements ITestDataLibDAO {
             PreparedStatement preStat = connection.prepareStatement(query.toString());
             try {
                 int i = 1;
-                if (!StringUtil.isEmpty(searchTerm)) {
+                if (!StringUtil.isEmptyOrNull(searchTerm)) {
                     preStat.setString(i++, "%" + searchTerm + "%");
                     preStat.setString(i++, "%" + searchTerm + "%");
                     preStat.setString(i++, "%" + searchTerm + "%");
@@ -572,7 +572,7 @@ public class TestDataLibDAO implements ITestDataLibDAO {
                 if (country != null) {
                     preStat.setString(i++, country);
                 }
-                if (!StringUtil.isEmpty(type)) {
+                if (!StringUtil.isEmptyOrNull(type)) {
                     preStat.setString(i++, type);
                 }
 
@@ -725,11 +725,11 @@ public class TestDataLibDAO implements ITestDataLibDAO {
         StringBuilder query = new StringBuilder();
         TestDataLib createdTestDataLib;
         query.append("INSERT INTO testdatalib (`name`, `system`, `environment`, `country`, `privateData`, `group`, `type`, `database`, `script`, `databaseUrl`, ");
-        query.append("`service`, `servicePath`, `method`, `envelope`, `databaseCsv`, `csvUrl`,`separator`, `description`, `creator`) ");
+        query.append("`service`, `servicePath`, `method`, `envelope`, `databaseCsv`, `csvUrl`,`separator`,`ignoreFirstLine`, `description`, `creator`) ");
         if ((testDataLib.getService() != null) && (!testDataLib.getService().isEmpty())) {
-            query.append("VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
+            query.append("VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
         } else {
-            query.append("VALUES (?,?,?,?,?,?,?,?,?,?,null,?,?,?,?,?,?,?,?)");
+            query.append("VALUES (?,?,?,?,?,?,?,?,?,?,null,?,?,?,?,?,?,?,?,?)");
 
         }
 
@@ -763,6 +763,7 @@ public class TestDataLibDAO implements ITestDataLibDAO {
                 preStat.setString(i++, ParameterParserUtil.returnEmptyStringIfNull(testDataLib.getDatabaseCsv()));
                 preStat.setString(i++, ParameterParserUtil.returnEmptyStringIfNull(testDataLib.getCsvUrl()));
                 preStat.setString(i++, ParameterParserUtil.returnEmptyStringIfNull(testDataLib.getSeparator()));
+                preStat.setBoolean(i++, testDataLib.isIgnoreFirstLine());
                 preStat.setString(i++, ParameterParserUtil.returnEmptyStringIfNull(testDataLib.getDescription()));
                 preStat.setString(i++, ParameterParserUtil.returnEmptyStringIfNull(testDataLib.getCreator()));
 
@@ -881,7 +882,7 @@ public class TestDataLibDAO implements ITestDataLibDAO {
         Answer answer = new Answer();
         MessageEvent msg;
         String query = "UPDATE testdatalib SET `name`=?, `type`=?, `privateData`=?, `group`= ?, `system`=?, `environment`=?, `country`=?, `database`= ? , `script`= ? , "
-                + "`databaseUrl`= ? , `servicepath`= ? , `method`= ? , `envelope`= ? , `DatabaseCsv` = ? , `csvUrl` = ? ,`separator`= ?,  `description`= ? , `LastModifier`= ?, `LastModified` = NOW() ";
+                + "`databaseUrl`= ? , `servicepath`= ? , `method`= ? , `envelope`= ? , `DatabaseCsv` = ? , `csvUrl` = ? , `separator`= ?, `ignoreFirstLine`= ?,  `description`= ? , `LastModifier`= ?, `LastModified` = NOW() ";
         if ((testDataLib.getService() != null) && (!testDataLib.getService().isEmpty())) {
             query += " ,`service` = ? ";
         } else {
@@ -917,6 +918,7 @@ public class TestDataLibDAO implements ITestDataLibDAO {
                 preStat.setString(i++, testDataLib.getDatabaseCsv());
                 preStat.setString(i++, testDataLib.getCsvUrl());
                 preStat.setString(i++, testDataLib.getSeparator());
+                preStat.setBoolean(i++, testDataLib.isIgnoreFirstLine());
                 preStat.setString(i++, testDataLib.getDescription());
                 preStat.setString(i++, testDataLib.getLastModifier());
                 if ((testDataLib.getService() != null) && (!testDataLib.getService().isEmpty())) {
@@ -1029,6 +1031,7 @@ public class TestDataLibDAO implements ITestDataLibDAO {
         String databaseCsv = ParameterParserUtil.returnEmptyStringIfNull(resultSet.getString("tdl.databaseCsv"));
         String csvUrl = ParameterParserUtil.returnEmptyStringIfNull(resultSet.getString("tdl.csvUrl"));
         String separator = ParameterParserUtil.returnEmptyStringIfNull(resultSet.getString("tdl.separator"));
+        boolean ignoreFirstLine = resultSet.getBoolean("tdl.ignoreFirstLine");
         String description = ParameterParserUtil.returnEmptyStringIfNull(resultSet.getString("tdl.description"));
         String creator = ParameterParserUtil.returnEmptyStringIfNull(resultSet.getString("tdl.Creator"));
         Timestamp created = resultSet.getTimestamp("tdl.Created");
@@ -1044,11 +1047,11 @@ public class TestDataLibDAO implements ITestDataLibDAO {
             subDataParsingAnswer = ParameterParserUtil.returnEmptyStringIfNull(resultSet.getString("tdd.parsingAnswer"));
             subDataColumnPosition = ParameterParserUtil.returnEmptyStringIfNull(resultSet.getString("tdd.columnPosition"));
         } catch (Exception ex) {
-            LOG.warn(ex.toString());
+            LOG.debug(ex.toString());
         }
 
         return factoryTestDataLib.create(testDataLibID, name, system, environment, country, privateData, group, type, database, script, databaseUrl, service, servicePath,
-                method, envelope, databaseCsv, csvUrl, separator, description, creator, created, lastModifier, lastModified, subDataValue, subDataColumn, subDataParsingAnswer, subDataColumnPosition);
+                method, envelope, databaseCsv, csvUrl, separator, ignoreFirstLine, description, creator, created, lastModifier, lastModified, subDataValue, subDataColumn, subDataParsingAnswer, subDataColumnPosition);
     }
 
     @Override
@@ -1069,7 +1072,7 @@ public class TestDataLibDAO implements ITestDataLibDAO {
 
         searchSQL.append("WHERE 1=1");
 
-        if (!StringUtil.isEmpty(searchTerm)) {
+        if (!StringUtil.isEmptyOrNull(searchTerm)) {
             searchSQL.append(" and (tdl.`name` like ?");
             searchSQL.append(" or tdl.`privateData` like ?");
             searchSQL.append(" or tdl.`group` like ?");
@@ -1103,12 +1106,10 @@ public class TestDataLibDAO implements ITestDataLibDAO {
         if (LOG.isDebugEnabled()) {
             LOG.debug("SQL : " + query.toString());
         }
-        try (Connection connection = databaseSpring.connect();
-             PreparedStatement preStat = connection.prepareStatement(query.toString());
-             Statement stm = connection.createStatement();) {
+        try (Connection connection = databaseSpring.connect(); PreparedStatement preStat = connection.prepareStatement(query.toString()); Statement stm = connection.createStatement();) {
 
             int i = 1;
-            if (!Strings.isNullOrEmpty(searchTerm)) {
+            if (!StringUtil.isEmptyOrNull(searchTerm)) {
                 preStat.setString(i++, "%" + searchTerm + "%");
                 preStat.setString(i++, "%" + searchTerm + "%");
                 preStat.setString(i++, "%" + searchTerm + "%");
@@ -1130,8 +1131,7 @@ public class TestDataLibDAO implements ITestDataLibDAO {
                 preStat.setString(i++, individualColumnSearchValue);
             }
 
-            try (ResultSet resultSet = preStat.executeQuery();
-                 ResultSet rowSet = stm.executeQuery("SELECT FOUND_ROWS()");) {
+            try (ResultSet resultSet = preStat.executeQuery(); ResultSet rowSet = stm.executeQuery("SELECT FOUND_ROWS()");) {
                 //gets the data
                 while (resultSet.next()) {
                     distinctValues.add(resultSet.getString("distinctValues") == null ? "" : resultSet.getString("distinctValues"));

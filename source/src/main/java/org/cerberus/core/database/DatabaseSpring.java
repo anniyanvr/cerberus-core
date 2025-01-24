@@ -1,5 +1,5 @@
 /**
- * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * Cerberus Copyright (C) 2013 - 2025 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -30,6 +30,9 @@ import javax.naming.NamingException;
 import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.SQLException;
+import org.cerberus.core.engine.entity.MessageEvent;
+import org.cerberus.core.enums.MessageEventEnum;
+import org.cerberus.core.exception.CerberusEventException;
 
 /**
  * Database class, allow to get Connections defined on glassfish.
@@ -127,29 +130,43 @@ public class DatabaseSpring {
         endTransaction(false);
     }
 
-    public Connection connect(final String connection) {
+    public Connection connect(final String connection) throws CerberusEventException {
+        MessageEvent msg = new MessageEvent(MessageEventEnum.PROPERTY_FAILED_SQL_GENERIC);
+
         try {
             InitialContext ic = new InitialContext();
             String conName = "jdbc/" + connection;
             LOG.info("connecting to '{}'", conName);
             DataSource ds = (DataSource) ic.lookup(conName);
             return ds.getConnection();
+
         } catch (SQLException ex) {
-            LOG.warn(ex.toString());
+            LOG.warn(ex.toString(), ex);
+            msg = new MessageEvent(MessageEventEnum.PROPERTY_FAILED_SQL);
+            msg
+                    .resolveDescription("JDBC", "jdbc/" + connection)
+                    .resolveDescription("ERROR", ex.toString());
+            throw new CerberusEventException(msg);
+
         } catch (NamingException ex) {
-            LOG.warn(ex.toString());
             InitialContext ic;
             try {
                 ic = new InitialContext();
                 String conName = "java:/comp/env/jdbc/" + connection;
-                LOG.info("connecting to '{}'", conName);
+                LOG.info("failed with '" + "jdbc/" + connection + "' --> connecting to '{}'", conName);
                 DataSource ds = (DataSource) ic.lookup(conName);
                 return ds.getConnection();
+
             } catch (NamingException | SQLException ex1) {
-                LOG.warn(ex.toString());
+
+                LOG.warn("failed connection with 'java:/comp/env/jdbc/" + connection + "'", ex1.toString());
+                msg = new MessageEvent(MessageEventEnum.PROPERTY_FAILED_SQL);
+                msg
+                        .resolveDescription("JDBC", "java:/comp/env/jdbc/" + connection)
+                        .resolveDescription("ERROR", ex1.toString());
+                throw new CerberusEventException(msg);
             }
         }
-        return null;
     }
 
     public boolean isOnTransaction() {

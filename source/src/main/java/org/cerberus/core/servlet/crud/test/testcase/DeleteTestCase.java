@@ -1,5 +1,5 @@
 /**
- * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * Cerberus Copyright (C) 2013 - 2025 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -27,6 +27,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.cerberus.core.crud.entity.LogEvent;
 import org.cerberus.core.engine.entity.MessageEvent;
 import org.cerberus.core.crud.entity.TestCase;
 import org.cerberus.core.crud.entity.TestCaseStep;
@@ -90,7 +91,7 @@ public class DeleteTestCase extends AbstractCrudTestCase {
         /**
          * Checking all constrains before calling the services.
          */
-        if (StringUtil.isEmpty(test) || testCase == null) {
+        if (StringUtil.isEmptyOrNull(test) || testCase == null) {
             msg = new MessageEvent(MessageEventEnum.DATA_OPERATION_ERROR_EXPECTED);
             msg.setDescription(msg.getDescription().replace("%ITEM%", "TestCase")
                     .replace("%OPERATION%", "Delete")
@@ -137,7 +138,7 @@ public class DeleteTestCase extends AbstractCrudTestCase {
                      * Delete was successful. Adding Log entry.
                      */
                     ILogEventService logEventService = appContext.getBean(LogEventService.class);
-                    logEventService.createForPrivateCalls("/DeleteTestCase", "DELETE", "Delete TestCase : ['" + test + "'|'" + testCase + "']", request);
+                    logEventService.createForPrivateCalls("/DeleteTestCase", "DELETE", LogEvent.STATUS_INFO, "Delete TestCase : ['" + test + "'|'" + testCase + "']", request);
                 }
             }
         }

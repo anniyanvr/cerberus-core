@@ -1,5 +1,5 @@
 /**
- * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * Cerberus Copyright (C) 2013 - 2025 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -68,36 +68,35 @@ public class CIService implements ICIService {
     private ITagService tagService;
 
     @Override
-    public JSONObject getCIResult(String tag, String campaign) {
+    public JSONObject getCIResult(String tag, String campaign, List<TestCaseExecution> executions) {
         try {
 
             // If campaign is not defined here, we try to get it from tag. At the same time, we check that tag exist.
-            if (StringUtil.isEmpty(campaign)) {
+            if (StringUtil.isEmptyOrNull(campaign)) {
                 Tag myTag = tagService.convert(tagService.readByKey(tag));
                 campaign = myTag.getCampaign();
             }
 
-            List<TestCaseExecution> myList = testExecutionService.readLastExecutionAndExecutionInQueueByTag(tag);
-            JSONObject jsonResponse = CIService.this.getCIResult(tag, campaign, myList);
+            JSONObject jsonResponse = CIService.this.calculateCIResult(tag, campaign, executions);
 
-            jsonResponse.put("detail_by_declinaison", generateStats(myList));
+            jsonResponse.put("detail_by_declinaison", generateStats(executions));
 
-            jsonResponse.put("environment_List", generateEnvList(myList));
-            jsonResponse.put("country_list", generateCountryList(myList));
-            jsonResponse.put("robotdecli_list", generateRobotDecliList(myList));
-            jsonResponse.put("system_list", generateSystemList(myList));
-            jsonResponse.put("application_list", generateApplicationList(myList));
+            jsonResponse.put("environment_List", generateEnvList(executions));
+            jsonResponse.put("country_list", generateCountryList(executions));
+            jsonResponse.put("robotdecli_list", generateRobotDecliList(executions));
+            jsonResponse.put("system_list", generateSystemList(executions));
+            jsonResponse.put("application_list", generateApplicationList(executions));
 
-            jsonResponse.put("nb_of_retry", myList.stream().mapToInt(it -> it.getNbExecutions() - 1).sum());
+            jsonResponse.put("nb_of_retry", executions.stream().mapToInt(it -> it.getNbExecutions() - 1).sum());
 
             return jsonResponse;
-        } catch (CerberusException | ParseException | JSONException ex) {
+        } catch (CerberusException | JSONException ex) {
             LOG.error(ex, ex);
         }
         return null;
     }
 
-    private JSONObject getCIResult(String tag, String campaign, List<TestCaseExecution> myList) {
+    private JSONObject calculateCIResult(String tag, String campaign, List<TestCaseExecution> myList) {
         try {
             JSONObject jsonResponse = new JSONObject();
 
@@ -206,12 +205,12 @@ public class CIService implements ICIService {
             int resultCalThreshold = parameterService.getParameterIntegerByKey("cerberus_ci_threshold", "", 100);
 
             // If tag is linked to campaign, we get the threshold from the campaign definition (if exist and can be converted to integer).
-            if (!StringUtil.isEmpty(campaign)) {
+            if (!StringUtil.isEmptyOrNull(campaign)) {
                 try {
                     LOG.debug("Trying to get CIScoreThreshold from campaign : '" + campaign + "'");
                     // Check campaign score here.
                     Campaign mycampaign = campaignService.convert(campaignService.readByKey(campaign));
-                    if (!StringUtil.isEmpty(mycampaign.getCIScoreThreshold())) {
+                    if (!StringUtil.isEmptyOrNull(mycampaign.getCIScoreThreshold())) {
                         try {
                             resultCalThreshold = Integer.valueOf(mycampaign.getCIScoreThreshold());
                         } catch (NumberFormatException ex) {
@@ -273,7 +272,7 @@ public class CIService implements ICIService {
         List<TestCaseExecution> executions;
         try {
             //Get the last campaign execution when campaign id is specified
-            if (StringUtil.isNotEmpty(campaign)) {
+            if (StringUtil.isNotEmptyOrNull(campaign)) {
                 AnswerList<Tag> tags = tagService.readByVariousByCriteria(campaign, 0, 1, "id", "desc", null, null);
                 if (CollectionUtils.isNotEmpty(tags.getDataList()) && tags.isCodeEquals(MessageEventEnum.DATA_OPERATION_OK.getCode())) {//the service was able to perform the query, then we should get all values
                     tag = tags.getDataList().get(0).getTag();
@@ -397,7 +396,7 @@ public class CIService implements ICIService {
 
         HashMap<String, String> statMap = new HashMap<>();
         for (TestCaseExecution testCaseExecution : testCaseExecutions) {
-            if (!StringUtil.isEmpty(testCaseExecution.getEnvironment())) {
+            if (!StringUtil.isEmptyOrNull(testCaseExecution.getEnvironment())) {
                 statMap.put(testCaseExecution.getEnvironment(), null);
             }
         }
@@ -415,7 +414,7 @@ public class CIService implements ICIService {
 
         HashMap<String, String> statMap = new HashMap<>();
         for (TestCaseExecution testCaseExecution : testCaseExecutions) {
-            if (!StringUtil.isEmpty(testCaseExecution.getCountry())) {
+            if (!StringUtil.isEmptyOrNull(testCaseExecution.getCountry())) {
                 statMap.put(testCaseExecution.getCountry(), null);
             }
         }
@@ -433,7 +432,7 @@ public class CIService implements ICIService {
 
         HashMap<String, String> statMap = new HashMap<>();
         for (TestCaseExecution testCaseExecution : testCaseExecutions) {
-            if (!StringUtil.isEmpty(testCaseExecution.getRobotDecli())) {
+            if (!StringUtil.isEmptyOrNull(testCaseExecution.getRobotDecli())) {
                 statMap.put(testCaseExecution.getRobotDecli(), null);
             }
         }
@@ -451,7 +450,7 @@ public class CIService implements ICIService {
 
         HashMap<String, String> statMap = new HashMap<>();
         for (TestCaseExecution testCaseExecution : testCaseExecutions) {
-            if (!StringUtil.isEmpty(testCaseExecution.getSystem())) {
+            if (!StringUtil.isEmptyOrNull(testCaseExecution.getSystem())) {
                 statMap.put(testCaseExecution.getSystem(), null);
             }
         }
@@ -469,7 +468,7 @@ public class CIService implements ICIService {
 
         HashMap<String, String> statMap = new HashMap<>();
         for (TestCaseExecution testCaseExecution : testCaseExecutions) {
-            if (!StringUtil.isEmpty(testCaseExecution.getApplication())) {
+            if (!StringUtil.isEmptyOrNull(testCaseExecution.getApplication())) {
                 statMap.put(testCaseExecution.getApplication(), null);
             }
         }
@@ -545,11 +544,11 @@ public class CIService implements ICIService {
 
     private int convertCIScoreThreshold(String campaign) throws CerberusException {
         int ciScoreThreshold = parameterService.getParameterIntegerByKey("cerberus_ci_threshold", "", 100);
-        if (StringUtil.isNotEmpty(campaign)) {
+        if (StringUtil.isNotEmptyOrNull(campaign)) {
             LOG.debug("Trying to get CIScoreThreshold from campaign : {}", campaign);
             // Check campaign score here.
             Campaign campaignRetrieved = campaignService.convert(campaignService.readByKey(campaign));
-            if (StringUtil.isNotEmpty(campaignRetrieved.getCIScoreThreshold())) {
+            if (StringUtil.isNotEmptyOrNull(campaignRetrieved.getCIScoreThreshold())) {
                 try {
                     ciScoreThreshold = Integer.parseInt(campaignRetrieved.getCIScoreThreshold());
                 } catch (NumberFormatException ex) {

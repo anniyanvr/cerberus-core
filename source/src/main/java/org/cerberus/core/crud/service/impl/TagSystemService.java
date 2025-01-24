@@ -1,5 +1,5 @@
 /**
- * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * Cerberus Copyright (C) 2013 - 2025 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -100,7 +100,7 @@ public class TagSystemService implements ITagSystemService {
 
     @Override
     public Answer createIfNotExist(String tag, String system, String user) {
-        if (!StringUtil.isEmpty(tag) && !StringUtil.isEmpty(system)) {
+        if (!StringUtil.isEmptyOrNull(tag) && !StringUtil.isEmptyOrNull(system)) {
             String keyCacheEntry = tag + "//!//" + system;
             if (!tagSystemCache.contains(keyCacheEntry) && !exist(tag, system)) {
                 tagSystemCache.add(keyCacheEntry);

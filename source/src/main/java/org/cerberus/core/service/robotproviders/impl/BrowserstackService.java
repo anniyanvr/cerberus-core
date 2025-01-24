@@ -1,5 +1,5 @@
 /**
- * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * Cerberus Copyright (C) 2013 - 2025 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -106,12 +106,12 @@ public class BrowserstackService implements IBrowserstackService {
     }
 
     @Override
-    public String getBrowserStackBuildHash(String system, String tag, String user, String pass) {
+    public String getBrowserStackBuildHashFromEndpoint(String system, String tag, String user, String pass, String endPoint) {
         LOG.debug("Calling Browserstack to get build referential and find the tag.");
 
         try {
 
-            String url = "https://" + user + ":" + pass + "@api.browserstack.com/automate/builds.json";
+            String url = "https://" + user + ":" + pass + "@" + endPoint;
 
             HttpClient httpclient = null;
             HttpClientBuilder httpclientBuilder;

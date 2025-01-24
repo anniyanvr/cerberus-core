@@ -1,5 +1,5 @@
 /**
- * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * Cerberus Copyright (C) 2013 - 2025 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -27,6 +27,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.cerberus.core.crud.entity.LogEvent;
 import org.cerberus.core.engine.entity.MessageEvent;
 import org.cerberus.core.crud.entity.Test;
 import org.cerberus.core.crud.factory.IFactoryLogEvent;
@@ -114,7 +115,7 @@ public class CreateTest extends HttpServlet {
                 ILogEventService logEventService = appContext.getBean(LogEventService.class);
                 IFactoryLogEvent factoryLogEvent = appContext.getBean(FactoryLogEvent.class);
 
-                logEventService.createForPrivateCalls("/CreateTest", "CREATE", "Create Test : ['" + test + "']", request);
+                logEventService.createForPrivateCalls("/CreateTest", "CREATE", LogEvent.STATUS_INFO, "Create Test : ['" + test + "']", request);
             }
         }
 

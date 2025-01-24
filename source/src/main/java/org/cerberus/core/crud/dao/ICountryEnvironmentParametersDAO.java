@@ -1,5 +1,5 @@
 /**
- * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * Cerberus Copyright (C) 2013 - 2025 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -20,7 +20,6 @@
 package org.cerberus.core.crud.dao;
 
 import java.util.List;
-
 import org.cerberus.core.crud.entity.CountryEnvironmentParameters;
 import org.cerberus.core.exception.CerberusException;
 import org.cerberus.core.util.answer.Answer;
@@ -46,8 +45,28 @@ public interface ICountryEnvironmentParametersDAO {
      */
     AnswerItem<CountryEnvironmentParameters> readByKey(String system, String country, String environment, String application);
 
+    /**
+     *
+     * @param application
+     * @return
+     * @throws org.cerberus.core.exception.CerberusException
+     */
+    List<CountryEnvironmentParameters> readByKeyByApplication(String application) throws CerberusException;
+
+    /**
+     *
+     * @param country
+     * @param application
+     * @return
+     */
     List<String[]> getEnvironmentAvailable(String country, String application);
 
+    /**
+     *
+     * @param countryEnvironmentParameter
+     * @return
+     * @throws CerberusException
+     */
     List<CountryEnvironmentParameters> findCountryEnvironmentParametersByCriteria(CountryEnvironmentParameters countryEnvironmentParameter) throws CerberusException;
 
     /**
@@ -65,6 +84,15 @@ public interface ICountryEnvironmentParametersDAO {
      * @return
      */
     AnswerList<CountryEnvironmentParameters> readByVariousByCriteria(String system, String country, String environment, String application, int start, int amount, String column, String dir, String searchTerm, String individualSearch);
+
+    /**
+     *
+     * @param system
+     * @param country
+     * @param environment
+     * @return
+     */
+    AnswerList<CountryEnvironmentParameters> readDependenciesByVarious(String system, String country, String environment);
 
     /**
      *
@@ -86,6 +114,5 @@ public interface ICountryEnvironmentParametersDAO {
      * @return
      */
     Answer update(CountryEnvironmentParameters object);
-
 
 }

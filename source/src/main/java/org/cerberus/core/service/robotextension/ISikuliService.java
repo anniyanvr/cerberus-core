@@ -1,5 +1,5 @@
 /**
- * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * Cerberus Copyright (C) 2013 - 2025 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -162,7 +162,7 @@ public interface ISikuliService {
      * @param text
      * @return
      */
-    public MessageEvent doSikuliActionMouseOver(Session session, String locator, String text);
+    public MessageEvent doSikuliActionMouseOver(Session session, String locator, String text, String offset);
 
     /**
      *

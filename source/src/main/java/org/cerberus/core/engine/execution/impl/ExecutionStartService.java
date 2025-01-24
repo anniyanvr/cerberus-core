@@ -1,5 +1,5 @@
 /**
- * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * Cerberus Copyright (C) 2013 - 2025 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -19,24 +19,12 @@
  */
 package org.cerberus.core.engine.execution.impl;
 
+import java.sql.Timestamp;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.cerberus.core.crud.factory.IFactoryCountryEnvironmentParameters;
-import org.cerberus.core.engine.entity.ExecutionUUID;
-import org.cerberus.core.engine.entity.MessageGeneral;
-import org.cerberus.core.engine.execution.IExecutionCheckService;
-import org.cerberus.core.engine.execution.IExecutionStartService;
-import org.cerberus.core.engine.execution.IRobotServerService;
-import org.cerberus.core.engine.queuemanagement.IExecutionThreadPoolService;
-import org.cerberus.core.enums.MessageGeneralEnum;
-import org.cerberus.core.event.IEventService;
-import org.cerberus.core.exception.CerberusException;
-import org.cerberus.core.util.ParameterParserUtil;
-import org.cerberus.core.util.StringUtil;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
-
-import java.util.Date;
 import org.cerberus.core.crud.entity.Application;
 import org.cerberus.core.crud.entity.CountryEnvParam;
 import org.cerberus.core.crud.entity.CountryEnvironmentParameters;
@@ -46,6 +34,7 @@ import org.cerberus.core.crud.entity.Robot;
 import org.cerberus.core.crud.entity.RobotExecutor;
 import org.cerberus.core.crud.entity.TestCase;
 import org.cerberus.core.crud.entity.TestCaseExecution;
+import org.cerberus.core.crud.factory.IFactoryCountryEnvironmentParameters;
 import org.cerberus.core.crud.service.IApplicationService;
 import org.cerberus.core.crud.service.ICountryEnvParamService;
 import org.cerberus.core.crud.service.ICountryEnvironmentParametersService;
@@ -53,10 +42,29 @@ import org.cerberus.core.crud.service.IInvariantService;
 import org.cerberus.core.crud.service.IParameterService;
 import org.cerberus.core.crud.service.IRobotExecutorService;
 import org.cerberus.core.crud.service.IRobotService;
+import org.cerberus.core.crud.service.ITagService;
 import org.cerberus.core.crud.service.ITestCaseExecutionQueueService;
 import org.cerberus.core.crud.service.ITestCaseExecutionService;
 import org.cerberus.core.crud.service.ITestCaseService;
 import org.cerberus.core.crud.service.ITestService;
+import org.cerberus.core.crud.service.impl.TagService;
+import org.cerberus.core.engine.entity.ExecutionUUID;
+import org.cerberus.core.engine.entity.MessageGeneral;
+import org.cerberus.core.engine.execution.IConditionService;
+import org.cerberus.core.engine.execution.IExecutionCheckService;
+import org.cerberus.core.engine.execution.IExecutionStartService;
+import org.cerberus.core.engine.queuemanagement.IExecutionThreadPoolService;
+import org.cerberus.core.enums.MessageGeneralEnum;
+import org.cerberus.core.event.IEventService;
+import org.cerberus.core.exception.CerberusException;
+import org.cerberus.core.util.ParameterParserUtil;
+import org.cerberus.core.util.StringUtil;
+import org.cerberus.core.websocket.QueueStatus;
+import org.cerberus.core.websocket.QueueStatusEndPoint;
+import org.json.JSONArray;
+import org.json.JSONObject;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
 
 /**
  * @author bcivel
@@ -68,6 +76,8 @@ public class ExecutionStartService implements IExecutionStartService {
     private IExecutionCheckService executionCheckService;
     @Autowired
     private ITestCaseService testCaseService;
+    @Autowired
+    private IConditionService conditionService;
     @Autowired
     private ITestService testService;
     @Autowired
@@ -83,9 +93,9 @@ public class ExecutionStartService implements IExecutionStartService {
     @Autowired
     private IInvariantService invariantService;
     @Autowired
-    ExecutionUUID executionUUIDObject;
+    private ExecutionUUID executionUUIDObject;
     @Autowired
-    private IRobotServerService serverService;
+    private ITagService tagService;
     @Autowired
     private IParameterService parameterService;
     @Autowired
@@ -155,12 +165,19 @@ public class ExecutionStartService implements IExecutionStartService {
                 execution.setTestCaseObj(tCase);
                 execution.setDescription(tCase.getDescription());
                 execution.setConditionOperator(tCase.getConditionOperator());
-                execution.setConditionVal1(tCase.getConditionValue1());
-                execution.setConditionVal1Init(tCase.getConditionValue1());
-                execution.setConditionVal2(tCase.getConditionValue2());
-                execution.setConditionVal2Init(tCase.getConditionValue2());
-                execution.setConditionVal3(tCase.getConditionValue3());
-                execution.setConditionVal3Init(tCase.getConditionValue3());
+
+                // Clean condition depending on the operatot.
+                String condval1 = conditionService.cleanValue1(tCase.getConditionOperator(), tCase.getConditionValue1());
+                String condval2 = conditionService.cleanValue2(tCase.getConditionOperator(), tCase.getConditionValue2());
+                String condval3 = conditionService.cleanValue3(tCase.getConditionOperator(), tCase.getConditionValue3());
+
+                execution.setConditionVal1(condval1);
+                execution.setConditionVal1Init(condval1);
+                execution.setConditionVal2(condval2);
+                execution.setConditionVal2Init(condval2);
+                execution.setConditionVal3(condval3);
+                execution.setConditionVal3Init(condval3);
+
                 execution.setTestCaseVersion(tCase.getVersion());
                 execution.setTestCasePriority(tCase.getPriority());
                 execution.setConditionOptions(tCase.getConditionOptionsActive());
@@ -246,24 +263,25 @@ public class ExecutionStartService implements IExecutionStartService {
         String appURL = "";
         if (execution.getManualURL() == 1) {
             LOG.debug("Execution will be done with manual application connectivity setting.");
-            if (StringUtil.isEmpty(execution.getMyHost())) {
+            if (StringUtil.isEmptyOrNull(execution.getMyHost())) {
                 MessageGeneral mes = new MessageGeneral(MessageGeneralEnum.VALIDATION_FAILED_MANUALURL_INVALID);
                 LOG.debug(mes.getDescription());
                 throw new CerberusException(mes);
             } else {
                 CountryEnvironmentParameters cea;
-                cea = this.factorycountryEnvironmentParameters.create(execution.getApplicationObj().getSystem(), execution.getCountry(), execution.getEnvironment(), execution.getApplicationObj().getApplication(), execution.getMyHost(), "", execution.getMyContextRoot(), execution.getMyLoginRelativeURL(), "", "", "", "", CountryEnvironmentParameters.DEFAULT_POOLSIZE, "", "");
+                cea = this.factorycountryEnvironmentParameters.create(execution.getApplicationObj().getSystem(), execution.getCountry(), execution.getEnvironment(), execution.getApplicationObj().getApplication(),
+                        true, execution.getMyHost(), "", execution.getMyContextRoot(), execution.getMyLoginRelativeURL(), "", "", "", "", "", "", CountryEnvironmentParameters.DEFAULT_POOLSIZE, "", "", null, null, null, null);
                 cea.setIp(execution.getMyHost());
                 cea.setUrl(execution.getMyContextRoot());
                 appURL = StringUtil.getURLFromString(cea.getIp(), cea.getUrl(), "", "");
-                execution.appendSecret(StringUtil.getPasswordFromUrl(appURL));
+                execution.addSecret(StringUtil.getPasswordFromUrl(appURL));
                 execution.setUrl(appURL);
                 // If domain is empty we guess it from URL.
-                if (StringUtil.isEmpty(cea.getDomain())) {
+                if (StringUtil.isEmptyOrNull(cea.getDomain())) {
                     cea.setDomain(StringUtil.getDomainFromUrl(appURL));
                 }
                 cea.setUrlLogin(execution.getMyLoginRelativeURL());
-                execution.setCountryEnvironmentParameters(cea);
+                execution.setCountryEnvApplicationParam(cea);
                 LOG.debug(" -> Execution will be done with manual application connectivity setting. IP/URL/LOGIN : {}-{}-{}", cea.getIp(), cea.getUrl(), cea.getUrlLogin());
                 LOG.debug(" Domain : {}", cea.getDomain());
             }
@@ -282,28 +300,43 @@ public class ExecutionStartService implements IExecutionStartService {
             try {
                 cea = this.countryEnvironmentParametersService.convert(this.countryEnvironmentParametersService.readByKey(
                         execution.getApplicationObj().getSystem(), execution.getCountry(), execution.getEnvironment(), execution.getApplicationObj().getApplication()));
-                if (cea != null) {
+                if (cea != null && (cea.isActive())) {
                     if (execution.getManualURL() == 2) {
                         // add possibility to override URL with MyHost if MyHost is available
-                        if (!StringUtil.isEmpty(execution.getMyHost())) {
+                        if (!StringUtil.isEmptyOrNull(execution.getMyHost())) {
                             cea.setIp(execution.getMyHost());
                         }
-                        if (!StringUtil.isEmpty(execution.getMyContextRoot())) {
+                        if (!StringUtil.isEmptyOrNull(execution.getMyContextRoot())) {
                             cea.setUrl(execution.getMyContextRoot());
                         }
-                        if (!StringUtil.isEmpty(execution.getMyLoginRelativeURL())) {
+                        if (!StringUtil.isEmptyOrNull(execution.getMyLoginRelativeURL())) {
                             cea.setUrlLogin(execution.getMyLoginRelativeURL());
                         }
                     }
                     appURL = StringUtil.getURLFromString(cea.getIp(), cea.getUrl(), "", "");
-                    execution.appendSecret(StringUtil.getPasswordFromUrl(appURL));
+                    execution.addSecret(StringUtil.getPasswordFromUrl(appURL));
                     execution.setUrl(appURL);
-                    if ("GUI".equals(execution.getApplicationObj().getType()) && StringUtil.isEmpty(cea.getDomain())) {
+                    if ("GUI".equals(execution.getApplicationObj().getType()) && StringUtil.isEmptyOrNull(cea.getDomain())) {
                         // Domain calculation only make sense for Web applications.
                         // If domain is empty we guess it from URL.
                         cea.setDomain(StringUtil.getDomainFromUrl(execution.getUrl()));
                     }
-                    execution.setCountryEnvironmentParameters(cea);
+                    // Protect Secret data coming from application-environment.
+                    execution.addSecret(cea.getSecret1());
+                    execution.addSecret(cea.getSecret2());
+                    execution.setCountryEnvApplicationParam(cea);
+
+                    // Load all associated application informations (same system, country and env as the execution).
+                    HashMap<String, CountryEnvironmentParameters> countryEnvApplicationParamHash;
+                    List<CountryEnvironmentParameters> ceaList;
+                    ceaList = this.countryEnvironmentParametersService.convert(this.countryEnvironmentParametersService.readByVarious(
+                            execution.getApplicationObj().getSystem(), execution.getCountry(), execution.getEnvironment(), null));
+                    execution.addcountryEnvApplicationParams(ceaList);
+                    // Load all linked application informations of the application testcase.
+                    ceaList = this.countryEnvironmentParametersService.convert(this.countryEnvironmentParametersService.readDependenciesByVarious(
+                            execution.getApplicationObj().getSystem(), execution.getCountry(), execution.getEnvironment()));
+                    execution.addcountryEnvApplicationParams(ceaList);
+
                 } else {
                     MessageGeneral mes = new MessageGeneral(MessageGeneralEnum.VALIDATION_FAILED_COUNTRYENVAPP_NOT_FOUND);
                     mes.setDescription(mes.getDescription().replace("%COUNTRY%", execution.getCountry()));
@@ -413,7 +446,7 @@ public class ExecutionStartService implements IExecutionStartService {
         String robotDecli = "";
         String version = "";
         String platform = "";
-        if (!StringUtil.isEmpty(execution.getRobot())) {
+        if (!StringUtil.isEmptyOrNull(execution.getRobot())) {
             robObj = robotService.readByKey(execution.getRobot());
 
             if (robObj == null) {
@@ -424,7 +457,7 @@ public class ExecutionStartService implements IExecutionStartService {
             // If Robot parameter is defined and we can find the robot, we overwrite the corresponding parameters.
             browser = ParameterParserUtil.parseStringParam(robObj.getBrowser(), browser);
             robotDecli = ParameterParserUtil.parseStringParam(robObj.getRobotDecli(), "");
-            if (StringUtil.isEmpty(robotDecli)) {
+            if (StringUtil.isEmptyOrNull(robotDecli)) {
                 robotDecli = robObj.getRobot();
             }
             version = ParameterParserUtil.parseStringParam(robObj.getVersion(), version);
@@ -438,14 +471,14 @@ public class ExecutionStartService implements IExecutionStartService {
             execution.setRobotObj(robObj);
 
             // We cannot execute a testcase on a desactivated Robot.
-            if ("N".equalsIgnoreCase(robObj.getActive())) {
+            if (!robObj.isActive()) {
                 LOG.debug("Robot " + execution.getRobot() + " is not active.");
                 throw new CerberusException(new MessageGeneral(MessageGeneralEnum.EXECUTION_FA_ROBOTNOTACTIVE)
                         .resolveDescription("ROBOT", execution.getRobot()));
             }
 
             // If executor is not set, we get the best one from the list.
-            if (StringUtil.isEmpty(execution.getRobotExecutor())) {
+            if (StringUtil.isEmptyOrNull(execution.getRobotExecutor())) {
                 LOG.debug("Getting the best Executor on Robot : {}", execution.getRobot());
                 robExeObj = robotExecutorService.readBestByKey(execution.getRobot());
                 if (robExeObj != null) {
@@ -468,7 +501,7 @@ public class ExecutionStartService implements IExecutionStartService {
                             .resolveDescription("EXECUTOR", execution.getRobotExecutor()));
                 } else {
                     // We cannot execute a testcase on a desactivated Robot.
-                    if ("N".equalsIgnoreCase(robExeObj.getActive())) {
+                    if (!robExeObj.isActive()) {
                         LOG.debug("Robot Executor {} / {} is not active", execution.getRobot(), execution.getRobotExecutor());
                         throw new CerberusException(new MessageGeneral(MessageGeneralEnum.EXECUTION_FA_ROBOTEXECUTORNOTACTIVE)
                                 .resolveDescription("ROBOT", execution.getRobot())
@@ -552,10 +585,18 @@ public class ExecutionStartService implements IExecutionStartService {
             if (runID != 0) {
                 execution.setId(runID);
                 executionUUIDObject.setExecutionUUID(execution.getExecutionUUID(), execution);
+                QueueStatus queueS = QueueStatus.builder()
+                        .executionHashMap(executionUUIDObject.getExecutionUUIDList())
+                        .globalLimit(executionUUIDObject.getGlobalLimit())
+                        .running(executionUUIDObject.getRunning())
+                        .queueSize(executionUUIDObject.getQueueSize()).build();
+                QueueStatusEndPoint.getInstance().send(queueS, true);
                 // Update Queue Execution here if QueueID =! 0.
                 if (execution.getQueueID() != 0) {
                     inQueueService.updateToExecuting(execution.getQueueID(), "", runID);
                 }
+
+                tagService.manageCampaignStartOfExecution(execution.getTag(), new Timestamp(executionStart));
 
                 eventService.triggerEvent(EventHook.EVENTREFERENCE_EXECUTION_START, execution, null, null, null);
 

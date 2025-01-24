@@ -1,5 +1,5 @@
 /**
- * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * Cerberus Copyright (C) 2013 - 2025 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -81,7 +81,7 @@ public class DocumentationService implements IDocumentationService {
         } else {
             labelFromDB = myDoc.getDocLabel();
             label.append(labelFromDB);
-            if (!(StringUtil.isEmpty(myDoc.getDocDesc().trim()))) {
+            if (!(StringUtil.isEmptyOrNull(myDoc.getDocDesc().trim()))) {
                 label.append(" <a class=\"docOnline\" href=\'javascript:popup(\"Documentation.jsp?DocTable=");
                 label.append(docTable);
                 label.append("&DocField=");

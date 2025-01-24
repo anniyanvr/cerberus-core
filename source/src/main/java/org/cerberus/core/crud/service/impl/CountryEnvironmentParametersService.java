@@ -1,5 +1,5 @@
 /**
- * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * Cerberus Copyright (C) 2013 - 2025 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -25,6 +25,7 @@ import java.util.List;
 import org.cerberus.core.crud.dao.ICountryEnvironmentParametersDAO;
 import org.cerberus.core.crud.entity.CountryEnvParam;
 import org.cerberus.core.crud.entity.CountryEnvironmentParameters;
+import org.cerberus.core.crud.entity.LogEvent;
 import org.cerberus.core.crud.factory.IFactoryCountryEnvParam;
 import org.cerberus.core.crud.service.ICountryEnvParamService;
 import org.cerberus.core.engine.entity.MessageEvent;
@@ -39,6 +40,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.cerberus.core.crud.service.ICountryEnvironmentParametersService;
 import org.cerberus.core.crud.service.ILogEventService;
+import org.cerberus.core.util.StringUtil;
 import org.cerberus.core.util.answer.AnswerUtil;
 
 /**
@@ -74,6 +76,11 @@ public class CountryEnvironmentParametersService implements ICountryEnvironmentP
     }
 
     @Override
+    public AnswerList<CountryEnvironmentParameters> readDependenciesByVarious(String system, String country, String environment) {
+        return countryEnvironmentParametersDao.readDependenciesByVarious(system, country, environment);
+    }
+
+    @Override
     public AnswerList<CountryEnvironmentParameters> readByVariousByCriteria(String system, String country, String environment, String application, int start, int amount, String column, String dir, String searchTerm, String individualSearch) {
         return countryEnvironmentParametersDao.readByVariousByCriteria(system, country, environment, application, start, amount, column, dir, searchTerm, individualSearch);
     }
@@ -100,7 +107,7 @@ public class CountryEnvironmentParametersService implements ICountryEnvironmentP
             if (!answer.isCodeStringEquals("OK")) {
                 return answer;
             } else {
-                logEventService.createForPrivateCalls("", "CREATE", "Create CountryEnvParam : ['" + object.getSystem() + "'|'" + object.getCountry() + "'|'" + object.getEnvironment() + "']");
+                logEventService.createForPrivateCalls("", "CREATE", LogEvent.STATUS_INFO , "Create CountryEnvParam : ['" + object.getSystem() + "'|'" + object.getCountry() + "'|'" + object.getEnvironment() + "']");
             }
         }
         answer = countryEnvironmentParametersDao.create(object);
@@ -207,6 +214,16 @@ public class CountryEnvironmentParametersService implements ICountryEnvironmentP
         for (CountryEnvironmentParameters objectDifference : listToUpdateOrInsertToIterate) {
             for (CountryEnvironmentParameters objectInDatabase : oldList) {
                 if (objectDifference.hasSameKey(objectInDatabase)) {
+                    // If new value has a SECRET String, we replace it by the initial Password.
+                    if (objectDifference.getIp().contains(StringUtil.SECRET_STRING)) {
+                        objectDifference.setIp(objectDifference.getIp().replace(StringUtil.SECRET_STRING, StringUtil.getPasswordFromAnyUrl(objectInDatabase.getIp())));
+                    }
+                    if (StringUtil.SECRET_STRING.equals(objectDifference.getSecret1())) {
+                        objectDifference.setSecret1(objectInDatabase.getSecret1());
+                    }
+                    if (StringUtil.SECRET_STRING.equals(objectDifference.getSecret2())) {
+                        objectDifference.setSecret2(objectInDatabase.getSecret2());
+                    }
                     ans = this.update(objectDifference);
                     finalAnswer = AnswerUtil.agregateAnswer(finalAnswer, ans);
                     listToUpdateOrInsert.remove(objectDifference);
@@ -265,6 +282,6 @@ public class CountryEnvironmentParametersService implements ICountryEnvironmentP
             //if the service returns an OK message then we can get the item
             return;
         }
-        throw new CerberusException(new MessageGeneral(MessageGeneralEnum.DATA_OPERATION_ERROR));
+        throw new CerberusException(new MessageGeneral(MessageGeneralEnum.DATA_OPERATION_ERROR_WITH_DETAIL).resolveDescription("DETAIL", answer.getMessageDescription()));
     }
 }

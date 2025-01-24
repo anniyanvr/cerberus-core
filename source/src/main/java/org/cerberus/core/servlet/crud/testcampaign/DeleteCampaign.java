@@ -1,5 +1,5 @@
 /**
- * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * Cerberus Copyright (C) 2013 - 2025 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -30,6 +30,7 @@ import javax.servlet.http.HttpServletResponse;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.cerberus.core.crud.entity.Campaign;
+import org.cerberus.core.crud.entity.LogEvent;
 import org.cerberus.core.crud.entity.ScheduleEntry;
 import org.cerberus.core.crud.service.ICampaignService;
 import org.cerberus.core.crud.service.ILogEventService;
@@ -85,7 +86,7 @@ public class DeleteCampaign extends HttpServlet {
         String key = ParameterParserUtil.parseStringParamAndDecode(request.getParameter("key"), "", charset);
         // Parameter that we cannot secure as we need the html --> We DECODE them
 
-        if (StringUtil.isEmpty(key)) {
+        if (StringUtil.isEmptyOrNull(key)) {
             /**
              * Missing key
              */
@@ -136,7 +137,7 @@ public class DeleteCampaign extends HttpServlet {
                      * Adding Log entry.
                      */
                     ILogEventService logEventService = appContext.getBean(LogEventService.class);
-                    logEventService.createForPrivateCalls("/DeleteCampaign", "DELETE", "Delete Campaign : ['" + key + "']", request);
+                    logEventService.createForPrivateCalls("/DeleteCampaign", "DELETE", LogEvent.STATUS_INFO, "Delete Campaign : ['" + key + "']", request);
 
                 }
 

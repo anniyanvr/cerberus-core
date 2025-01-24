@@ -1,5 +1,5 @@
 /**
- * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * Cerberus Copyright (C) 2013 - 2025 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -150,6 +150,51 @@ public class MyVersionDAO implements IMyVersionDAO {
                 preStat.setString(2, myVersion.getKey());
 
                 result = preStat.execute();
+            } catch (SQLException exception) {
+                LOG.warn("Unable to execute query : " + exception.toString());
+            } finally {
+                preStat.close();
+            }
+        } catch (SQLException exception) {
+            LOG.warn("Unable to execute query : " + exception.toString());
+        } finally {
+            try {
+                if (connection != null) {
+                    connection.close();
+                }
+            } catch (SQLException e) {
+                LOG.warn(e.toString());
+            }
+        }
+        return result;
+    }
+
+    @Override
+    public boolean updateAndLockVersionEntryDuringMs(String version, long value, long lockDurationMs) {
+        boolean result = false;
+        final String query = "UPDATE myversion SET value = ? WHERE `key` = ? and value < ?";
+
+        // Debug message on SQL.
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("SQL : " + query);
+            LOG.debug("SQL.param.value : " + value);
+            LOG.debug("SQL.param.value : " + (value - lockDurationMs));
+        }
+
+        Connection connection = this.databaseSpring.connect();
+        try {
+            PreparedStatement preStat = connection.prepareStatement(query);
+            try {
+                preStat.setLong(1, value);
+                preStat.setString(2, version);
+                preStat.setLong(3, value - lockDurationMs);
+
+                if (preStat.executeUpdate() >= 1) {
+                    result = true;
+                } else {
+                    result = false;
+                }
+
             } catch (SQLException exception) {
                 LOG.warn("Unable to execute query : " + exception.toString());
             } finally {

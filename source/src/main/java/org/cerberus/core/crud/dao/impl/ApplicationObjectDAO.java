@@ -1,5 +1,5 @@
 /**
- * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * Cerberus Copyright (C) 2013 - 2025 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -111,6 +111,8 @@ public class ApplicationObjectDAO implements IApplicationObjectDAO {
         MessageEvent msg;
         final String query = "SELECT * FROM `applicationobject` obj WHERE `Application` = ? AND `Object` = ?";
         LOG.debug("SQL : {}", query);
+        LOG.debug("SQL.param.app : {}", application);
+        LOG.debug("SQL.param.obj : {}", object);
 
         try (Connection connection = databaseSpring.connect();
                 PreparedStatement preStat = connection.prepareStatement(query)) {
@@ -176,13 +178,13 @@ public class ApplicationObjectDAO implements IApplicationObjectDAO {
             AnswerItem<ApplicationObject> applicationObjectAnswerItem = readByKey(application, object);
             if (applicationObjectAnswerItem.isCodeEquals(MessageEventEnum.DATA_OPERATION_OK.getCode())) {
                 ApplicationObject applicationObject = applicationObjectAnswerItem.getItem();
-                if (applicationObject != null) {
+                if ((applicationObject != null) && StringUtil.isNotEmptyOrNull(applicationObject.getScreenshotFilename())) {
                     String filePath = uploadPath + File.separator + applicationObject.getID() + File.separator + applicationObject.getScreenshotFilename();
                     File picture = new File(filePath);
                     try {
                         image = ImageIO.read(picture);
                     } catch (IOException e) {
-                        LOG.warn("Impossible to read the image : " + picture, e);
+                        LOG.warn("Impossible to read the image : " + picture, e.toString());
                     }
                 }
             } else {
@@ -267,7 +269,7 @@ public class ApplicationObjectDAO implements IApplicationObjectDAO {
 
         searchSQL.append(" where 1=1 ");
 
-        if (StringUtil.isNotEmpty(searchTerm)) {
+        if (StringUtil.isNotEmptyOrNull(searchTerm)) {
             searchSQL.append(" and (`Application` like ?");
             searchSQL.append(" or `Object` like ?");
             searchSQL.append(" or `Value` like ?");
@@ -289,7 +291,7 @@ public class ApplicationObjectDAO implements IApplicationObjectDAO {
 
         query.append(searchSQL);
 
-        if (StringUtil.isNotEmpty(column)) {
+        if (StringUtil.isNotEmptyOrNull(column)) {
             query.append(" order by ").append(column).append(" ").append(dir);
         }
 
@@ -306,7 +308,7 @@ public class ApplicationObjectDAO implements IApplicationObjectDAO {
                 Statement stm = connection.createStatement()) {
 
             int i = 1;
-            if (StringUtil.isNotEmpty(searchTerm)) {
+            if (StringUtil.isNotEmptyOrNull(searchTerm)) {
                 preStat.setString(i++, "%" + searchTerm + "%");
                 preStat.setString(i++, "%" + searchTerm + "%");
                 preStat.setString(i++, "%" + searchTerm + "%");
@@ -371,7 +373,7 @@ public class ApplicationObjectDAO implements IApplicationObjectDAO {
 
         searchSQL.append(" where 1=1 ");
 
-        if (StringUtil.isNotEmpty(searchTerm)) {
+        if (StringUtil.isNotEmptyOrNull(searchTerm)) {
             searchSQL.append(" and (obj.`Application` like ?");
             searchSQL.append(" or obj.`Object` like ?");
             searchSQL.append(" or obj.`Value` like ?");
@@ -391,7 +393,7 @@ public class ApplicationObjectDAO implements IApplicationObjectDAO {
             searchSQL.append(" )");
         }
 
-        if (StringUtil.isNotEmpty(application)) {
+        if (StringUtil.isNotEmptyOrNull(application)) {
             searchSQL.append(" and (obj.`Application` = ? )");
         }
 
@@ -404,7 +406,7 @@ public class ApplicationObjectDAO implements IApplicationObjectDAO {
 
         query.append(searchSQL);
 
-        if (StringUtil.isNotEmpty(column)) {
+        if (StringUtil.isNotEmptyOrNull(column)) {
             query.append(" order by ").append(column).append(" ").append(dir);
         }
 
@@ -421,7 +423,7 @@ public class ApplicationObjectDAO implements IApplicationObjectDAO {
                 Statement stm = connection.createStatement()) {
 
             int i = 1;
-            if (StringUtil.isNotEmpty(searchTerm)) {
+            if (StringUtil.isNotEmptyOrNull(searchTerm)) {
                 preStat.setString(i++, "%" + searchTerm + "%");
                 preStat.setString(i++, "%" + searchTerm + "%");
                 preStat.setString(i++, "%" + searchTerm + "%");
@@ -434,7 +436,7 @@ public class ApplicationObjectDAO implements IApplicationObjectDAO {
             for (String individualColumnSearchValue : individualColumnSearchValues) {
                 preStat.setString(i++, individualColumnSearchValue);
             }
-            if (StringUtil.isNotEmpty(application)) {
+            if (StringUtil.isNotEmptyOrNull(application)) {
                 preStat.setString(i++, application);
             }
 
@@ -586,7 +588,7 @@ public class ApplicationObjectDAO implements IApplicationObjectDAO {
 
         searchSQL.append("WHERE 1=1 ");
 
-        if (StringUtil.isNotEmpty(searchTerm)) {
+        if (StringUtil.isNotEmptyOrNull(searchTerm)) {
             searchSQL.append(" and (`Application` like ?");
             searchSQL.append(" or `Object` like ?");
             searchSQL.append(" or `Value` like ?");
@@ -615,7 +617,7 @@ public class ApplicationObjectDAO implements IApplicationObjectDAO {
                 Statement stm = connection.createStatement()) {
 
             int i = 1;
-            if (StringUtil.isNotEmpty(searchTerm)) {
+            if (StringUtil.isNotEmptyOrNull(searchTerm)) {
                 preStat.setString(i++, "%" + searchTerm + "%");
                 preStat.setString(i++, "%" + searchTerm + "%");
                 preStat.setString(i++, "%" + searchTerm + "%");
@@ -680,11 +682,11 @@ public class ApplicationObjectDAO implements IApplicationObjectDAO {
                 .append(" as distinctValues FROM applicationobject obj ");
 
         searchSQL.append("WHERE 1=1");
-        if (StringUtil.isNotEmpty(application)) {
+        if (StringUtil.isNotEmptyOrNull(application)) {
             searchSQL.append(" and (`Application` = ? )");
         }
 
-        if (StringUtil.isNotEmpty(searchTerm)) {
+        if (StringUtil.isNotEmptyOrNull(searchTerm)) {
             searchSQL.append(" and (`Application` like ?");
             searchSQL.append(" or `Object` like ?");
             searchSQL.append(" or `Value` like ?");
@@ -713,10 +715,10 @@ public class ApplicationObjectDAO implements IApplicationObjectDAO {
                 Statement stm = connection.createStatement()) {
 
             int i = 1;
-            if (StringUtil.isNotEmpty(application)) {
+            if (StringUtil.isNotEmptyOrNull(application)) {
                 preStat.setString(i++, application);
             }
-            if (StringUtil.isNotEmpty(searchTerm)) {
+            if (StringUtil.isNotEmptyOrNull(searchTerm)) {
                 preStat.setString(i++, "%" + searchTerm + "%");
                 preStat.setString(i++, "%" + searchTerm + "%");
                 preStat.setString(i++, "%" + searchTerm + "%");

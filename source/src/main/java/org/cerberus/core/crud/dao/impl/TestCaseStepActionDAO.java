@@ -1,5 +1,5 @@
 /**
- * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * Cerberus Copyright (C) 2013 - 2025 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -76,8 +76,7 @@ public class TestCaseStepActionDAO implements ITestCaseStepActionDAO {
             LOG.debug("SQL : " + query);
         }
 
-        try (Connection connection = this.databaseSpring.connect();
-                PreparedStatement preStat = connection.prepareStatement(query, ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY)) {
+        try (Connection connection = this.databaseSpring.connect(); PreparedStatement preStat = connection.prepareStatement(query, ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY)) {
 
             preStat.setString(1, test);
             preStat.setString(2, testcase);
@@ -112,8 +111,7 @@ public class TestCaseStepActionDAO implements ITestCaseStepActionDAO {
             LOG.debug("SQL.param.stepId : " + stepId);
         }
 
-        try (Connection connection = this.databaseSpring.connect();
-                PreparedStatement preStat = connection.prepareStatement(query);) {
+        try (Connection connection = this.databaseSpring.connect(); PreparedStatement preStat = connection.prepareStatement(query);) {
 
             preStat.setString(1, test);
             preStat.setString(2, testcase);
@@ -148,8 +146,7 @@ public class TestCaseStepActionDAO implements ITestCaseStepActionDAO {
             LOG.debug("SQL : " + query);
         }
 
-        try (Connection connection = this.databaseSpring.connect();
-                PreparedStatement preStat = connection.prepareStatement(query.toString())) {
+        try (Connection connection = this.databaseSpring.connect(); PreparedStatement preStat = connection.prepareStatement(query.toString())) {
 
             try {
                 preStat.setString(1, test);
@@ -230,8 +227,7 @@ public class TestCaseStepActionDAO implements ITestCaseStepActionDAO {
             LOG.debug("SQL : " + query);
         }
 
-        try (Connection connection = this.databaseSpring.connect();
-                PreparedStatement preStat = connection.prepareStatement(query.toString());) {
+        try (Connection connection = this.databaseSpring.connect(); PreparedStatement preStat = connection.prepareStatement(query.toString());) {
 
             preStat.setString(1, test);
             preStat.setString(2, testcase);
@@ -304,16 +300,15 @@ public class TestCaseStepActionDAO implements ITestCaseStepActionDAO {
         StringBuilder query = new StringBuilder();
         query.append("INSERT INTO testcasestepaction (`test`, `testcase`, `stepId`, `actionId`, `sort`, ")
                 .append("`conditionOperator`, `conditionValue1`, `conditionValue2`, `conditionValue3`, `conditionOptions`, `action`, ")
-                .append("`value1`, `value2`, `value3`, `options`, `IsFatal`, `description`, `screenshotfilename`, `usrCreated`) ");
-        query.append("VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
+                .append("`value1`, `value2`, `value3`, `options`, `IsFatal`, `description`, `screenshotfilename`, `waitBefore`, `waitAfter`, `doScreenshotBefore`, `doScreenshotAfter`, `usrCreated`) ");
+        query.append("VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
 
         // Debug message on SQL.
         if (LOG.isDebugEnabled()) {
             LOG.debug("SQL : " + query);
         }
 
-        try (Connection connection = this.databaseSpring.connect();
-                PreparedStatement preStat = connection.prepareStatement(query.toString());) {
+        try (Connection connection = this.databaseSpring.connect(); PreparedStatement preStat = connection.prepareStatement(query.toString());) {
 
             int i = 1;
             preStat.setString(i++, testCaseStepAction.getTest());
@@ -334,6 +329,10 @@ public class TestCaseStepActionDAO implements ITestCaseStepActionDAO {
             preStat.setBoolean(i++, testCaseStepAction.isFatal());
             preStat.setString(i++, testCaseStepAction.getDescription());
             preStat.setString(i++, testCaseStepAction.getScreenshotFilename());
+            preStat.setInt(i++, testCaseStepAction.getWaitBefore());
+            preStat.setInt(i++, testCaseStepAction.getWaitAfter());
+            preStat.setBoolean(i++, testCaseStepAction.isDoScreenshotBefore());
+            preStat.setBoolean(i++, testCaseStepAction.isDoScreenshotAfter());
             preStat.setString(i++, testCaseStepAction.getUsrCreated() == null ? "" : testCaseStepAction.getUsrCreated());
 
             preStat.executeUpdate();
@@ -365,6 +364,10 @@ public class TestCaseStepActionDAO implements ITestCaseStepActionDAO {
                 .append("`IsFatal` = ?, ")
                 .append("`Description` = ?, ")
                 .append("`ScreenshotFilename` = ?, ")
+                .append("`waitBefore` = ?, ")
+                .append("`waitAfter` = ?, ")
+                .append("`doScreenshotBefore` = ?, ")
+                .append("`doScreenshotAfter` = ?, ")
                 .append("`UsrModif` = ?, ")
                 .append("`dateModif` = CURRENT_TIMESTAMP ")
                 .append("WHERE `Test` = ? AND `Testcase` = ? AND `StepId` = ? AND `actionId` = ? ")
@@ -378,8 +381,7 @@ public class TestCaseStepActionDAO implements ITestCaseStepActionDAO {
             LOG.debug("SQL.param.options " + testCaseStepAction.getOptions().toString());
         }
 
-        try (Connection connection = this.databaseSpring.connect();
-                PreparedStatement preStat = connection.prepareStatement(query);) {
+        try (Connection connection = this.databaseSpring.connect(); PreparedStatement preStat = connection.prepareStatement(query);) {
 
             int i = 1;
             preStat.setString(i++, testCaseStepAction.getTest());
@@ -400,6 +402,10 @@ public class TestCaseStepActionDAO implements ITestCaseStepActionDAO {
             preStat.setBoolean(i++, testCaseStepAction.isFatal());
             preStat.setString(i++, testCaseStepAction.getDescription());
             preStat.setString(i++, testCaseStepAction.getScreenshotFilename());
+            preStat.setInt(i++, testCaseStepAction.getWaitBefore());
+            preStat.setInt(i++, testCaseStepAction.getWaitAfter());
+            preStat.setBoolean(i++, testCaseStepAction.isDoScreenshotBefore());
+            preStat.setBoolean(i++, testCaseStepAction.isDoScreenshotAfter());
             preStat.setString(i++, testCaseStepAction.getUsrModif() == null ? "" : testCaseStepAction.getUsrModif());
 
             preStat.setString(i++, testCaseStepAction.getTest());
@@ -427,8 +433,7 @@ public class TestCaseStepActionDAO implements ITestCaseStepActionDAO {
             LOG.debug("SQL.param.service " + service);
         }
 
-        try (Connection connection = this.databaseSpring.connect();
-                PreparedStatement preStat = connection.prepareStatement(query);) {
+        try (Connection connection = this.databaseSpring.connect(); PreparedStatement preStat = connection.prepareStatement(query);) {
 
             int i = 1;
             preStat.setString(i++, service);
@@ -455,8 +460,7 @@ public class TestCaseStepActionDAO implements ITestCaseStepActionDAO {
             LOG.debug("SQL.param.service " + "%\\%object." + oldObject + ".%");
         }
 
-        try (Connection connection = this.databaseSpring.connect();
-                PreparedStatement preStat = connection.prepareStatement(query);) {
+        try (Connection connection = this.databaseSpring.connect(); PreparedStatement preStat = connection.prepareStatement(query);) {
 
             int i = 1;
             preStat.setString(i++, application);
@@ -478,8 +482,7 @@ public class TestCaseStepActionDAO implements ITestCaseStepActionDAO {
             LOG.debug("SQL : " + query);
         }
 
-        try (Connection connection = this.databaseSpring.connect();
-                PreparedStatement preStat = connection.prepareStatement(query);) {
+        try (Connection connection = this.databaseSpring.connect(); PreparedStatement preStat = connection.prepareStatement(query);) {
 
             preStat.setString(1, tcsa.getTest());
             preStat.setString(2, tcsa.getTestcase());
@@ -506,8 +509,7 @@ public class TestCaseStepActionDAO implements ITestCaseStepActionDAO {
             LOG.debug("SQL : " + query);
         }
 
-        try (Connection connection = this.databaseSpring.connect();
-                PreparedStatement preStat = connection.prepareStatement(query);) {
+        try (Connection connection = this.databaseSpring.connect(); PreparedStatement preStat = connection.prepareStatement(query);) {
 
             preStat.setInt(1, newActionId);
             preStat.setString(2, test);
@@ -530,16 +532,16 @@ public class TestCaseStepActionDAO implements ITestCaseStepActionDAO {
         MessageEvent msg = null;
         StringBuilder query = new StringBuilder();
         query.append("INSERT INTO testcasestepaction (`test`, `testcase`, `stepId`, `actionId`, `sort`, ")
-                .append("`conditionOperator`, `conditionValue1`, `conditionValue2`, `conditionValue3`, `conditionOptions`, `action`, `Value1`, `Value2`, `Value3`, `Options`, `IsFatal`, `description`, `screenshotfilename`, `usrCreated`) ");
-        query.append("VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
+                .append("`conditionOperator`, `conditionValue1`, `conditionValue2`, `conditionValue3`, `conditionOptions`, `action`, `Value1`, `Value2`, `Value3`, `Options`"
+                        + ", `IsFatal`, `description`, `screenshotfilename`, `waitBefore`, `waitAfter`, `doScreenshotBefore`, `doScreenshotAfter`, `usrCreated`) ");
+        query.append("VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
 
         // Debug message on SQL.
         if (LOG.isDebugEnabled()) {
             LOG.debug("SQL : " + query);
         }
 
-        try (Connection connection = databaseSpring.connect();
-                PreparedStatement preStat = connection.prepareStatement(query.toString())) {
+        try (Connection connection = databaseSpring.connect(); PreparedStatement preStat = connection.prepareStatement(query.toString())) {
             // Prepare and execute query
             int i = 1;
             preStat.setString(i++, testCaseStepAction.getTest());
@@ -560,6 +562,10 @@ public class TestCaseStepActionDAO implements ITestCaseStepActionDAO {
             preStat.setBoolean(i++, testCaseStepAction.isFatal());
             preStat.setString(i++, testCaseStepAction.getDescription());
             preStat.setString(i++, testCaseStepAction.getScreenshotFilename());
+            preStat.setInt(i++, testCaseStepAction.getWaitBefore());
+            preStat.setInt(i++, testCaseStepAction.getWaitAfter());
+            preStat.setBoolean(i++, testCaseStepAction.isDoScreenshotBefore());
+            preStat.setBoolean(i++, testCaseStepAction.isDoScreenshotAfter());
             preStat.setString(i++, testCaseStepAction.getUsrCreated() == null ? "" : testCaseStepAction.getUsrCreated());
             preStat.executeUpdate();
 
@@ -596,6 +602,10 @@ public class TestCaseStepActionDAO implements ITestCaseStepActionDAO {
         String description = resultSet.getString("tca.description");
         String screenshotFilename = resultSet.getString("tca.screenshotFilename");
         boolean isFatal = resultSet.getBoolean("tca.isFatal");
+        boolean doScreenshotBefore = resultSet.getBoolean("tca.doScreenshotBefore");
+        boolean doScreenshotAfter = resultSet.getBoolean("tca.doScreenshotAfter");
+        int waitBefore = resultSet.getInt("tca.waitBefore");
+        int waitAfter = resultSet.getInt("tca.waitAfter");
         String usrCreated = resultSet.getString("tca.UsrCreated");
         Timestamp dateCreated = resultSet.getTimestamp("tca.DateCreated");
         String usrModif = resultSet.getString("tca.UsrModif");
@@ -603,8 +613,9 @@ public class TestCaseStepActionDAO implements ITestCaseStepActionDAO {
 
         return factoryTestCaseStepAction.create(test, testcase, stepId, actionId, sort, conditionOperator,
                 conditionValue1, conditionValue2, conditionValue3, conditionOptions, action, value1,
-                value2, value3, options, isFatal, description, screenshotFilename, usrCreated, dateCreated,
-                usrModif, dateModif);
+                value2, value3, options, isFatal, description, screenshotFilename,
+                doScreenshotBefore, doScreenshotAfter, waitBefore, waitAfter,
+                usrCreated, dateCreated, usrModif, dateModif);
     }
 
 }

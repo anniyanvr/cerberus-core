@@ -1,5 +1,5 @@
 /**
- * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * Cerberus Copyright (C) 2013 - 2025 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -35,6 +35,7 @@ import org.cerberus.core.crud.entity.TestDataLibData;
 import org.cerberus.core.crud.service.ITestDataLibDataService;
 import org.cerberus.core.crud.service.ITestDataLibService;
 import org.cerberus.core.enums.MessageEventEnum;
+import org.cerberus.core.util.StringUtil;
 import org.cerberus.core.util.answer.AnswerItem;
 import org.cerberus.core.util.answer.AnswerList;
 import org.cerberus.core.util.answer.AnswerUtil;
@@ -196,7 +197,7 @@ public class ReadTestDataLibData extends HttpServlet {
 
         for (TestDataLibData subdata : answer.getDataList()) {
             if (!hasPermissionToSeePrivateValue && "Y".equals(subdata.getEncrypt())){
-                subdata.setValue("XXXXXXXX");
+                subdata.setValue(StringUtil.SECRET_STRING);
             }
             jsonArray.put(convertTestDataLibDataToJSONObject(subdata));
         }

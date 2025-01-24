@@ -1,5 +1,5 @@
 /**
- * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * Cerberus Copyright (C) 2013 - 2025 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -28,6 +28,7 @@ import javax.servlet.http.HttpServletResponse;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.cerberus.core.crud.entity.BuildRevisionParameters;
+import org.cerberus.core.crud.entity.LogEvent;
 import org.cerberus.core.engine.entity.MessageEvent;
 import org.cerberus.core.crud.service.IBuildRevisionParametersService;
 import org.cerberus.core.enums.MessageEventEnum;
@@ -144,7 +145,7 @@ public class DeleteBuildRevisionParameters extends HttpServlet {
                         /**
                          * Delete was successful. Adding Log entry.
                          */
-                        logEventService.createForPrivateCalls("/DeleteBuildRevisionParameters", "DELETE", "Delete BuildRevisionParameters : ['" + brpid + "'|'" + brpData.getRelease() + "']", request);
+                        logEventService.createForPrivateCalls("/DeleteBuildRevisionParameters", "DELETE", LogEvent.STATUS_INFO, "Delete BuildRevisionParameters : ['" + brpid + "'|'" + brpData.getRelease() + "']", request);
                     } else {
                         massErrorCounter++;
                         output_message.append("<br>id : ").append(myId1).append(" - ").append(ans.getResultMessage().getDescription());
@@ -173,7 +174,7 @@ public class DeleteBuildRevisionParameters extends HttpServlet {
                         .replace("%OPERATION%", "Mass Update") + "\n\nAll " + myId.length + " object(s) updated successfuly.");
                 ans.setResultMessage(msg);
             }
-            logEventService.createForPrivateCalls("/DeleteBuildRevisionParameters", "MASSUPDATE", msg.getDescription(), request);
+            logEventService.createForPrivateCalls("/DeleteBuildRevisionParameters", "MASSUPDATE", LogEvent.STATUS_INFO, msg.getDescription(), request);
         }
 
         /**

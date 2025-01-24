@@ -1,5 +1,5 @@
 /**
- * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * Cerberus Copyright (C) 2013 - 2025 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -91,6 +91,8 @@ public class TestCase {
      * Not included in table.
      */
     @EqualsAndHashCode.Exclude
+    private String refOrigineUrl;
+    @EqualsAndHashCode.Exclude
     private String system;
     @EqualsAndHashCode.Exclude
     private String lastExecutionStatus;
@@ -111,13 +113,18 @@ public class TestCase {
     @EqualsAndHashCode.Exclude
     private List<TestCaseDep> dependencies;
 
+    public static final String TESTCASE_STATUS_WORKING = "WORKING";
+
     public static final String TESTCASE_TYPE_MANUAL = "MANUAL";
     public static final String TESTCASE_TYPE_AUTOMATED = "AUTOMATED";
     public static final String TESTCASE_TYPE_PRIVATE = "PRIVATE";
 
     public static final String TESTCASE_ORIGIN_SIDE = "SeleniumIDE";
+    public static final String TESTCASE_ORIGIN_TESTLINK = "TestLink";
     public static final String TESTCASE_ORIGIN_JIRAXRAYCLOUD = "JiraXray-Cloud";
     public static final String TESTCASE_ORIGIN_JIRAXRAYDC = "JiraXray-DC";
+    public static final String TESTCASE_ORIGIN_JIRACLOUD = "Jira-Cloud";
+    public static final String TESTCASE_ORIGIN_JIRADC = "Jira-DC";
 
     private static final Logger LOG = LogManager.getLogger(TestCase.class);
 
@@ -224,6 +231,7 @@ public class TestCase {
             testCaseJson.put("usrModif", this.getUsrModif());
             testCaseJson.put("origine", this.getOrigine());
             testCaseJson.put("refOrigine", this.getRefOrigine());
+            testCaseJson.put("refOrigineUrl", this.getRefOrigineUrl());
 
             JSONArray stepsJson = new JSONArray();
             if (this.getSteps() != null) {

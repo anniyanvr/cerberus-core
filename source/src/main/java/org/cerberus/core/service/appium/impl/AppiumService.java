@@ -1,5 +1,5 @@
 /**
- * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * Cerberus Copyright (C) 2013 - 2025 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -19,33 +19,30 @@
  */
 package org.cerberus.core.service.appium.impl;
 
-import io.appium.java_client.AppiumDriver;
-import io.appium.java_client.MobileBy;
-import io.appium.java_client.MobileElement;
-import io.appium.java_client.TouchAction;
+import io.appium.java_client.NoSuchContextException;
+import io.appium.java_client.*;
 import io.appium.java_client.touch.WaitOptions;
 import io.appium.java_client.touch.offset.ElementOption;
 import io.appium.java_client.touch.offset.PointOption;
+import lombok.Getter;
+import lombok.Setter;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.cerberus.core.crud.entity.TestCaseExecution;
 import org.cerberus.core.crud.service.impl.ParameterService;
-import org.cerberus.core.engine.entity.Identifier;
-import org.cerberus.core.engine.entity.MessageEvent;
-import org.cerberus.core.engine.entity.Session;
+import org.cerberus.core.engine.entity.*;
+import org.cerberus.core.engine.gwt.impl.ActionService;
 import org.cerberus.core.enums.MessageEventEnum;
+import org.cerberus.core.enums.MessageGeneralEnum;
+import org.cerberus.core.exception.CerberusEventException;
+import org.cerberus.core.exception.CerberusException;
 import org.cerberus.core.service.appium.IAppiumService;
 import org.cerberus.core.service.appium.SwipeAction;
 import org.cerberus.core.service.appium.SwipeAction.Direction;
 import org.cerberus.core.util.ParameterParserUtil;
 import org.cerberus.core.util.StringUtil;
 import org.json.JSONException;
-import org.openqa.selenium.By;
-import org.openqa.selenium.Dimension;
-import org.openqa.selenium.NoSuchElementException;
-import org.openqa.selenium.Point;
-import org.openqa.selenium.TimeoutException;
-import org.openqa.selenium.WebDriverException;
-import org.openqa.selenium.WebElement;
+import org.openqa.selenium.*;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -103,6 +100,30 @@ public abstract class AppiumService implements IAppiumService {
     }
 
     @Override
+    public MessageEvent switchToContext(Session session, String context) {
+        MessageEvent message;
+        AppiumDriver driver = session.getAppiumDriver();
+        Set<String> contexts = driver.getContextHandles();
+
+        try {
+            if (context.isEmpty()) {
+                context = "NATIVE_APP";
+            }
+            driver.context(context);
+            message = new MessageEvent(MessageEventEnum.ACTION_SUCCESS_SWITCHTOCONTEXT);
+            message.setDescription(message.getDescription().replace("%CONTEXT%", context));
+        } catch (NoSuchContextException exception) {
+            LOG.error("Impossible to change the context: ", exception);
+            message = new MessageEvent(MessageEventEnum.ACTION_FAILED_SWITCHTOCONTEXT_NO_SUCH_ELEMENT);
+            message.setDescription(message.getDescription()
+                    .replace("%CONTEXT%", context)
+                    .replace("%CONTEXTS%", contexts.toString())
+                    .replace("%ERROR%", exception.getMessage()));
+        }
+        return message;
+    }
+
+    @Override
     public MessageEvent wait(Session session, Identifier identifier) {
         MessageEvent message;
         try {
@@ -126,9 +147,14 @@ public abstract class AppiumService implements IAppiumService {
     @Override
     public MessageEvent type(Session session, Identifier identifier, String valueToType, String propertyName) {
         MessageEvent message;
+        MessageEvent foundElementMsg = new MessageEvent(MessageEventEnum.ACTION_FAILED_TYPE_NO_SUCH_ELEMENT);
         try {
-            if (!StringUtil.isEmptyOrNullValue(valueToType)) {
+            if (!StringUtil.isEmptyOrNULLString(valueToType)) {
                 WebElement elmt = this.getElement(session, identifier, false, false);
+                Integer numberOfElement = this.getNumberOfElements(session, identifier);
+                foundElementMsg = new MessageEvent(MessageEventEnum.ACTION_SUCCESS_FOUND_ELEMENT);
+                foundElementMsg.resolveDescription("NUMBER", numberOfElement.toString());
+                foundElementMsg.resolveDescription("ELEMENT", identifier.toString());
                 if (elmt instanceof MobileElement) {
                     ((MobileElement) this.getElement(session, identifier, false, false)).setValue(valueToType);
                 } else { // FIXME See if we can delete it ??
@@ -143,8 +169,8 @@ public abstract class AppiumService implements IAppiumService {
                 }
             }
             message = new MessageEvent(MessageEventEnum.ACTION_SUCCESS_TYPE);
-            message.setDescription(message.getDescription().replace("%ELEMENT%", identifier.getIdentifier() + "=" + identifier.getLocator()));
-            if (!StringUtil.isEmptyOrNullValue(valueToType)) {
+            message.setDescription(message.getDescription().replace("%ELEMENT%", identifier.getIdentifier() + "=" + identifier.getLocator()).replace("ELEMENTFOUND", foundElementMsg.getDescription()));
+            if (!StringUtil.isEmptyOrNULLString(valueToType)) {
                 message.setDescription(message.getDescription().replace("%DATA%", ParameterParserUtil.securePassword(valueToType, propertyName)));
             } else {
                 message.setDescription(message.getDescription().replace("%DATA%", "No property"));
@@ -162,16 +188,27 @@ public abstract class AppiumService implements IAppiumService {
     }
 
     @Override
-    public MessageEvent click(final Session session, final Identifier identifier) {
+    public MessageEvent click(final Session session, final Identifier identifier, Integer hOffset, Integer vOffset) {
         try {
+            MessageEvent foundElementMsg;
             final TouchAction action = new TouchAction(session.getAppiumDriver());
+
             if (identifier.isSameIdentifier(Identifier.Identifiers.COORDINATE)) {
                 final Coordinates coordinates = getCoordinates(identifier);
-                action.tap(PointOption.point(coordinates.getX(), coordinates.getY())).perform();
+                Point offset = new Point(coordinates.getX(), coordinates.getY());
+                foundElementMsg = new MessageEvent(MessageEventEnum.ACTION_SUCCESS_FOUND_ELEMENT);
+                foundElementMsg.resolveDescription("NUMBER", "1");
+                foundElementMsg.resolveDescription("ELEMENT", identifier.toString());
+                action.tap(PointOption.point(offset)).perform();
             } else {
-                action.tap(ElementOption.element(getElement(session, identifier, false, false))).perform();
+                WebElement element = getElement(session, identifier, false, false);
+                Integer numberOfElement = this.getNumberOfElements(session, identifier);
+                foundElementMsg = new MessageEvent(MessageEventEnum.ACTION_SUCCESS_FOUND_ELEMENT);
+                foundElementMsg.resolveDescription("NUMBER", numberOfElement.toString());
+                foundElementMsg.resolveDescription("ELEMENT", identifier.toString());
+                action.tap(ElementOption.element(element, hOffset, vOffset)).perform();
             }
-            return new MessageEvent(MessageEventEnum.ACTION_SUCCESS_CLICK).resolveDescription("ELEMENT", identifier.toString());
+            return new MessageEvent(MessageEventEnum.ACTION_SUCCESS_CLICK).resolveDescription("ELEMENT", identifier.toString()).resolveDescription("ELEMENTFOUND", foundElementMsg.getDescription());
         } catch (NoSuchElementException e) {
             if (LOG.isDebugEnabled()) {
                 LOG.debug(e.getMessage());
@@ -201,11 +238,11 @@ public abstract class AppiumService implements IAppiumService {
      * Get the {@link Coordinates} represented by the given {@link Identifier}
      *
      * @param identifier the {@link Identifier} to parse to get the
-     * {@link Coordinates}
+     *                   {@link Coordinates}
      * @return the {@link Coordinates} represented by the given
      * {@link Identifier}
      * @throws NoSuchElementException if no {@link Coordinates} can be found
-     * inside the given {@link Identifier}
+     *                                inside the given {@link Identifier}
      */
     private Coordinates getCoordinates(final Identifier identifier) {
         if (identifier == null || !identifier.isSameIdentifier(Identifier.Identifiers.COORDINATE)) {
@@ -343,8 +380,8 @@ public abstract class AppiumService implements IAppiumService {
     }
 
     @Override
-    public MessageEvent scrollTo(Session session, Identifier element, String numberScrollDownMax) throws IllegalArgumentException {
-        AppiumDriver driver = session.getAppiumDriver();
+    public MessageEvent scrollTo(TestCaseExecution testCaseExecution, Identifier element, String numberScrollDownMax, Integer hOffset, Integer vOffset) throws IllegalArgumentException {
+        AppiumDriver driver = testCaseExecution.getSession().getAppiumDriver();
         MessageEvent message;
         try {
             message = new MessageEvent(MessageEventEnum.ACTION_SUCCESS_SCROLLTO);
@@ -358,14 +395,17 @@ public abstract class AppiumService implements IAppiumService {
 
             // check text
             if (element.getIdentifier().equals("text")) {
-                scrollDown(driver, By.xpath("//*[contains(@text,'" + element.getLocator() + "')]"), numberOfScrollDown);
+                scrollDown(testCaseExecution, By.xpath("//*[contains(@text,'" + element.getLocator() + "')]"), numberOfScrollDown, hOffset, vOffset);
             } else {
-                scrollDown(driver, this.getBy(element), numberOfScrollDown);
+                scrollDown(testCaseExecution, this.getBy(element), numberOfScrollDown, hOffset, vOffset);
             }
 
             message.setDescription(message.getDescription().replace("%VALUE%", element.toString()));
 
             return message;
+        } catch (CerberusEventException e) {
+            LOG.error("An error occured during scroll to (element:" + element + ",numberScrollDownMax:" + numberScrollDownMax + ")", e);
+            return e.getMessageError();
         } catch (Exception e) {
             LOG.error("An error occured during scroll to (element:" + element + ",numberScrollDownMax:" + numberScrollDownMax + ")", e);
             message = new MessageEvent(MessageEventEnum.ACTION_FAILED_GENERIC);
@@ -381,30 +421,56 @@ public abstract class AppiumService implements IAppiumService {
      * @param element
      * @return
      */
-    private boolean scrollDown(AppiumDriver driver, By element, int numberOfScrollDown) {
+    private boolean scrollDown(TestCaseExecution testCaseExecution, By element, int numberOfScrollDown, Integer hOffset, Integer vOffset) throws CerberusEventException{
+
+        AppiumDriver driver = testCaseExecution.getSession().getAppiumDriver();
+        Dimension screenSize = driver.manage().window().getSize();
+
+        float screenTopPercentage = parameters.getParameterFloatByKey("cerberus_appium_scroll_endTopScreenPercentageScreenHeight", null, 0.125f);
+        float screenBottomPercentage = parameters.getParameterFloatByKey("cerberus_appium_scroll_startBottomPercentageScreenHeight", null, 0.8f);
+
+        /**
+         * Check if cerberus_appium_scroll_endTopScreenPercentageScreenHeight and cerberus_appium_scroll_startBottomPercentageScreenHeight parameters are float between 0 and 1
+         */
+        if (screenTopPercentage < 0 || screenTopPercentage > 1 ||  screenBottomPercentage < 0 || screenBottomPercentage > 1){
+            MessageEvent me  =new MessageEvent(MessageEventEnum.ACTION_FAILED_SCROLL_INVALID_PARAMETER);
+            throw new CerberusEventException(me);
+        }
 
         int pressX = driver.manage().window().getSize().width / 2;
 
-        int bottomY = driver.manage().window().getSize().height * 4 / 5;
-
-        int topY = driver.manage().window().getSize().height / 8;
+        int bottomY = (int) (screenSize.height * screenBottomPercentage);
+        int topY = (int) (screenSize.height * screenTopPercentage);
 
         int i = 0;
 
         do {
+            i++;
             boolean isPresent = driver.findElements(element).size() > 0;
-            if (isPresent) {
-                Object elmtObj = driver.findElements(element).get(0);
+            if (isPresent && driver.findElement(element).isDisplayed()) {
 
-                if (elmtObj != null && ((MobileElement) elmtObj).isDisplayed()) {
-                    return true;
+                //Element found, perform another scroll to put the element at the middle of the screen at the defined offset.
+                int distanceFromMiddleOfTheScreen = (driver.manage().window().getSize().height / 2) - driver.findElement(element).getLocation().getY();
+                testCaseExecution.addExecutionLog(ExecutionLog.STATUS_INFO, "[Action:ScrollTo] : Element " + element + " displayed. Coordinate : (" + driver.findElement(element).getLocation().getX() + ";" + driver.findElement(element).getLocation().getY() + "). Distance from the middle of the screen ("+distanceFromMiddleOfTheScreen+"px)");
+
+
+                if (distanceFromMiddleOfTheScreen > 0) {
+                    int targetCoordinateY = topY + distanceFromMiddleOfTheScreen + vOffset;
+                    scroll(driver, pressX, topY, pressX, targetCoordinateY);
+                    testCaseExecution.addExecutionLog(ExecutionLog.STATUS_INFO, "[Action:ScrollTo] : Element " + element + " displayed. Perform another scroll to get it at the middle of the screen after applied the offset (" + hOffset + ";" + vOffset + ") scrolling from coord("+pressX+";"+topY+") to coord("+pressX+";"+targetCoordinateY+")");
+                } else if (distanceFromMiddleOfTheScreen < 0 ){
+                    int targetCoordinateY = bottomY + distanceFromMiddleOfTheScreen + vOffset;
+                    scroll(driver, pressX, bottomY, pressX, targetCoordinateY);
+                    testCaseExecution.addExecutionLog(ExecutionLog.STATUS_INFO, "[Action:ScrollTo] : Element " + element + " displayed. Perform another scroll to get it at the middle of the screen after applied the offset (" + hOffset + ";" + vOffset + ") scrolling from coord("+pressX+";"+bottomY+") to coord("+pressX+";"+targetCoordinateY+")");
                 }
+
+                return true;
             } else {
                 scroll(driver, pressX, bottomY, pressX, topY);
+                testCaseExecution.addExecutionLog(ExecutionLog.STATUS_INFO, "[Action:ScrollTo] : Element "+element+" not displayed. Scrolled "+i+"/"+numberOfScrollDown+" from coord("+pressX+";"+bottomY+") to coord("+pressX+";"+topY+")");
             }
-            i++;
 
-        } while (i <= numberOfScrollDown);
+        } while (i < numberOfScrollDown);
 
         return false;
     }
@@ -456,13 +522,9 @@ public abstract class AppiumService implements IAppiumService {
             final TouchAction action = new TouchAction(session.getAppiumDriver());
             if (identifier.isSameIdentifier(Identifier.Identifiers.COORDINATE)) {
                 final Coordinates coordinates = getCoordinates(identifier);
-                click(session, identifier);
+                click(session, identifier,0, 0);
             } else {
-                click(session, identifier);
-                //action.press(ElementOption.element(getElement(session, identifier, false, false))).waitAction(WaitOptions.waitOptions(Duration.ofMillis(8000))).release().perform();
-                //MobileElement element = (MobileElement) session.getAppiumDriver().findElementByAccessibilityId("SomeAccessibilityID");
-                //element.clear();
-                // WebElement elmt = this.getElement(session, identifier, false, false);
+                click(session, identifier, 0 ,0);
                 this.getElement(session, identifier, false, false).clear();
 
             }
@@ -477,5 +539,11 @@ public abstract class AppiumService implements IAppiumService {
             return parseWebDriverException(e);
         }
 
+    }
+
+    private Integer getNumberOfElements(Session session, Identifier identifier) {
+        By locator = this.getBy(identifier);
+        AppiumDriver driver = session.getAppiumDriver();
+        return driver.findElements(locator).size();
     }
 }

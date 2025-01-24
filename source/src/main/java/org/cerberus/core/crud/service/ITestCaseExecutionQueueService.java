@@ -1,5 +1,5 @@
 /**
- * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * Cerberus Copyright (C) 2013 - 2025 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -38,12 +38,21 @@ import java.util.Map;
 public interface ITestCaseExecutionQueueService {
 
     /**
+     *
+     * @param test
+     * @param testCase
+     * @param country
+     * @param env
+     * @return
+     */
+    String getUniqKey(String test, String testCase, String country, String env);
+
+    /**
      * @param queueId
      * @param withDep
      * @return
      */
     AnswerItem<TestCaseExecutionQueue> readByKey(long queueId, boolean withDep);
-
 
     /**
      * @param tag
@@ -58,8 +67,8 @@ public interface ITestCaseExecutionQueueService {
     AnswerList<TestCaseExecutionQueue> readByTagByCriteria(String tag, int start, int amount, String sort, String searchTerm, Map<String, List<String>> individualSearch) throws CerberusException;
 
     /**
-     * @param tag              tag to filter.
-     * @param stateList        List of State to filter.
+     * @param tag tag to filter.
+     * @param stateList List of State to filter.
      * @param withDependencies
      * @return
      * @throws CerberusException
@@ -167,32 +176,37 @@ public interface ITestCaseExecutionQueueService {
      * @return
      */
     AnswerList readBySystemByVarious(String system, List<String> testList, List<String> applicationList, List<String> tcstatusList, List<String> groupList,
-                                     List<String> isActiveList, List<String> priorityList, List<String> targetMajorList, List<String> targetMinorList, List<String> creatorList,
-                                     List<String> implementerList, List<String> buildList, List<String> revisionList, List<String> environmentList, List<String> countryList, List<String> browserList, List<String> tcestatusList, String ip, String port, String tag, String browserversion,
-                                     String comment, String bugs, String ticket);
+            List<String> isActiveList, List<String> priorityList, List<String> targetMajorList, List<String> targetMinorList, List<String> creatorList,
+            List<String> implementerList, List<String> buildList, List<String> revisionList, List<String> environmentList, List<String> countryList, List<String> browserList, List<String> tcestatusList, String ip, String port, String tag, String browserversion,
+            String comment, String bugs, String ticket);
 
     /**
      * Create a new Queue entry on database from existing object. if withNewDep
      * true, we create new not RELEASED dependencies. if false, we duplicate
      * existing dependencies from queue entry exeQueue.
      *
-     * @param object      the {@link queue entry} to Create
-     * @param withNewDep
-     * @param exeQueue    original queue entry id from which the duplication is
-     *                    done.
+     * @param object the {@link queue entry} to Create
+     * @param withNewDep when true, queue will be inserted with released even if past execution could be released. when false, dependencies from queue inserted will be released incase a past execution exist.
+     * @param exeQueue original queue entry id from which the duplication is
+     * done.
      * @param targetState
+     * @param queueToInsert Optionally that hashmap include all Execution of the
+     * context. This is used in order to avoid inserting a dependency on a
+     * testcase that is not included inside the campaign.
      * @return {@link AnswerItem}
      */
-    AnswerItem<TestCaseExecutionQueue> create(TestCaseExecutionQueue object, boolean withNewDep, long exeQueue, TestCaseExecutionQueue.State targetState);
+    AnswerItem<TestCaseExecutionQueue> create(TestCaseExecutionQueue object, boolean withNewDep, long exeQueue, TestCaseExecutionQueue.State targetState, Map<String, TestCaseExecutionQueue> queueToInsert);
 
     /**
      * @param exeQueueId
      * @param tag
+     * @return
      */
-    void checkAndReleaseQueuedEntry(long exeQueueId, String tag);
+    boolean checkAndReleaseQueuedEntry(long exeQueueId, String tag);
 
     /**
-     * @param object the {@link org.cerberus.core.crud.entity.AppService} to Update
+     * @param object the {@link org.cerberus.core.crud.entity.AppService} to
+     * Update
      * @return {@link AnswerItem}
      */
     Answer update(TestCaseExecutionQueue object);
@@ -307,7 +321,8 @@ public interface ITestCaseExecutionQueueService {
     Answer updateToErrorForce(long id, String comment);
 
     /**
-     * @param object the {@link org.cerberus.core.crud.entity.AppService} to Delete
+     * @param object the {@link org.cerberus.core.crud.entity.AppService} to
+     * Delete
      * @return {@link AnswerItem}
      */
     Answer delete(TestCaseExecutionQueue object);

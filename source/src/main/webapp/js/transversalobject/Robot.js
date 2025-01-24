@@ -1,5 +1,5 @@
 /*
- * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * Cerberus Copyright (C) 2013 - 2025 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -71,6 +71,7 @@ function initModalRobot() {
     $("#editRobotModal [name='screensizeField']").html(doc.getDocOnline("robot", "screensize"));
     $("#editRobotModal [name='isAcceptInsecureCertsField']").html(doc.getDocOnline("robot", "IsAcceptInsecureCerts"));
     $("#editRobotModal [name='extraParamField']").html(doc.getDocOnline("robot", "ExtraParam"));
+    $("#editRobotModal [name='acceptNotificationsField']").html(doc.getDocOnline("robot", "AcceptNotifications"));
     $("#editRobotModal [name='profileFolderField']").html(doc.getDocOnline("robot", "ProfileFolder"));
     $("#editRobotModal [name='descriptionField']").html(doc.getDocOnline("robot", "description"));
     $("#editRobotModal [name='addCapabilityHeader']").html(doc.getDocOnline("robot", "capabilityCapability"));
@@ -84,7 +85,7 @@ function initModalRobot() {
     displayInvariantList("robotActive", "ROBOTACTIVE", false);
     displayInvariantList("robotBrowser", "BROWSER", false, undefined, "");
     displayInvariantList("robotPlatform", "PLATFORM", false, undefined, "");
-    displayInvariantList("type", "APPLITYPE", false, undefined, "");
+    displayInvariantList("type", "APPLITYPE", false, undefined, "", undefined, undefined, "editRobotModal");
     displayInvariantList("lbexemethod", "ROBOTLBMETHOD", false);
 
     var availableUserAgent = getInvariantArray("USERAGENT", false);
@@ -120,6 +121,9 @@ function initModalRobot() {
     // Load the select needed in localStorage cache.
     getSelectInvariant("CAPABILITY", true);
     getSelectInvariant("ROBOTEXECUTORACTIVE", true);
+
+    getSelectInvariant('PROXYTYPE',false);
+
     // Adding rows in modals.
     $("#addEditCapability").click(addNewCapabilityRow.bind(null, "editCapabilitiesTableBody"));
     $("#addEditExecutor").click(addNewExecutorRow.bind(null, "editExecutorsTableBody"));
@@ -286,7 +290,9 @@ function confirmRobotModalHandler(mode) {
         tcElement.parents("div.form-group").removeClass("has-error");
     }
 
+    data.acceptNotifications = formEdit.find("#acceptNotifications").find("label[class*='active'] > input").attr('data-accnotif');
     data.isAcceptInsecureCerts = formEdit.find("#isAcceptInsecureCerts").prop("checked");
+    data.robotIsActive = formEdit.find("#robotIsActive").prop("checked");
     // we send to the server
 //    if (data.hostUsername !== hostUserBeforeUpdate || data.hostPassword !== HOST_PASSWORD_DEFAULT) {
 //        data.hostUsernameToSend = data.hostUsername;
@@ -312,7 +318,7 @@ function confirmRobotModalHandler(mode) {
         data: {
             robot: data.robot,
             robotid: data.robotid,
-            active: data.robotActive,
+            isActive: data.robotIsActive,
             host: data.host,
             port: data.port,
             hostUsername: data.hostUsernameToSend,
@@ -328,6 +334,7 @@ function confirmRobotModalHandler(mode) {
             description: data.description,
             isAcceptInsecureCerts: data.isAcceptInsecureCerts,
             extraParam: data.extraParam,
+            acceptNotifications: data.acceptNotifications,
             lbexemethod: data.lbexemethod,
             capabilities: data.capabilities,
             executors: data.executors
@@ -391,7 +398,7 @@ function feedRobotModal(robot, modalId, mode) {
     } else {
         var robotObj1 = {};
         robotObj1.robot = "";
-        robotObj1.active = "Y";
+        robotObj1.isActive = true;
         robotObj1.host = "";
         robotObj1.port = "";
         robotObj1.platform = "";
@@ -405,6 +412,7 @@ function feedRobotModal(robot, modalId, mode) {
         robotObj1.lbexemethod = "BYRANKING";
         robotObj1.type = "";
         robotObj1.extraParam = "";
+        robotObj1.acceptNotifications = 0;
         robotObj1.isAcceptInsecureCerts = true;
         var hasPermissions = true;
         feedRobotModalData(robotObj1, modalId, mode, hasPermissions);
@@ -441,7 +449,7 @@ function feedRobotModalData(robot, modalId, mode, hasPermissionsUpdate) {
     if (isEmpty(robot)) {
         formEdit.find("#robotid").prop("value", "");
         formEdit.find("#robotName").prop("value", "");
-        formEdit.find("#active").val("Y");
+        formEdit.find("#robotIsActive").prop("checked", true);
         formEdit.find("#platform").val("");
         formEdit.find("#browser").val("");
         formEdit.find("#version").prop("value", "");
@@ -453,6 +461,7 @@ function feedRobotModalData(robot, modalId, mode, hasPermissionsUpdate) {
         formEdit.find("#type").val("");
         formEdit.find("#lbexemethod").val("ROUNDROBIN");
         formEdit.find("#extraParam").val("");
+        formEdit.find("#acceptNotifications").val("");
         formEdit.find("#isAcceptInsecureCerts").prop("checked", true);
     } else {
         if (mode === "EDIT") {
@@ -461,14 +470,18 @@ function feedRobotModalData(robot, modalId, mode, hasPermissionsUpdate) {
             formEdit.find("#robotid").prop("value", "");
         }
         formEdit.find("#robotName").prop("value", robot.robot);
-        formEdit.find("#active").val(robot.active);
+        formEdit.find("#robotIsActive").prop("checked", robot.isActive);
         formEdit.find("#platform").val(robot.platform);
         if (robot.platform !== "") {
             $('#platformLogo').attr('src', './images/platform-' + robot.platform + '.png');
+        } else {
+            $('#platformLogo').attr('src', '');
         }
         formEdit.find("#browser").val(robot.browser);
-        if (robot.platform !== "") {
+        if (robot.browser !== "") {
             $('#browserLogo').attr('src', './images/browser-' + robot.browser + '.png');
+        } else {
+            $('#browserLogo').attr('src', '');
         }
         formEdit.find("#version").prop("value", robot.version);
         formEdit.find("#useragent").prop("value", robot.userAgent);
@@ -479,6 +492,7 @@ function feedRobotModalData(robot, modalId, mode, hasPermissionsUpdate) {
         formEdit.find("#type").val(robot.type);
         formEdit.find("#lbexemethod").val(robot.lbexemethod);
         formEdit.find("#extraParam").val(robot.extraParam);
+        formEdit.find("#acceptNotifications").find("input[data-accnotif='"+robot.acceptNotifications+"']").click();
         formEdit.find("#isAcceptInsecureCerts").prop("checked", robot.isAcceptInsecureCerts);
         loadCapabilitiesTable("editCapabilitiesTableBody", robot.capabilities);
         loadExecutorsTable("editExecutorsTableBody", robot.executors);
@@ -493,7 +507,7 @@ function feedRobotModalData(robot, modalId, mode, hasPermissionsUpdate) {
     //We desactivate or activate the access to the fields depending on if user has the credentials to edit.
     if (isEditable) { // If readonly, we readonly all fields
         formEdit.find("#robotName").prop("readonly", false);
-        formEdit.find("#active").removeAttr("disabled");
+        formEdit.find("#robotIsActive").removeAttr("disabled");
         formEdit.find("#host").prop("readonly", false);
         formEdit.find("#port").prop("readonly", false);
         formEdit.find("#platform").removeAttr("disabled");
@@ -509,10 +523,11 @@ function feedRobotModalData(robot, modalId, mode, hasPermissionsUpdate) {
         formEdit.find("#hostUsername").prop("readonly", false);
         formEdit.find("#type").prop("readonly", false);
         formEdit.find("#extraParam").prop("readonly", false);
+        formEdit.find("#acceptNotifications").prop("readonly", false);
         formEdit.find("#isAcceptInsecureCerts").prop("readonly", false);
     } else {
         formEdit.find("#robotName").prop("readonly", "readonly");
-        formEdit.find("#active").prop("disabled", "disabled");
+        formEdit.find("#robotIsActive").prop("disabled", "disabled");
         formEdit.find("#host").prop("readonly", "readonly");
         formEdit.find("#port").prop("readonly", "readonly");
         formEdit.find("#platform").prop("disabled", "disabled");
@@ -528,6 +543,7 @@ function feedRobotModalData(robot, modalId, mode, hasPermissionsUpdate) {
         formEdit.find("#hostUsername").prop("readonly", "readonly");
         formEdit.find("#type").prop("readonly", "readonly");
         formEdit.find("#extraParam").prop("readonly", "readonly");
+        formEdit.find("#acceptNotifications").prop("readonly", "readonly");
         formEdit.find("#isAcceptInsecureCerts").prop("readonly", "readonly");
     }
 }
@@ -605,7 +621,7 @@ function appendExecutorRow(tableBody, executor) {
 
     var doc = new Doc();
     var deleteBtn = $("<button type=\"button\"></button>").addClass("btn btn-default btn-xs").append($("<span></span>").addClass("glyphicon glyphicon-trash"));
-    var selectActive = getSelectInvariant("ROBOTEXECUTORACTIVE", false);
+    var selectActive = $("<input  type=\"checkbox\">").addClass("form-control input-sm").prop("checked", executor.isActive);
     var nameInput = $("<input  maxlength=\"150\" placeholder=\"-- " + doc.getDocLabel("robotexecutor", "executor") + " --\">").addClass("form-control input-sm").val(executor.executor);
     var rankInput = $("<input  placeholder=\"-- " + doc.getDocLabel("robotexecutor", "rank") + " --\">").addClass("form-control input-sm").val(executor.rank);
     var hostInput = $("<input  placeholder=\"-- " + doc.getDocLabel("robotexecutor", "host") + " --\">").addClass("form-control input-sm").val(executor.host);
@@ -615,14 +631,49 @@ function appendExecutorRow(tableBody, executor) {
     var deviceUdidInput = $("<input  placeholder=\"-- " + doc.getDocLabel("robotexecutor", "deviceUdid") + " --\">").addClass("form-control input-sm").val(executor.deviceUdid);
     var deviceNameInput = $("<input  placeholder=\"-- " + doc.getDocLabel("robotexecutor", "deviceName") + " --\">").addClass("form-control input-sm").val(executor.deviceName);
     var devicePortInput = $("<input  placeholder=\"-- " + doc.getDocLabel("robotexecutor", "devicePort") + " --\">").addClass("form-control input-sm").val(executor.devicePort);
-    var deviceLockUnlockInput = $("<input type='checkbox' placeholder=\"-- " + doc.getDocLabel("robotexecutor", "deviceLockUnlock") + " --\">").addClass("form-control input-sm").prop("checked", executor.deviceLockUnlock);
+    var deviceLockUnlockInput = $("<input type='checkbox' placeholder=\"-- " + doc.getDocLabel("robotexecutor", "deviceLockUnlock") + " --\">").addClass("form-control input-sm").prop("checked", executor.isDeviceLockUnlock);
     var executorExtensionHostInput = $("<input  placeholder=\"-- " + doc.getDocLabel("robotexecutor", "executorExtensionHost") + " --\">").addClass("form-control input-sm").val(executor.executorExtensionHost);
     var executorExtensionPortInput = $("<input  placeholder=\"-- " + doc.getDocLabel("robotexecutor", "executorExtensionPort") + " --\">").addClass("form-control input-sm").val(executor.executorExtensionPort);
     var executorProxyHostInput = $("<input  placeholder=\"-- " + doc.getDocLabel("robotexecutor", "executorProxyHost") + " --\">").addClass("form-control input-sm").val(executor.executorProxyHost);
     var executorProxyPortInput = $("<input  placeholder=\"-- " + doc.getDocLabel("robotexecutor", "executorProxyPort") + " --\">").addClass("form-control input-sm").val(executor.executorProxyPort);
-    var executorProxyActiveInput = $("<input type='checkbox' placeholder=\"-- " + doc.getDocLabel("robotexecutor", "executorProxyActive") + " --\">").addClass("form-control input-sm").prop("checked", executor.executorProxyActive);
+    var selectProxyTypeLnk = getSelectInvariant('PROXYTYPE', false);
     var table = $("#" + tableBody);
 
+    if (executor.executorProxyType === 'NONE' || executor.executorProxyType === 'MANUAL') {
+        executorExtensionHostInput.prop("readonly", true);
+        executorExtensionPortInput.prop("readonly", true);
+    } else {
+        executorExtensionHostInput.prop("readonly", false);
+        executorExtensionPortInput.prop("readonly", false);
+    }
+    if (executor.executorProxyType === 'NONE') {
+        executorProxyHostInput.prop("readonly", true);
+        executorProxyPortInput.prop("readonly", true);
+    } else {
+        executorProxyHostInput.prop("readonly", false);
+        executorProxyPortInput.prop("readonly", false);
+    }
+
+
+
+    selectProxyTypeLnk.change(function () {
+        executor.executorProxyType = $(this).val();
+        if (executor.executorProxyType === 'NONE' || executor.executorProxyType === 'MANUAL') {
+            executorExtensionHostInput.prop("readonly", true);
+            executorExtensionPortInput.prop("readonly", true);
+        } else {
+            executorExtensionHostInput.prop("readonly", false);
+            executorExtensionPortInput.prop("readonly", false);
+        }
+        if (executor.executorProxyType === 'NONE') {
+            executorProxyHostInput.prop("readonly", true);
+            executorProxyPortInput.prop("readonly", true);
+        } else {
+            executorProxyHostInput.prop("readonly", false);
+            executorProxyPortInput.prop("readonly", false);
+        }
+
+    });
 
     var row = $("<tr></tr>");
 
@@ -632,7 +683,7 @@ function appendExecutorRow(tableBody, executor) {
     var drow01 = $("<div class='row'></div>").append(name);
     var td2 = $("<td></td>").append(drow01);
 
-    var active = $("<div class='form-group col-sm-6'></div>").append("<label for='active'>" + doc.getDocOnline("robotexecutor", "active") + "</label>").append(selectActive.val(executor.active));
+    var active = $("<div class='form-group col-sm-6'></div>").append("<label for='active'>" + doc.getDocOnline("robotexecutor", "active") + "</label>").append(selectActive);
     var rank = $("<div class='form-group col-sm-4'></div>").append("<label for='rank'>" + doc.getDocOnline("robotexecutor", "rank") + "</label>").append(rankInput);
     var expandName = $("<div class='form-group col-sm-2'></div>").append("<button class='btn btn-primary' type='button' data-toggle='collapse' data-target='#col" + nbRow + "' aria-expanded='false' aria-controls='col" + nbRow + "'><span class='glyphicon glyphicon-chevron-down'></span></button>");
     var host = $("<div class='form-group col-sm-4'></div>").append("<label for='host'>" + doc.getDocOnline("robotexecutor", "host") + "</label>").append(hostInput);
@@ -643,7 +694,7 @@ function appendExecutorRow(tableBody, executor) {
     var dname = $("<div class='form-group col-sm-4'></div>").append("<label for='devicename'>" + doc.getDocOnline("robotexecutor", "deviceName") + "</label>").append(deviceNameInput);
     var dport = $("<div class='form-group col-sm-2'></div>").append("<label for='deviceport'>" + doc.getDocOnline("robotexecutor", "devicePort") + "</label>").append(devicePortInput);
     var dLockUnlock = $("<div class='form-group col-sm-2'></div>").append("<label for='devicelockunlockinput'>" + doc.getDocOnline("robotexecutor", "deviceLockUnlock") + "</label>").append(deviceLockUnlockInput);
-    var epActive = $("<div class='form-group col-sm-2'></div>").append("<label for='executorproxyactive'>" + doc.getDocOnline("robotexecutor", "executorProxyActive") + "</label>").append(executorProxyActiveInput);
+    var epType = $("<div class='form-group col-sm-2'></div>").append("<label for='executorproxytype'>" + doc.getDocOnline("robotexecutor", "executorProxyType") + "</label>").append(selectProxyTypeLnk.val(executor.executorProxyType));
     var eehost = $("<div class='form-group col-sm-3'></div>").append("<label for='executorextensionhost'>" + doc.getDocOnline("robotexecutor", "executorExtensionHost") + "</label>").append(executorExtensionHostInput);
     var eeport = $("<div class='form-group col-sm-2'></div>").append("<label for='executorextensionport'>" + doc.getDocOnline("robotexecutor", "executorExtensionPort") + "</label>").append(executorExtensionPortInput);
     var ephost = $("<div class='form-group col-sm-3'></div>").append("<label for='executorproxyhost'>" + doc.getDocOnline("robotexecutor", "executorProxyHost") + "</label>").append(executorProxyHostInput);
@@ -652,7 +703,7 @@ function appendExecutorRow(tableBody, executor) {
     var drow2 = $("<div class='row'></div>").append(host).append(port).append(hostuser).append(hostpass);
 //    var drow3 = $("<div class='row'></div>").append(hostuser).append(hostpass);
     var drow4 = $("<div class='row alert alert-warning'></div>").append(dudid).append(dname).append(dport).append(dLockUnlock);
-    var drow5 = $("<div class='row alert alert-warning'></div>").append(epActive).append(eehost).append(eeport).append(ephost).append(epport);
+    var drow5 = $("<div class='row alert alert-warning'></div>").append(epType).append(eehost).append(eeport).append(ephost).append(epport);
     var panelExtra = $("<div class='collapse' id='col" + nbRow + "'></div>").append(drow4).append(drow5);
     var td3 = $("<td></td>").append(drow1).append(drow2).append(panelExtra);
 
@@ -667,7 +718,7 @@ function appendExecutorRow(tableBody, executor) {
         }
     });
     selectActive.change(function () {
-        executor.active = $(this).val();
+        executor.isActive = $(this).prop("checked");
     });
     nameInput.change(function () {
         executor.executor = $(this).val();
@@ -697,7 +748,7 @@ function appendExecutorRow(tableBody, executor) {
         executor.devicePort = $(this).val();
     });
     deviceLockUnlockInput.change(function () {
-        executor.deviceLockUnlock = $(this).prop("checked");
+        executor.isDeviceLockUnlock = $(this).prop("checked");
     });
     executorExtensionHostInput.change(function () {
         executor.executorExtensionHost = $(this).val();
@@ -710,9 +761,6 @@ function appendExecutorRow(tableBody, executor) {
     });
     executorProxyPortInput.change(function () {
         executor.executorProxyPort = $(this).val();
-    });
-    executorProxyActiveInput.change(function () {
-        executor.executorProxyActive = $(this).prop("checked");
     });
 
     hostInput.autocomplete({
@@ -758,6 +806,7 @@ function appendExecutorRow(tableBody, executor) {
     row.append(td2);
     row.append(td3);
 //    executor.active = selectActive.prop("value"); // Value that has been requested by dtb parameter may not exist in combo values so we take the real selected value.
+    executor.executorProxyType = selectProxyTypeLnk.prop("value"); // Value that has been requested by dtb parameter may not exist in combo vlaues so we take the real selected value.
     row.data("executor", executor);
     table.append(row);
 }
@@ -780,7 +829,7 @@ function addNewExecutorRow(tableBody) {
         toDelete: false,
         ID: 0,
         executor: "EXE-" + nbExecutorTable,
-        active: "Y",
+        isActive: true,
         rank: nbExecutorTable,
         host: "",
         port: "",
@@ -788,13 +837,13 @@ function addNewExecutorRow(tableBody) {
         hostPassword: "",
         deviceUdid: "",
         deviceName: "",
-        deviceLockUnlock: false,
+        isDeviceLockUnlock: false,
         description: "",
         executorExtensionHost: "",
-        executorExtensionPort: "8093",
+        executorExtensionPort: 8093,
         executorProxyHost: "",
-        executorProxyPort: "",
-        executorProxyActive: false
+        executorProxyPort: 0,
+        executorProxyType: "NONE"
     };
     appendExecutorRow(tableBody, newExecutor);
 }

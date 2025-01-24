@@ -1,5 +1,5 @@
 /**
- * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * Cerberus Copyright (C) 2013 - 2025 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -66,10 +66,11 @@ public interface ILogEventService {
      *
      * @param page
      * @param action
+     * @param status
      * @param request
      * @param log
      */
-    void createForPrivateCalls(String page, String action, String log, HttpServletRequest request);
+    void createForPrivateCalls(String page, String action, String status, String log, HttpServletRequest request);
 
     /**
      * This method is to be used when log is done from a private Servlet. In
@@ -77,9 +78,10 @@ public interface ILogEventService {
      *
      * @param page
      * @param action
+     * @param status
      * @param log
      */
-    void createForPrivateCalls(String page, String action, String log);
+    void createForPrivateCalls(String page, String action, String status, String log);
 
     /**
      * This method is to be used when log is done from a public Servlet. It will
@@ -88,17 +90,29 @@ public interface ILogEventService {
      *
      * @param page
      * @param action
+     * @param status
      * @param request
      * @param log
      */
-    void createForPublicCalls(String page, String action, String log, HttpServletRequest request);
+    void createForPublicCalls(String page, String action, String status, String log, HttpServletRequest request);
 
     /**
-     * 
+     *
+     * @param page
+     * @param action
+     * @param status
+     * @param log
+     * @param request
+     * @param login
+     */
+    void createForPublicCalls(String page, String action, String status, String log, HttpServletRequest request, String login);
+
+    /**
+     *
      * @param searchParameter
      * @param individualSearch
      * @param columnName
-     * @return 
+     * @return
      */
     public AnswerList<String> readDistinctValuesByCriteria(String searchParameter, Map<String, List<String>> individualSearch, String columnName);
 }

@@ -1,19 +1,19 @@
 /**
- * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * Cerberus Copyright (C) 2013 - 2025 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
- *
+ * 
  * This file is part of Cerberus.
- *
+ * 
  * Cerberus is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- *
+ * 
  * Cerberus is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- *
+ * 
  * You should have received a copy of the GNU General Public License
  * along with Cerberus.  If not, see <http://www.gnu.org/licenses/>.
  */
@@ -34,6 +34,7 @@ import java.net.Proxy;
 import java.net.URL;
 import java.net.URLConnection;
 import java.util.UUID;
+
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
@@ -42,7 +43,9 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.tika.mime.MimeType;
 import org.apache.tika.mime.MimeTypeException;
 import org.apache.tika.mime.MimeTypes;
+import org.cerberus.core.crud.entity.Parameter;
 import org.cerberus.core.crud.service.IParameterService;
+import org.cerberus.core.crud.service.impl.ParameterService;
 import org.cerberus.core.engine.entity.Identifier;
 import org.cerberus.core.engine.entity.MessageEvent;
 import org.cerberus.core.engine.entity.Session;
@@ -56,7 +59,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 /**
- *
  * @author bcivel
  */
 @Service
@@ -96,7 +98,7 @@ public class SikuliService implements ISikuliService {
     public static final String SIKULI_IDENTIFIER_TEXT = "text";
 
     private JSONObject generatePostParameters(String action, String locator, String locator2, String text, String text2,
-            long defaultWait, String minSimilarity, Integer highlightElement, String typeDelay) throws JSONException, IOException, MalformedURLException, MimeTypeException {
+                                              long defaultWait, String minSimilarity, Integer highlightElement, String typeDelay) throws JSONException, IOException, MalformedURLException, MimeTypeException {
         JSONObject result = new JSONObject();
         String picture = "";
         String extension = "";
@@ -176,14 +178,14 @@ public class SikuliService implements ISikuliService {
                             yOffsetS = offsetsR1.replace("yoffset=", "");
                         }
                     }
-                    if (!StringUtil.isEmpty(xOffsetS)) {
+                    if (!StringUtil.isEmptyOrNull(xOffsetS)) {
                         try {
                             xOffset = Integer.valueOf(xOffsetS);
                         } catch (NumberFormatException e) {
                             LOG.warn("Failed to convert xOffset : " + xOffsetS, e);
                         }
                     }
-                    if (!StringUtil.isEmpty(yOffsetS)) {
+                    if (!StringUtil.isEmptyOrNull(yOffsetS)) {
                         try {
                             yOffset = Integer.valueOf(yOffsetS);
                         } catch (NumberFormatException e) {
@@ -296,11 +298,12 @@ public class SikuliService implements ISikuliService {
             }
 
             if (connection == null || connection.getResponseCode() != 200) {
+                LOG.info("Responce code different from 200 when calling '" + urlToConnect + "'. Disable Cerberus extension features.");
                 return false;
             }
 
         } catch (IOException ex) {
-            LOG.warn(ex);
+            LOG.warn("Exception catch when calling '" + urlToConnect + "' " + ex, ex);
             return false;
         } finally {
             if (os != null) {
@@ -403,7 +406,7 @@ public class SikuliService implements ISikuliService {
                         msg = new MessageEvent(MessageEventEnum.ACTION_SUCCESS_BUTRETURNEDKO);
                         msg.resolveDescription("DETAIL", "");
                     } else {
-                        if (objReceived.has("message") && !StringUtil.isEmpty(objReceived.getString("message"))) {
+                        if (objReceived.has("message") && !StringUtil.isEmptyOrNull(objReceived.getString("message"))) {
                             msg = new MessageEvent(MessageEventEnum.ACTION_FAILED_WITHDETAIL);
                             msg.resolveDescription("DETAIL", objReceived.getString("message"));
                         } else {
@@ -501,6 +504,7 @@ public class SikuliService implements ISikuliService {
 
         if (actionResult.getResultMessage().getCodeString().equals(new MessageEvent(MessageEventEnum.ACTION_SUCCESS).getCodeString())) {
             MessageEvent message = new MessageEvent(MessageEventEnum.ACTION_SUCCESS_CLICK);
+            message.setDescription(message.getDescription().replace("%ELEMENTFOUND%", "At least 1 element found"));
             message.setDescription(message.getDescription().replace("%ELEMENT%", locator));
             return message;
         }
@@ -627,6 +631,7 @@ public class SikuliService implements ISikuliService {
 
         if (actionResult.getResultMessage().getCodeString().equals(new MessageEvent(MessageEventEnum.ACTION_SUCCESS).getCodeString())) {
             MessageEvent message = new MessageEvent(MessageEventEnum.ACTION_SUCCESS_TYPE);
+            message.setDescription(message.getDescription().replace("%ELEMENTFOUND%", "At least 1 element found"));
             message.setDescription(message.getDescription().replace("%ELEMENT%", locator));
             message.setDescription(message.getDescription().replace("%DATA%", text));
             return message;
@@ -641,23 +646,27 @@ public class SikuliService implements ISikuliService {
     }
 
     @Override
-    public MessageEvent doSikuliActionMouseOver(Session session, String locator, String text) {
+    public MessageEvent doSikuliActionMouseOver(Session session, String locator, String text, String offset) {
         AnswerItem<JSONObject> actionResult = null;
 
         if (!locator.isEmpty()) {
             actionResult = doSikuliAction(session, this.SIKULI_MOUSEOVER, locator, null, "", "");
+            actionResult = doSikuliAction(session, this.SIKULI_MOUSEMOVE, null, null, offset, "");
         } else {
             actionResult = doSikuliAction(session, this.SIKULI_MOUSEOVER, null, null, text, "");
+            actionResult = doSikuliAction(session, this.SIKULI_MOUSEMOVE, null, null, offset, "");
         }
 
         if (actionResult.getResultMessage().getCodeString().equals(new MessageEvent(MessageEventEnum.ACTION_SUCCESS).getCodeString())) {
             MessageEvent message = new MessageEvent(MessageEventEnum.ACTION_SUCCESS_MOUSEOVER);
             message.setDescription(message.getDescription().replace("%ELEMENT%", locator));
+            message.setDescription(message.getDescription().replace("%OFFSET%", "("+offset+")"));
             return message;
         }
         if (actionResult.getResultMessage().getCodeString().equals(new MessageEvent(MessageEventEnum.ACTION_FAILED).getCodeString())) {
             MessageEvent mes = new MessageEvent(MessageEventEnum.ACTION_FAILED_MOUSEOVER_NO_SUCH_ELEMENT);
             mes.setDescription(mes.getDescription().replace("%ELEMENT%", locator) + " - " + actionResult.getMessageDescription());
+            mes.setDescription(mes.getDescription().replace("%OFFSET%", "("+offset+")"));
             return mes;
         }
 
@@ -719,14 +728,14 @@ public class SikuliService implements ISikuliService {
         if (actionResult.getResultMessage().getCodeString().equals(new MessageEvent(MessageEventEnum.ACTION_SUCCESS).getCodeString())) {
             MessageEvent message = new MessageEvent(MessageEventEnum.ACTION_SUCCESS_KEYPRESS)
                     .resolveDescription("ELEMENT", locator)
-                    .resolveDescription("DATA", textToKey)
+                    .resolveDescription("KEY", textToKey)
                     .resolveDescription("MODIFIER", modifier);
             return message;
         }
         if (actionResult.getResultMessage().getCodeString().equals(new MessageEvent(MessageEventEnum.ACTION_FAILED).getCodeString())) {
             MessageEvent mes = new MessageEvent(MessageEventEnum.ACTION_FAILED_KEYPRESS_OTHER)
                     .resolveDescription("ELEMENT", locator)
-                    .resolveDescription("DATA", textToKey)
+                    .resolveDescription("KEY", textToKey)
                     .resolveDescription("MODIFIER", modifier)
                     .resolveDescription("REASON", actionResult.getMessageDescription());
             return mes;
@@ -804,7 +813,7 @@ public class SikuliService implements ISikuliService {
         AnswerItem<JSONObject> actionResult = doSikuliAction(session, SikuliService.SIKULI_ENDEXECUTION, null, null, "", "");
 
         if (actionResult.getResultMessage().getCodeString().equals(new MessageEvent(MessageEventEnum.ACTION_SUCCESS).getCodeString())) {
-            MessageEvent message = new MessageEvent(MessageEventEnum.ACTION_SUCCESS_KEYPRESS);
+            MessageEvent message = new MessageEvent(MessageEventEnum.ACTION_SUCCESS_ENDEXECUTION);
             return message;
         }
         if (actionResult.getResultMessage().getCodeString().equals(new MessageEvent(MessageEventEnum.ACTION_FAILED).getCodeString())) {
@@ -826,7 +835,8 @@ public class SikuliService implements ISikuliService {
             String screenshotInBase64 = actionResult.getItem().getString("screenshot");
             byte[] data = Base64.decodeBase64(screenshotInBase64);
 
-            image = new File("screenshotsikuli" + UUID.randomUUID().toString().subSequence(0, 14) + ".png");
+            image = new File(parameterService.getParameterStringByKey(Parameter.VALUE_cerberus_exeautomedia_path, "", File.separator + "tmp") + File.separator + "tmp" + File.separator
+                    + "screenshotsikuli-" + UUID.randomUUID().toString().subSequence(0, 13) + ".png");
             FileUtils.writeByteArrayToFile(image, data);
 
             if (image != null) {
@@ -837,9 +847,9 @@ public class SikuliService implements ISikuliService {
             }
 
         } catch (JSONException ex) {
-            LOG.warn(ex);
+            LOG.warn(ex, ex);
         } catch (IOException ex) {
-            LOG.warn(ex);
+            LOG.warn(ex, ex);
         }
         return image;
     }

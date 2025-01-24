@@ -1,5 +1,5 @@
 /**
- * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * Cerberus Copyright (C) 2013 - 2025 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -33,6 +33,7 @@ import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.cerberus.core.service.notifications.slack.ISlackGenerationService;
+import org.json.JSONArray;
 
 /**
  *
@@ -53,13 +54,13 @@ public class SlackGenerationService implements ISlackGenerationService {
 
         JSONObject slackMessage = new JSONObject();
         String cerberusUrl = parameterService.getParameterStringByKey("cerberus_gui_url", "", "");
-        if (StringUtil.isEmpty(cerberusUrl)) {
+        if (StringUtil.isEmptyOrNull(cerberusUrl)) {
             cerberusUrl = parameterService.getParameterStringByKey("cerberus_url", "", "");
         }
         cerberusUrl = StringUtil.addSuffixIfNotAlready(cerberusUrl, "/");
         cerberusUrl += "ReportingExecutionByTag.jsp?Tag=" + URLEncoder.encode(tag.getTag(), "UTF-8");
         slackMessage.put("text", "Execution Tag '" + tag.getTag() + "' Started. <" + cerberusUrl + "|Click here> for details.");
-        if (!StringUtil.isEmpty(channel)) {
+        if (!StringUtil.isEmptyOrNull(channel)) {
             slackMessage.put("channel", channel);
         }
         slackMessage.put("username", "Cerberus");
@@ -72,8 +73,31 @@ public class SlackGenerationService implements ISlackGenerationService {
     @Override
     public JSONObject generateNotifyEndTagExecution(Tag tag, String channel) throws UnsupportedEncodingException, Exception {
 
+        String jsonMessage = "{\n"
+                + "	\"attachments\": [\n"
+                + "		{\n"
+                + "			\"color\": \"%COLOR%\",\n"
+                + "			\"fallback\": \"%MESSAGE%\",\n"
+                + "            \n"
+                + "			\"blocks\": [\n"
+                + "				{\n"
+                + "					\"type\": \"section\",\n"
+                + "					\"fields\": [\n"
+                + "						{\n"
+                + "							\"type\": \"mrkdwn\",\n"
+                + "							\"text\": \"%MESSAGE%\\n*Campaign %STATUS-MESSAGE%. CI Score = %CISCORE% vs %CITHRESHOLD%*\\n%TAG-SUMMARY%\"\n"
+                + "						}\n"
+                + "					]\n"
+                + "				}\n"
+                + "			]\n"
+                + "		}\n"
+                + "	],\n"
+                + "	\"username\": \"Cerberus\",\n"
+                + "	\"channel\": \"%CHANNEL%\"\n"
+                + "}";
+
         String cerberusUrl = parameterService.getParameterStringByKey("cerberus_gui_url", "", "");
-        if (StringUtil.isEmpty(cerberusUrl)) {
+        if (StringUtil.isEmptyOrNull(cerberusUrl)) {
             cerberusUrl = parameterService.getParameterStringByKey("cerberus_url", "", "");
         }
         cerberusUrl = StringUtil.addSuffixIfNotAlready(cerberusUrl, "/");
@@ -82,31 +106,29 @@ public class SlackGenerationService implements ISlackGenerationService {
         JSONObject slackMessage = new JSONObject();
         JSONObject attachementObj = new JSONObject();
 
-        attachementObj.put("fallback", "Execution Tag '" + tag.getTag() + "' Ended. <" + cerberusUrl + "|Click here> for details.");
-        attachementObj.put("pretext", "Execution Tag '" + tag.getTag() + "' Ended. <" + cerberusUrl + "|Click here> for details.");
+        String message = "Execution Tag '" + tag.getTag() + "' Ended. <" + cerberusUrl + "|Click here> for details.";
 
-        JSONObject slackattaMessage = new JSONObject();
+        String slackStatus = "";
+        String color = "";
         if ("OK".equalsIgnoreCase(tag.getCiResult())) {
-            attachementObj.put("color", TestCaseExecution.CONTROLSTATUS_OK_COL_EXT);
-            slackattaMessage.put("title", "Campaign successfully Executed. CI Score = " + tag.getCiScore() + " (< " + tag.getCiScoreThreshold() + ")");
+            color = TestCaseExecution.CONTROLSTATUS_OK_COL_EXT;
+            slackStatus = "successfully executed";
         } else {
-            attachementObj.put("color", TestCaseExecution.CONTROLSTATUS_KO_COL_EXT);
-            slackattaMessage.put("title", "Campaign failed. CI Score = " + tag.getCiScore() + " >= " + tag.getCiScoreThreshold());
-
+            color = TestCaseExecution.CONTROLSTATUS_KO_COL_EXT;
+            slackStatus = "failed";
         }
-        slackattaMessage.put("value", tagService.formatResult(tag));
-        slackattaMessage.put("short", false);
-        attachementObj.append("fields", slackattaMessage);
 
-        slackMessage.append("attachments", attachementObj);
+        jsonMessage = jsonMessage
+                .replace("%COLOR%", color)
+                .replace("%MESSAGE%", message)
+                .replace("%CHANNEL%", channel)
+                .replace("%CISCORE%", String.valueOf(tag.getCiScore()))
+                .replace("%CITHRESHOLD%", String.valueOf(tag.getCiScoreThreshold()))
+                .replace("%STATUS-MESSAGE%", slackStatus)
+                .replace("%TAG-SUMMARY%", tagService.formatResult(tag));
 
-        if (!StringUtil.isEmpty(channel)) {
-            slackMessage.put("channel", channel);
-        }
-        slackMessage.put("username", "Cerberus");
-
-        LOG.debug(slackMessage.toString(1));
-        return slackMessage;
+        LOG.debug(jsonMessage);
+        return new JSONObject(jsonMessage);
 
     }
 
@@ -115,13 +137,13 @@ public class SlackGenerationService implements ISlackGenerationService {
 
         JSONObject slackMessage = new JSONObject();
         String cerberusUrl = parameterService.getParameterStringByKey("cerberus_gui_url", "", "");
-        if (StringUtil.isEmpty(cerberusUrl)) {
+        if (StringUtil.isEmptyOrNull(cerberusUrl)) {
             cerberusUrl = parameterService.getParameterStringByKey("cerberus_url", "", "");
         }
         cerberusUrl = StringUtil.addSuffixIfNotAlready(cerberusUrl, "/");
         cerberusUrl += "TestCaseExecution.jsp?executionId=" + exe.getId();
         slackMessage.put("text", "Execution '" + exe.getId() + "' Started. <" + cerberusUrl + "|Click here> for details.");
-        if (!StringUtil.isEmpty(channel)) {
+        if (!StringUtil.isEmptyOrNull(channel)) {
             slackMessage.put("channel", channel);
         }
         slackMessage.put("username", "Cerberus");
@@ -135,7 +157,7 @@ public class SlackGenerationService implements ISlackGenerationService {
     public JSONObject generateNotifyEndExecution(TestCaseExecution exe, String channel) throws Exception {
 
         String cerberusUrl = parameterService.getParameterStringByKey("cerberus_gui_url", "", "");
-        if (StringUtil.isEmpty(cerberusUrl)) {
+        if (StringUtil.isEmptyOrNull(cerberusUrl)) {
             cerberusUrl = parameterService.getParameterStringByKey("cerberus_url", "", "");
         }
         cerberusUrl = StringUtil.addSuffixIfNotAlready(cerberusUrl, "/");
@@ -161,7 +183,7 @@ public class SlackGenerationService implements ISlackGenerationService {
 
         slackMessage.append("attachments", attachementObj);
 
-        if (!StringUtil.isEmpty(channel)) {
+        if (!StringUtil.isEmptyOrNull(channel)) {
             slackMessage.put("channel", channel);
         }
         slackMessage.put("username", "Cerberus");
@@ -176,7 +198,7 @@ public class SlackGenerationService implements ISlackGenerationService {
 
         JSONObject slackMessage = new JSONObject();
         String cerberusUrl = parameterService.getParameterStringByKey("cerberus_gui_url", "", "");
-        if (StringUtil.isEmpty(cerberusUrl)) {
+        if (StringUtil.isEmptyOrNull(cerberusUrl)) {
             cerberusUrl = parameterService.getParameterStringByKey("cerberus_url", "", "");
         }
         cerberusUrl = StringUtil.addSuffixIfNotAlready(cerberusUrl, "/");
@@ -192,7 +214,7 @@ public class SlackGenerationService implements ISlackGenerationService {
                 slackMessage.put("text", "Testcase '" + testCase.getTest() + " - " + testCase.getTestcase() + "' was Updated to version " + testCase.getVersion() + ". <" + cerberusUrl + "|Click here> for details.");
                 break;
         }
-        if (!StringUtil.isEmpty(channel)) {
+        if (!StringUtil.isEmptyOrNull(channel)) {
             slackMessage.put("channel", channel);
         }
         slackMessage.put("username", "Cerberus");

@@ -1,5 +1,5 @@
 /**
- * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * Cerberus Copyright (C) 2013 - 2025 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -76,6 +76,15 @@ public interface ICountryEnvironmentParametersService {
      * @return
      */
     public AnswerList<CountryEnvironmentParameters> readByVarious(String system, String country, String environment, String application);
+
+    /**
+     *
+     * @param system
+     * @param country
+     * @param environment
+     * @return
+     */
+    public AnswerList<CountryEnvironmentParameters> readDependenciesByVarious(String system, String country, String environment);
 
     /**
      *

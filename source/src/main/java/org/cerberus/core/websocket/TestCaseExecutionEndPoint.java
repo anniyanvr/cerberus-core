@@ -1,5 +1,5 @@
 /**
- * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * Cerberus Copyright (C) 2013 - 2025 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -119,18 +119,14 @@ public class TestCaseExecutionEndPoint {
     public void send(TestCaseExecution execution, boolean forcePush) {
         // Check if sending is enabled
         if (!execution.isCerberus_featureflipping_activatewebsocketpush()) {
-            if (LOG.isDebugEnabled()) {
-                LOG.debug("Push is disabled. Ignore sending of execution " + execution.getId());
-            }
+            LOG.debug("Push is disabled. Ignore sending of execution " + execution.getId());
             return;
         }
 
         // Check if sending can be done regarding on the last push and allowed period
         long sinceLastPush = new Date().getTime() - execution.getLastWebsocketPush();
         if ((sinceLastPush < execution.getCerberus_featureflipping_websocketpushperiod()) && !forcePush) {
-            if (LOG.isDebugEnabled()) {
-                LOG.debug("Not enough elapsed time since the last push for execution " + execution.getId() + " (" + sinceLastPush + " < " + execution.getCerberus_featureflipping_websocketpushperiod());
-            }
+            LOG.debug("Not enough elapsed time since the last push for execution " + execution.getId() + " (" + sinceLastPush + " < " + execution.getCerberus_featureflipping_websocketpushperiod());
             return;
         }
 
@@ -147,15 +143,11 @@ public class TestCaseExecutionEndPoint {
         }
 
         // Send the given TestCaseExecution to all registered sessions
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("Trying to send execution " + execution.getId() + " to sessions");
-        }
+        LOG.debug("Trying to send execution " + execution.getId() + " to sessions");
         for (Session registeredSession : registeredSessions) {
             try {
                 registeredSession.getBasicRemote().sendObject(execution);
-                if (LOG.isDebugEnabled()) {
-                    LOG.debug("Execution " + execution.getId() + " sent to session " + registeredSession.getId());
-                }
+                LOG.debug("Execution " + execution.getId() + " sent to session " + registeredSession.getId());
             } catch (Exception e) {
                 LOG.warn("Unable to send execution " + execution.getId() + " to session " + registeredSession.getId() + " due to " + e.getMessage());
             }

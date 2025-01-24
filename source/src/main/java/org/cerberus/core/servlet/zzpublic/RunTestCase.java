@@ -1,5 +1,5 @@
 /**
- * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * Cerberus Copyright (C) 2013 - 2025 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -34,6 +34,7 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import org.apache.commons.lang3.StringUtils;
+import org.cerberus.core.crud.entity.LogEvent;
 import org.cerberus.core.crud.entity.Robot;
 import org.cerberus.core.crud.entity.TestCase;
 import org.cerberus.core.crud.entity.TestCaseExecution;
@@ -127,7 +128,7 @@ public class RunTestCase extends HttpServlet {
          * Adding Log entry.
          */
         ILogEventService logEventService = appContext.getBean(ILogEventService.class);
-        logEventService.createForPublicCalls("/RunTestCase", "CALL", "RunTestCase called : " + request.getRequestURL(), request);
+        logEventService.createForPublicCalls("/RunTestCase", "CALL", LogEvent.STATUS_INFO, "RunTestCase called : " + request.getRequestURL(), request);
 
         if (apiKeyService.authenticate(request, response)) {
 
@@ -141,7 +142,7 @@ public class RunTestCase extends HttpServlet {
             String version = "";
             String platform = "";
             String robot = "";
-            String active = "";
+            boolean isActive = true;
             String timeout = "";
             String userAgent = "";
             String screenSize = "";
@@ -255,19 +256,19 @@ public class RunTestCase extends HttpServlet {
 
             // If Robot is feeded, we check it exist. If it exist, we overwrite the associated parameters.
             Robot robObj = null;
-            if (!StringUtil.isEmpty(robot)) {
+            if (!StringUtil.isEmptyOrNull(robot)) {
                 IRobotService robotService = appContext.getBean(IRobotService.class);
                 try {
                     robObj = robotService.readByKey(robot);
                     // If Robot parameter is defined and we can find the robot, we overwrite the corresponding parameters.
                     browser = ParameterParserUtil.parseStringParam(robObj.getBrowser(), browser);
                     robotDecli = ParameterParserUtil.parseStringParam(robObj.getRobotDecli(), "");
-                    if (StringUtil.isEmpty(robotDecli)) {
+                    if (StringUtil.isEmptyOrNull(robotDecli)) {
                         robotDecli = robObj.getRobot();
                     }
                     version = ParameterParserUtil.parseStringParam(robObj.getVersion(), version);
                     platform = ParameterParserUtil.parseStringParam(robObj.getPlatform(), platform);
-                    active = robObj.getActive();
+                    isActive = robObj.isActive();
                     userAgent = robObj.getUserAgent();
                     screenSize = robObj.getScreenSize();
                 } catch (CerberusException ex) {
@@ -278,7 +279,7 @@ public class RunTestCase extends HttpServlet {
                 robotDecli = browser;
             }
             // We cannot execute a testcase on a desactivated Robot.
-            if (active.equals("N")) {
+            if (!isActive) {
                 errorMessage += "Error - Robot is not Active. ";
                 error = true;
             }
@@ -302,7 +303,7 @@ public class RunTestCase extends HttpServlet {
             }
 
             // Create Tag when exist.
-            if (!StringUtil.isEmpty(tag)) {
+            if (!StringUtil.isEmptyOrNull(tag)) {
 
                 // We create or update it.
                 ITagService tagService = appContext.getBean(ITagService.class);

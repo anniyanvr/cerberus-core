@@ -1,5 +1,5 @@
 /**
- * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * Cerberus Copyright (C) 2013 - 2025 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -66,7 +66,9 @@ import java.net.SocketAddress;
 import java.net.URL;
 import java.net.URLConnection;
 import java.net.URLStreamHandler;
+import java.sql.Timestamp;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.regex.Pattern;
 
@@ -189,13 +191,13 @@ public class SoapService implements ISoapService {
         if (proxyUser != null && proxyPassword != null) {
             Authenticator.setDefault(
                     new Authenticator() {
-                        @Override
-                        public PasswordAuthentication getPasswordAuthentication() {
-                            return new PasswordAuthentication(
-                                    proxyUser, proxyPassword.toCharArray()
-                            );
-                        }
-                    }
+                @Override
+                public PasswordAuthentication getPasswordAuthentication() {
+                    return new PasswordAuthentication(
+                            proxyUser, proxyPassword.toCharArray()
+                    );
+                }
+            }
             );
             System.setProperty("http.proxyUser", proxyUser);
             System.setProperty("http.proxyPassword", proxyPassword);
@@ -208,17 +210,17 @@ public class SoapService implements ISoapService {
         String unescapedEnvelope = StringEscapeUtils.unescapeXml(envelope);
         boolean is12SoapVersion = SOAP_1_2_NAMESPACE_PATTERN.matcher(unescapedEnvelope).matches();
 
-        AppService serviceSOAP = factoryAppService.create("", AppService.TYPE_SOAP, null, "", "", envelope, "", "", "", "", "", "", "", servicePath, true, "", soapOperation, false, "", false, "", false, "", null, "", null, "", null, null);
+        AppService serviceSOAP = factoryAppService.create("", AppService.TYPE_SOAP, null, "", "", "", envelope, "", "", "", "", "", "", "", servicePath, true, "", soapOperation, false, "", false, "", false, "", null, "", null, "", null, null);
         serviceSOAP.setTimeoutms(timeOutMs);
         ByteArrayOutputStream out = null;
         MessageEvent message = null;
 
-        if (StringUtil.isEmpty(servicePath)) {
+        if (StringUtil.isEmptyOrNull(servicePath)) {
             message = new MessageEvent(MessageEventEnum.ACTION_FAILED_CALLSOAP_SERVICEPATHMISSING);
             result.setResultMessage(message);
             return result;
         }
-        if (StringUtil.isEmpty(envelope)) {
+        if (StringUtil.isEmptyOrNull(envelope)) {
             message = new MessageEvent(MessageEventEnum.ACTION_FAILED_CALLSOAP_ENVELOPEMISSING);
             result.setResultMessage(message);
             return result;
@@ -232,7 +234,7 @@ public class SoapService implements ISoapService {
         if (token != null) {
             header.add(factoryAppServiceHeader.create(null, "cerberus-token", token, true, 0, "", "", null, "", null));
         }
-        if (StringUtil.isEmpty(soapOperation)) {
+        if (StringUtil.isEmptyOrNull(soapOperation)) {
             header.add(factoryAppServiceHeader.create(null, "SOAPAction", "", true, 0, "", "", null, "", null));
         } else {
             header.add(factoryAppServiceHeader.create(null, "SOAPAction", "\"" + soapOperation + "\"", true, 0, "", "", null, "", null));
@@ -254,7 +256,7 @@ public class SoapService implements ISoapService {
             SOAPMessage input = createSoapRequest(envelope, soapOperation, header, token);
 
             //Add attachment File if specified
-            if (!StringUtil.isEmpty(attachmentUrl)) {
+            if (!StringUtil.isEmptyOrNull(attachmentUrl)) {
                 this.addAttachmentPart(input, attachmentUrl);
                 // Store the SOAP Call
                 out = new ByteArrayOutputStream();
@@ -310,7 +312,9 @@ public class SoapService implements ISoapService {
 
                     }
                     // Call with Proxy.
+                    serviceSOAP.setStart(new Timestamp(new Date().getTime()));
                     soapResponse = sendSOAPMessage(input, servicePath, proxy, timeOutMs);
+                    serviceSOAP.setEnd(new Timestamp(new Date().getTime()));
                 } catch (Exception e) {
                     LOG.error("Exception when trying to callSOAP on URL : '" + servicePath + "' for operation : '" + soapOperation + "'", e);
                     message = new MessageEvent(MessageEventEnum.ACTION_FAILED_CALLSOAP);
@@ -328,7 +332,9 @@ public class SoapService implements ISoapService {
                 serviceSOAP.setProxyPort(0);
 
                 // Call without proxy.
+                serviceSOAP.setStart(new Timestamp(new Date().getTime()));
                 soapResponse = sendSOAPMessage(input, servicePath, null, timeOutMs);
+                serviceSOAP.setEnd(new Timestamp(new Date().getTime()));
 //                soapResponse = soapConnection.call(input, servicePath);
 
             }
@@ -356,14 +362,14 @@ public class SoapService implements ISoapService {
 
             result.setItem(serviceSOAP);
 
-        } catch (SOAPException | UnsupportedOperationException | IOException | SAXException |
-                 ParserConfigurationException | CerberusException e) {
+        } catch (SOAPException | UnsupportedOperationException | IOException | SAXException
+                | ParserConfigurationException | CerberusException e) {
             LOG.error("Exception when trying to callSOAP on URL : '" + servicePath + "' for operation : '" + soapOperation + "'", e);
             message = new MessageEvent(MessageEventEnum.ACTION_FAILED_CALLSOAP);
             message.setDescription(message.getDescription()
                     .replace("%SERVICEPATH%", servicePath)
                     .replace("%SOAPMETHOD%", soapOperation)
-                    .replace("%DESCRIPTION%", e.getMessage()));
+                    .replace("%DESCRIPTION%", StringUtil.getExceptionCauseFromString(e)));
             result.setResultMessage(message);
             return result;
         } finally {

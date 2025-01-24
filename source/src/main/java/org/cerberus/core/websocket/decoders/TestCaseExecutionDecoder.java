@@ -1,5 +1,5 @@
 /**
- * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * Cerberus Copyright (C) 2013 - 2025 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -34,7 +34,7 @@ public class TestCaseExecutionDecoder implements Decoder.Text<TestCaseExecution>
     @Override
     public TestCaseExecution decode(String s) throws DecodeException {
         Gson gson = new Gson();
-        return gson.fromJson(s,TestCaseExecution.class);
+        return gson.fromJson(s, TestCaseExecution.class);
     }
 
     @Override

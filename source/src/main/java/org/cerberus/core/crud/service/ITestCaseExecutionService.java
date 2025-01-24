@@ -1,5 +1,5 @@
 /**
- * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * Cerberus Copyright (C) 2013 - 2025 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -30,6 +30,7 @@ import java.text.ParseException;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+import org.json.JSONArray;
 
 /**
  * @author bcivel
@@ -66,7 +67,7 @@ public interface ITestCaseExecutionService {
      * @throws CerberusException
      */
     TestCaseExecution findLastTCExecutionByCriteria(String test, String testCase, String environment, String country,
-                                                    String build, String revision) throws CerberusException;
+            String build, String revision) throws CerberusException;
 
     /**
      * @param test
@@ -83,20 +84,20 @@ public interface ITestCaseExecutionService {
      * @return
      */
     TestCaseExecution findLastTCExecutionByCriteria(String test, String testCase, String environment, String country,
-                                                    String build, String revision, String browser, String browserVersion,
-                                                    String ip, String port, String tag);
+            String build, String revision, String browser, String browserVersion,
+            String ip, String port, String tag);
 
     /**
      * @param dateLimitFrom The limit start date of the executions from which
-     *                      the selection is done. Mandatory parameter.
-     * @param test          filter on the test
-     * @param testCase      filter on the testCase
-     * @param application   filter on the application.
-     * @param country       filter on the country
-     * @param environment   filter on the environment
+     * the selection is done. Mandatory parameter.
+     * @param test filter on the test
+     * @param testCase filter on the testCase
+     * @param application filter on the application.
+     * @param country filter on the country
+     * @param environment filter on the environment
      * @param controlStatus filter on the control status (RC of the execution)
-     * @param status        filter on the status (Status of the testCase when execution
-     *                      was made)
+     * @param status filter on the status (Status of the testCase when execution
+     * was made)
      * @return a list of the testcaseExecution done after dateLimitFrom
      * parameter and that match the other criteria.
      * @throws CerberusException when no Execution match the criteria.
@@ -115,6 +116,14 @@ public interface ITestCaseExecutionService {
      * @throws CerberusException
      */
     List<TestCaseExecution> readByCriteria(List<String> system, List<String> countries, List<String> environments, List<String> robotDecli, List<TestCase> testcases, Date from, Date to) throws CerberusException;
+
+    /**
+     *
+     * @param system
+     * @return
+     * @throws CerberusException
+     */
+    public Integer getNbExecutions(List<String> system) throws CerberusException;
 
     /**
      * @param tCExecution
@@ -153,8 +162,8 @@ public interface ITestCaseExecutionService {
      * @return
      */
     public TestCaseExecution findLastTCExecutionInGroup(String test, String testCase, String environment, String country,
-                                                        String build, String revision, String browser, String browserVersion,
-                                                        String ip, String port, String tag);
+            String build, String revision, String browser, String browserVersion,
+            String ip, String port, String tag);
 
     /**
      * @param withUUIDTag determine of we must retreive UUID tag or not
@@ -166,11 +175,21 @@ public interface ITestCaseExecutionService {
     /**
      * Set Tag to an Execution
      *
-     * @param id  : ID of the execution to tag
+     * @param id : ID of the execution to tag
      * @param tag : Tag to apply to the execution
      * @throws CerberusException when exception occur during the update.
      */
     void setTagToExecution(long id, String tag) throws CerberusException;
+
+    /**
+     * Set Tag to an Execution
+     *
+     * @param id : ID of the execution to update
+     * @param falseNegative : value of falseNegative.
+     * @param usrModif
+     * @throws CerberusException when exception occur during the update.
+     */
+    void updateFalseNegative(long id, boolean falseNegative, String usrModif) throws CerberusException;
 
     /**
      * @param tag
@@ -217,7 +236,6 @@ public interface ITestCaseExecutionService {
      */
     AnswerList<TestCaseExecution> readDistinctEnvCountryBrowserByTag(String tag);
 
-
     /**
      * @param testCaseList
      * @param envList
@@ -233,6 +251,17 @@ public interface ITestCaseExecutionService {
      * @return AnswerItem with returncode and testcaseexecution object as item.
      */
     AnswerItem<TestCaseExecution> readByKey(long executionId);
+
+    /**
+     *
+     * @param test
+     * @param testCase
+     * @param country
+     * @param environment
+     * @param tag
+     * @return
+     */
+    AnswerItem<TestCaseExecution> readLastByCriteria(String test, String testCase, String country, String environment, String tag);
 
     /**
      * Read TestCaseExecution knowing the Key
@@ -280,4 +309,14 @@ public interface ITestCaseExecutionService {
      */
     public List<TestCaseExecution> readLastExecutionAndExecutionInQueueByTag(String tag) throws ParseException, CerberusException;
 
+    /**
+     *
+     * @param test
+     * @param testCase
+     * @param tag
+     * @param numberOfExecution
+     * @return
+     * @throws CerberusException
+     */
+    public JSONArray getLastByCriteria(String test, String testCase, String tag, Integer numberOfExecution) throws CerberusException;
 }

@@ -1,5 +1,5 @@
 /**
- * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * Cerberus Copyright (C) 2013 - 2025 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -99,8 +99,8 @@ public class TestCaseExecutionService implements ITestCaseExecutionService {
     @Override
     public long insertTCExecution(TestCaseExecution tCExecution) throws CerberusException {
         // We create the link between the tag and the system if it does not exist yet.
-        if (!StringUtil.isEmpty(tCExecution.getTag())
-                && !StringUtil.isEmpty(tCExecution.getSystem())
+        if (!StringUtil.isEmptyOrNull(tCExecution.getTag())
+                && !StringUtil.isEmptyOrNull(tCExecution.getSystem())
                 && !tagSystemService.exist(tCExecution.getTag(), tCExecution.getSystem())) {
             tagSystemService.create(factoryTagSystem.create(tCExecution.getTag(), tCExecution.getSystem(), tCExecution.getUsrCreated(), null, "", null));
         }
@@ -119,20 +119,20 @@ public class TestCaseExecutionService implements ITestCaseExecutionService {
 
     @Override
     public TestCaseExecution findLastTCExecutionByCriteria(String test, String testCase, String environment, String country,
-                                                           String build, String revision) throws CerberusException {
+            String build, String revision) throws CerberusException {
         return testCaseExecutionDao.findLastTCExecutionByCriteria(test, testCase, environment, country, build, revision);
     }
 
     @Override
     public TestCaseExecution findLastTCExecutionByCriteria(String test, String testCase, String environment, String country,
-                                                           String build, String revision, String browser, String browserVersion,
-                                                           String ip, String port, String tag) {
+            String build, String revision, String browser, String browserVersion,
+            String ip, String port, String tag) {
         return this.testCaseExecutionDao.findLastTCExecutionByCriteria(test, testCase, environment, country, build, revision, browser, browserVersion, ip, port, tag);
     }
 
     @Override
     public List<TestCaseExecution> findTCExecutionByCriteria1(String dateLimitFrom, String test, String testCase,
-                                                              String application, String country, String environment, String controlStatus, String status) {
+            String application, String country, String environment, String controlStatus, String status) {
         // Transform empty parameter in % in order to remove from SQL filter (thanks to the like operator).
         test = ParameterParserUtil.wildcardIfEmpty(test);
         testCase = ParameterParserUtil.wildcardIfEmpty(testCase);
@@ -146,8 +146,13 @@ public class TestCaseExecutionService implements ITestCaseExecutionService {
 
     @Override
     public List<TestCaseExecution> readByCriteria(List<String> system, List<String> countries, List<String> environments,
-                                                  List<String> robotDecli, List<TestCase> testcases, Date from, Date to) throws CerberusException {
+            List<String> robotDecli, List<TestCase> testcases, Date from, Date to) throws CerberusException {
         return this.convert(testCaseExecutionDao.readByCriteria(system, countries, environments, robotDecli, testcases, from, to));
+    }
+
+    @Override
+    public Integer getNbExecutions(List<String> system) throws CerberusException {
+        return testCaseExecutionDao.getNbExecutions(system);
     }
 
     @Override
@@ -171,8 +176,8 @@ public class TestCaseExecutionService implements ITestCaseExecutionService {
 
     @Override
     public TestCaseExecution findLastTCExecutionInGroup(String test, String testCase, String environment, String country,
-                                                        String build, String revision, String browser, String browserVersion,
-                                                        String ip, String port, String tag) {
+            String build, String revision, String browser, String browserVersion,
+            String ip, String port, String tag) {
         return this.testCaseExecutionDao.findLastTCExecutionInGroup(test, testCase, environment, country, build, revision, browser, browserVersion, ip, port, tag);
     }
 
@@ -189,6 +194,11 @@ public class TestCaseExecutionService implements ITestCaseExecutionService {
     @Override
     public void setTagToExecution(long id, String tag) throws CerberusException {
         testCaseExecutionDao.setTagToExecution(id, tag);
+    }
+
+    @Override
+    public void updateFalseNegative(long id, boolean falseNegative, String usrModif) throws CerberusException {
+        testCaseExecutionDao.updateFalseNegative(id, falseNegative, usrModif);
     }
 
     @Override
@@ -243,13 +253,18 @@ public class TestCaseExecutionService implements ITestCaseExecutionService {
     }
 
     @Override
+    public AnswerItem<TestCaseExecution> readLastByCriteria(String test, String testCase, String country, String environment, String tag) {
+        return testCaseExecutionDao.readLastByCriteria(test, testCase, country, environment, tag);
+    }
+
+    @Override
     public AnswerItem<TestCaseExecution> readByKeyWithDependency(long executionId) {
         // Get Main Execution.
         AnswerItem<TestCaseExecution> tce = this.readByKey(executionId);
         TestCaseExecution testCaseExecution = tce.getItem();
 
         // Get Execution Tag.
-        if (!StringUtil.isEmpty(testCaseExecution.getTag())) {
+        if (!StringUtil.isEmptyOrNull(testCaseExecution.getTag())) {
             AnswerItem<Tag> ai = tagService.readByKey(testCaseExecution.getTag());
             testCaseExecution.setTagObj(ai.getItem());
         }

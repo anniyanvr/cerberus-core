@@ -1,5 +1,5 @@
 /**
- * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * Cerberus Copyright (C) 2013 - 2025 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -20,6 +20,8 @@
 package org.cerberus.core.service.appium.impl;
 
 import io.appium.java_client.TouchAction;
+import io.appium.java_client.android.AndroidDriver;
+import io.appium.java_client.ios.IOSDriver;
 import io.appium.java_client.touch.WaitOptions;
 import io.appium.java_client.touch.offset.PointOption;
 import org.apache.logging.log4j.LogManager;
@@ -34,6 +36,7 @@ import org.cerberus.core.util.JSONUtil;
 import org.cerberus.core.util.StringUtil;
 import org.json.JSONException;
 import org.openqa.selenium.Keys;
+import org.openqa.selenium.ScreenOrientation;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -94,10 +97,10 @@ public class IOSAppiumService extends AppiumService {
         // Then do the key press
         try {
             session.getAppiumDriver().getKeyboard().pressKey(keyToPress.getCode());
-            return new MessageEvent(MessageEventEnum.ACTION_SUCCESS_KEYPRESS_NO_ELEMENT).resolveDescription("KEY", keyName);
+            return new MessageEvent(MessageEventEnum.ACTION_SUCCESS_KEYPRESS_NO_ELEMENT_NO_MODIFIER).resolveDescription("KEY", keyName);
         } catch (Exception e) {
             LOG.warn("Unable to key press due to " + e.getMessage());
-            return new MessageEvent(MessageEventEnum.ACTION_FAILED_KEYPRESS_OTHER)
+            return new MessageEvent(MessageEventEnum.ACTION_FAILED_KEYPRESS_OTHER_NOELEMENT_NOMODIFIER)
                     .resolveDescription("KEY", keyName)
                     .resolveDescription("REASON", e.getMessage());
         }
@@ -116,7 +119,7 @@ public class IOSAppiumService extends AppiumService {
     @Override
     public MessageEvent hideKeyboard(Session session) {
         MessageEvent keyPressResult = keyPress(session, KeyCode.RETURN.name());
-        return new MessageEvent(MessageEventEnum.ACTION_SUCCESS_KEYPRESS_NO_ELEMENT.equals(keyPressResult.getSource())
+        return new MessageEvent(MessageEventEnum.ACTION_SUCCESS_KEYPRESS_NO_ELEMENT_NO_MODIFIER.equals(keyPressResult.getSource())
                 ? MessageEventEnum.ACTION_SUCCESS_HIDEKEYBOARD
                 : MessageEventEnum.ACTION_FAILED_HIDEKEYBOARD);
     }
@@ -198,7 +201,7 @@ public class IOSAppiumService extends AppiumService {
 
         Object value;
         String valueString = "";
-        if (StringUtil.isEmpty(args)) {
+        if (StringUtil.isEmptyOrNull(args)) {
             value = session.getAppiumDriver().executeScript(cmd, new HashMap<>());
         } else {
             value = session.getAppiumDriver().executeScript(cmd, JSONUtil.convertFromJSONObjectString(args));
@@ -208,7 +211,7 @@ public class IOSAppiumService extends AppiumService {
             valueString = value.toString();
         }
         // execute Script return an \n or \r\n sometimes, so we delete the last occurence of it
-        if (!StringUtil.isEmpty(valueString)) {
+        if (!StringUtil.isEmptyOrNull(valueString)) {
             if (valueString.endsWith("\r\n")) {
                 valueString = valueString.substring(0, valueString.lastIndexOf("\r\n"));
             }
@@ -234,7 +237,7 @@ public class IOSAppiumService extends AppiumService {
     public MessageEvent openApp(Session session, String appPackage, String appActivity) {
         try {
 
-            if (StringUtil.isEmpty(appPackage)) {
+            if (StringUtil.isEmptyOrNull(appPackage)) {
                 session.getAppiumDriver().launchApp();
             } else {
                 session.getAppiumDriver().activateApp(appPackage);
@@ -256,6 +259,52 @@ public class IOSAppiumService extends AppiumService {
             session.getAppiumDriver().closeApp();
 
             return new MessageEvent(MessageEventEnum.ACTION_SUCCESS_CLOSEAPP_GENERIC);
+
+        } catch (Exception e) {
+            LOG.warn("Unable to close app " + e.getMessage(), e);
+            return new MessageEvent(MessageEventEnum.ACTION_FAILED_GENERIC)
+                    .resolveDescription("DETAIL", "Unable to close app : " + e.getMessage());
+        }
+    }
+
+    @Override
+    public MessageEvent lockDevice(Session session) {
+        try {
+            IOSDriver driver = ((IOSDriver) session.getAppiumDriver());
+            driver.lockDevice();
+
+            return new MessageEvent(MessageEventEnum.ACTION_SUCCESS_LOCKDEVICE_GENERIC);
+
+        } catch (Exception e) {
+            LOG.warn("Unable to close app " + e.getMessage(), e);
+            return new MessageEvent(MessageEventEnum.ACTION_FAILED_GENERIC)
+                    .resolveDescription("DETAIL", "Unable to close app : " + e.getMessage());
+        }
+    }
+
+    @Override
+    public MessageEvent unlockDevice(Session session) {
+        try {
+            IOSDriver driver = ((IOSDriver) session.getAppiumDriver());
+            driver.unlockDevice();
+
+            return new MessageEvent(MessageEventEnum.ACTION_SUCCESS_UNLOCKDEVICE_GENERIC);
+
+        } catch (Exception e) {
+            LOG.warn("Unable to close app " + e.getMessage(), e);
+            return new MessageEvent(MessageEventEnum.ACTION_FAILED_GENERIC)
+                    .resolveDescription("DETAIL", "Unable to close app : " + e.getMessage());
+        }
+    }
+
+    @Override
+    public MessageEvent rotateDevice(Session session) {
+        try {
+            IOSDriver driver = ((IOSDriver) session.getAppiumDriver());
+            LOG.warn("orientation : " + driver.getOrientation().value());
+            driver.rotate(ScreenOrientation.LANDSCAPE == driver.getOrientation() ? ScreenOrientation.PORTRAIT : ScreenOrientation.LANDSCAPE);
+
+            return new MessageEvent(MessageEventEnum.ACTION_SUCCESS_UNLOCKDEVICE_GENERIC);
 
         } catch (Exception e) {
             LOG.warn("Unable to close app " + e.getMessage(), e);
