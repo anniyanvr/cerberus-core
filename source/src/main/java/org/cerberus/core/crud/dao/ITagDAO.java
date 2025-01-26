@@ -1,5 +1,5 @@
 /**
- * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * Cerberus Copyright (C) 2013 - 2025 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -25,6 +25,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import org.cerberus.core.crud.entity.Tag;
+import org.cerberus.core.exception.CerberusException;
 import org.cerberus.core.util.answer.Answer;
 import org.cerberus.core.util.answer.AnswerItem;
 import org.cerberus.core.util.answer.AnswerList;
@@ -156,6 +157,15 @@ public interface ITagDAO {
     /**
      *
      * @param tag
+     * @param falseNegative
+     * @param usrModif
+     * @throws CerberusException
+     */
+    void updateFalseNegative(String tag, boolean falseNegative, String usrModif) throws CerberusException;
+
+    /**
+     *
+     * @param tag
      * @param object
      * @return
      */
@@ -167,6 +177,13 @@ public interface ITagDAO {
      * @return
      */
     Answer updateDateEndQueue(Tag tag);
+
+    /**
+     *
+     * @param tag
+     * @return
+     */
+    public Answer updateDateStartExe(Tag tag);
 
     /**
      * Uses data of ResultSet to create object {@link Application}

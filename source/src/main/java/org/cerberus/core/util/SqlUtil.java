@@ -1,5 +1,5 @@
 /**
- * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * Cerberus Copyright (C) 2013 - 2025 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -30,6 +30,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.json.JSONArray;
 import org.json.JSONException;
+import org.json.JSONObject;
 
 /**
  *
@@ -237,10 +238,32 @@ public class SqlUtil {
         String colValueString = resultSet.getString(columnName);
         JSONArray colValue = new JSONArray();
         try {
-            if (!StringUtil.isEmpty(colValueString)) {
+            if (!StringUtil.isEmptyOrNull(colValueString)) {
                 colValue = new JSONArray(colValueString);
             } else {
                 colValue = new JSONArray();
+            }
+        } catch (JSONException ex) {
+            LOG.error("Could not convert '" + colValueString + "' to JSONArray.", ex);
+        }
+        return colValue;
+    }
+
+    /**
+     *
+     * @param resultSet
+     * @param columnName
+     * @return a JSONArray from the column name and resultset defined.
+     * @throws SQLException
+     */
+    public static JSONObject getJSONObjectFromColumn(ResultSet resultSet, String columnName) throws SQLException {
+        String colValueString = resultSet.getString(columnName);
+        JSONObject colValue = new JSONObject();
+        try {
+            if (!StringUtil.isEmptyOrNull(colValueString)) {
+                colValue = new JSONObject(colValueString);
+            } else {
+                colValue = new JSONObject();
             }
         } catch (JSONException ex) {
             LOG.error("Could not convert '" + colValueString + "' to JSONArray.", ex);

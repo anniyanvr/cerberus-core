@@ -1,5 +1,5 @@
 /**
- * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * Cerberus Copyright (C) 2013 - 2025 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -28,6 +28,7 @@ import javax.servlet.http.HttpServletResponse;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.cerberus.core.crud.entity.Invariant;
+import org.cerberus.core.crud.entity.LogEvent;
 import org.cerberus.core.crud.factory.IFactoryInvariant;
 import org.cerberus.core.crud.service.IInvariantService;
 import org.cerberus.core.crud.service.ILogEventService;
@@ -99,7 +100,7 @@ public class CreateInvariant extends HttpServlet {
         /**
          * Checking all constrains before calling the services.
          */
-        if (StringUtil.isEmpty(id)) {
+        if (StringUtil.isEmptyOrNull(id)) {
             msg = new MessageEvent(MessageEventEnum.DATA_OPERATION_ERROR_EXPECTED);
             msg.setDescription(msg.getDescription().replace("%ITEM%", "Invariant")
                     .replace("%OPERATION%", "Create")
@@ -112,7 +113,7 @@ public class CreateInvariant extends HttpServlet {
                     .replace("%REASON%", "Could not manage to convert sort to an integer value!"));
             ans.setResultMessage(msg);
         } else if ((id.equals(Invariant.IDNAME_COUNTRY) || id.equals(Invariant.IDNAME_ENVIRONMENT) || id.equals(Invariant.IDNAME_SYSTEM))
-                && StringUtil.isEmpty(value)) {
+                && StringUtil.isEmptyOrNull(value)) {
             msg = new MessageEvent(MessageEventEnum.DATA_OPERATION_ERROR_EXPECTED);
             msg.setDescription(msg.getDescription().replace("%ITEM%", "Invariant")
                     .replace("%OPERATION%", "Create")
@@ -150,7 +151,7 @@ public class CreateInvariant extends HttpServlet {
                      * Object updated. Adding Log entry.
                      */
                     ILogEventService logEventService = appContext.getBean(LogEventService.class);
-                    logEventService.createForPrivateCalls("/CreateInvariant", "CREATE", "Create Invariant : ['" + id + "']", request);
+                    logEventService.createForPrivateCalls("/CreateInvariant", "CREATE", LogEvent.STATUS_INFO, "Create Invariant : ['" + id + "']", request);
                 }
             } else {
                 msg = new MessageEvent(MessageEventEnum.DATA_OPERATION_ERROR_EXPECTED);

@@ -1,5 +1,5 @@
 /**
- * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * Cerberus Copyright (C) 2013 - 2025 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -29,5 +29,5 @@ import org.cerberus.core.crud.entity.LogEvent;
  */
 public interface IFactoryLogEvent {
 
-    LogEvent create(long logEventID, long userID, String login, Timestamp time, String page, String action, String log, String remoteIP, String localIP);
+    LogEvent create(long logEventID, long userID, String login, Timestamp time, String page, String action, String status, String log, String remoteIP, String localIP);
 }

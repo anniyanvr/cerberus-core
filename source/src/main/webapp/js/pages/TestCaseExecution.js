@@ -1,5 +1,5 @@
 /*
- * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * Cerberus Copyright (C) 2013 - 2025 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -25,6 +25,8 @@ var configNb = {};
 var configSize = {};
 var configGantt = {};
 var sortCol = 1;
+var stepFocus = -1;
+var falseNegative = false;
 
 $.when($.getScript("js/global/global.js")).then(function () {
     $(document).ready(function () {
@@ -63,6 +65,7 @@ $.when($.getScript("js/global/global.js")).then(function () {
 
         var executionId = GetURLParameter("executionId");
         var executionQueueId = GetURLParameter("executionQueueId");
+        stepFocus = GetURLAnchorValue("stepId", 99999);
         paramActivatewebsocketpush = getParameterString("cerberus_featureflipping_activatewebsocketpush", "", true);
         paramWebsocketpushperiod = getParameterString("cerberus_featureflipping_websocketpushperiod", "", true);
 
@@ -82,15 +85,20 @@ $.when($.getScript("js/global/global.js")).then(function () {
         } else {
             $("#TestCaseButton").show();
             $("#RefreshQueueButton").hide();
+
+            $("#falseNegative").click(function () {
+                toggleFalseNegative(executionId);
+            });
+
             /* global */
             sockets = [];
             initPage(executionId);
             loadExecutionInformation(executionId, steps, sockets);
 
             $('[data-toggle="popover"]').popover({
-                    'placement': 'auto',
-                    'container': 'body'
-                }
+                'placement': 'auto',
+                'container': 'body'
+            }
             );
         }
     });
@@ -257,6 +265,7 @@ function getHistoryExecution(tce) {
     result.country = tce.country;
     result.robot = tce.robot;
     result.description = tce.description;
+    result.controlStatus = tce.controlStatus;
     return result;
 }
 
@@ -297,7 +306,23 @@ function initPage(id) {
                 $("#saveTag").hide();
                 $("#editTags").show();
             }
-        })
+        });
+    });
+
+    $("#editRobot").click(function () {
+        openModalRobot($("#tabRobot #robot").val(), "EDIT");
+    });
+
+    $("#tabEnv #editApplication").click(function () {
+        openModalApplication($("#tabEnv #application").val(), "EDIT");
+    });
+
+    $("#tabEnv #editCountry").click(function () {
+        openModalInvariant("COUNTRY", $("#tabEnv #country").val(), "EDIT");
+    });
+
+    $("#tabEnv #editEnvironment").click(function () {
+        openModalInvariant("ENVIRONMENT", $("#tabEnv #environment").val(), "EDIT");
     });
 
     $("#inheritedPropPanelWrapper").hide();
@@ -360,7 +385,7 @@ function displayPageLabel(doc) {
     $("#btnGroupDrop1").html(doc.getDocLabel("page_executiondetail", "goto") + " <span class='caret'></span>");
     $("#lastExecution").html("<span class='glyphicon glyphicon-list'></span> " + doc.getDocLabel("page_executiondetail", "lastexecution"));
     $("#lastExecutionwithEnvCountry").html("<span class='glyphicon glyphicon-list'></span> " + doc.getDocLabel("page_executiondetail", "lastexecutionwithenvcountry"));
-    $("#lastExecutionoT").html("<span class='glyphicon glyphicon-list'></span> " + doc.getDocLabel("page_executiondetail", "lastexecutionoT"));
+    $("#lastExecutionoT").html("<span class='glyphicon glyphicon-stats'></span> " + doc.getDocLabel("page_executiondetail", "lastexecutionoT"));
     $("#lastExecutionoTwithEnvCountry").html("<span class='glyphicon glyphicon-list'></span> " + doc.getDocLabel("page_executiondetail", "lastexecutionoTwithenvcountry"));
     $("#ExecutionByTag").html("<span class='glyphicon glyphicon-tag'></span> " + doc.getDocLabel("page_executiondetail", "see_execution_tag"));
     $("#ExecutionQueue").html("<span class='glyphicon glyphicon-eye-open'></span> " + doc.getDocLabel("page_executiondetail", "see_executionq"));
@@ -405,17 +430,30 @@ function updatePage(data, steps) {
         $("#rerunTestCase").attr("disabled", true);
         $("#rerunTestCase").parent().attr("href", "#");
     } else {
+        if ((data.testCaseObj.origine === "Jira-Cloud" || data.testCaseObj.origine === "Jira-DC") && (data.testCaseObj.refOrigine !== "")) {
+            $("#externalRef").show();
+            $("#externalRef").text(data.testCaseObj.refOrigine);
+            if (data.testCaseObj.refOrigineUrl !== "") {
+                $("#externalRef").attr("onclick", "window.open('" + data.testCaseObj.refOrigineUrl + "')");
+                $("#externalRef").attr("style", "cursor:pointer");
+            } else {
+                $("#externalRef").removeAttr("onclick");
+                $("#externalRef").attr("style", "cursor:auto')");
+            }
+        } else {
+            $("#externalRef").hide();
+        }
         $("#editTcInfo").attr("disabled", false);
         $("#editTcInfo").attr("href", "TestCaseScript.jsp?test=" + data.test + "&testcase=" + data.testcase);
         $("#editTcStepInfo").attr("disabled", false);
-        $("#editTcStepInfo").parent().attr("href", "TestCaseScript.jsp?test=" + data.test + "&testcase=" + data.testcase);
+        $("#editTcStepInfo").parent().attr("href", "TestCaseScript.jsp?test=" + encodeURI(data.test) + "&testcase=" + encodeURI(data.testcase));
         $("#btnGroupDrop4").click(function () {
             setLinkOnEditTCStepInfoButton();
         });
 
         $("#runTestCase").attr("disabled", false);
         $("#runTestCase").on('click', function () {
-            openModalExecutionSimple(data.application, data.test, data.testcase, data.description);
+            openModalExecutionSimple(data.application, data.test, data.testcase, data.description, data.country, data.environment, data.robot);
         });
         //$("#runTestCase").parent().attr("href", "RunTests.jsp?test=" + data.test + "&testcase=" + data.testcase);
         $("#rerunTestCase").attr("disabled", false);
@@ -430,9 +468,24 @@ function updatePage(data, steps) {
     $("#lastExecutionoT").parent().attr("href", "ReportingExecutionOverTime.jsp?tests=" + data.test + "&testcases=" + data.testcase);
     $("#lastExecutionoTwithEnvCountry").attr("disabled", false);
     $("#lastExecutionoTwithEnvCountry").parent().attr("href", "ReportingExecutionOverTime.jsp?tests=" + data.test + "&testcases=" + data.testcase + "&countrys=" + data.country + "&environments=" + data.environment);
+    falseNegative = data.falseNegative;
+    if (data.controlStatus === "OK") {
+        $("#falseNegative").hide();
+        $("#false-negative-bar").hide();
+    } else {
+        $("#falseNegative").show();
+        if (data.falseNegative) {
+            $("#false-negative-bar").show();
+            $("#falseNegative .glyphicon").removeClass("glyphicon-ok").addClass("glyphicon-remove");
+        } else {
+            $("#false-negative-bar").hide();
+            $("#falseNegative .glyphicon").removeClass("glyphicon-remove").addClass("glyphicon-ok");
+        }
+    }
     if (!isEmpty(data.tag)) {
-        $("#ExecutionByTag").parent().attr("href", "ReportingExecutionByTag.jsp?Tag=" + data.tag);
-        $("#ExecutionQueueByTag").parent().attr("href", "TestCaseExecutionQueueList.jsp?tag=" + data.tag);
+        $("#ExecutionByTag").parent().attr("href", "ReportingExecutionByTag.jsp?Tag=" + encodeURI(data.tag));
+        $("#openTag").parent().attr("href", "ReportingExecutionByTag.jsp?Tag=" + encodeURI(data.tag));
+        $("#ExecutionQueueByTag").parent().attr("href", "TestCaseExecutionQueueList.jsp?tag=" + encodeURI(data.tag));
     } else {
         $("#ExecutionByTag").attr("disabled", true);
         $("#ExecutionQueueByTag").attr("disabled", true);
@@ -465,9 +518,10 @@ function updatePage(data, steps) {
 
     // Adding all media attached to execution.
     var fileContainer = $("#testCaseConfig #tcFileContentField");
-    addFileLink(data.fileList, fileContainer, isTheExecutionManual);
+    var fileExeContainer = $("#testCaseConfig #tcDetailFileContentField");
+    addFileLink(data.fileList, fileContainer, fileExeContainer, isTheExecutionManual);
 
-    var myURL = $("#bugs").data("appBugURL");
+    var myURL = $("#bugButtons").data("appBugURL");
     if (myURL === undefined) {
         // We only refresh the bugURL and call readApplication if the information is not already filed.
         $.ajax({
@@ -479,11 +533,14 @@ function updatePage(data, steps) {
 
                 if (data.testCaseObj !== undefined) {
 
+                    var configPanel = $("#testCaseConfig");
+                    configPanel.find("#AppLogo").attr("src", "./images/logoapp-" + dataApp.contentTable.type + ".png");
+
                     // Display already existing bugs.
                     link = getBugIdList(data.testCaseObj.bugs, dataApp.contentTable.bugTrackerUrl);
                     $("#bugs").append(link);
 
-                    // Adding a button to create a new bug.
+                    // Adding a button to create a new bug redirecting to Bugtracked URL.
                     var newBugURL = dataApp.contentTable.bugTrackerNewUrl;
                     if (!isEmpty(newBugURL)) {
                         newBugURL = newBugURL.replace(/%EXEID%/g, data.id);
@@ -497,20 +554,54 @@ function updatePage(data, steps) {
                         newBugURL = newBugURL.replace(/%REV%/g, data.revision);
                         newBugURL = newBugURL.replace(/%BROWSER%/g, data.browser);
                         newBugURL = newBugURL.replace(/%BROWSERFULLVERSION%/g, data.browser + ' ' + data.version + ' ' + data.platform);
-                        link = $('<a target="_blank" id="bugs">').attr("href", newBugURL).append($("<button class='btn btn-default btn-block marginTop5'>").text("Open a new bug"));
+                        link = $('<a target="_blank">').attr("href", newBugURL).append($("<button class='btn btn-default btn-block marginTop5'>").text(" Open a new bug From Applcation Bug Tracker").prepend($(" <span class='glyphicon glyphicon-new-window'></span>")));
                     } else {
-                        link = $('<a id="bugs">').attr("href", "#").append($("<button class='btn btn-default btn-block'>").text("No 'New Bug' URL Specified.").attr("title", "Please specify 'New Bug' URL on application '" + data.application + "'."));
+                        link = $('<a>').attr("href", "#").append($("<button class='btn btn-default btn-block'>").text("No 'New Bug' URL Specified.").attr("title", "Please specify 'New Bug' URL on application '" + data.application + "'."));
                     }
-                    $("#bugs").append(link);
-                    link = $('<a id="bugs">').append($("<button class='btn btn-default btn-block marginTop5' id='editTcHeaderBug'>").text("Assign to Test Case"));
-                    $("#bugs").append(link);
+                    $("#bugButtons").append(link);
+
+
+                    // Open Bug with direct call to BugTracker using connector
+                    if (dataApp.contentTable.bugTrackerConnector !== "NONE") {
+                        link = $("<button class='btn btn-default btn-block marginTop5'>").attr("id", "addBugFromExternal").text(" Open a new bug using " + dataApp.contentTable.bugTrackerConnector + " connector").prepend($(" <span class='glyphicon glyphicon-cloud'></span>"));
+                        $("#bugButtons").append(link);
+                        $("#addBugFromExternal").click(function () {
+                            $('#addBugFromExternal').attr('disabled', 'disabled');
+
+                            $.ajax({
+                                url: "api/executions/" + data.id + "/createBug",
+                                async: true,
+                                method: "POST",
+                                success: function (bugCreated) {
+                                    try {
+                                        let bugCreatedJ = JSON.parse(bugCreated);
+//                                        console.info(bugCreatedJ);
+                                        if (bugCreatedJ.bug) {
+//                                            console.info(bugCreatedJ.bug);
+                                            $("#bugs").append(getBugIdRow(bugCreatedJ.bug.id, bugCreatedJ.bug.desc, bugCreatedJ.bug.url, bugCreatedJ.bug.act, dataApp.contentTable.bugTrackerUrlF));
+                                        }
+                                        showMessageMainPage(getAlertHttpType(bugCreatedJ.statusCode), bugCreatedJ.message, false, 30000);
+                                    } catch (e) {
+
+                                    }
+                                    $("#addBugFromExternal").removeAttr('disabled');
+
+
+                                }
+                            });
+                        });
+                    }
+
+                    // Open Modal TestCase Header on Bug tab
+                    link = $('<a>').append($("<button class='btn btn-default btn-block marginTop5' id='editTcHeaderBug'>").text("Manually Assign a bug to Test Case"));
+                    $("#bugButtons").append(link);
                     $("#editTcHeaderBug").unbind("click").click(function () {
                         openModalTestCase(data.test, data.testcase, "EDIT", "tabTCBugReport")
                     });
 
 
                 }
-                $("#bugs").data("appBugURL", "true");
+                $("#bugButtons").data("appBugURL", "true");
 
             }
         });
@@ -575,7 +666,7 @@ function isIndexSelected(index, selectedIndex) {
 }
 
 function loadIndexSelect() {
-    console.info("loadingSelect...")
+//    console.info("loadingSelect...")
     $("#selectIndex").select2({
         width: '100%' // need to override the default to secure to take the full size available.
     });
@@ -594,7 +685,7 @@ function loadIndexSelect() {
 
 function drawTable_Requests(data, targetTable, targetPanel) {
     var configurations = new TableConfigurationsClientSide(targetTable, data.requests, aoColumnsFunc(), true, [0, 'asc']);
-    configurations.lengthMenu = [10, 25, 50, 100, 10000];
+    configurations.lengthMenu = [10, 15, 20, 30, 50, 100, 10000];
 
     if ($('#' + targetTable).hasClass('dataTable') === false) {
         createDataTableWithPermissions(configurations, undefined, targetPanel);
@@ -702,10 +793,10 @@ function drawChart_HttpStatus(target) {
         type: 'pie',
         data: {
             datasets: [{
-                data: [],
-                backgroundColor: [],
-                label: 'Hits'
-            }],
+                    data: [],
+                    backgroundColor: [],
+                    label: 'Hits'
+                }],
             labels: []
         },
         options: {
@@ -801,10 +892,10 @@ function drawChart_SizePerType(target) {
         type: 'pie',
         data: {
             datasets: [{
-                data: [],
-                backgroundColor: [],
-                label: 'Size'
-            }],
+                    data: [],
+                    backgroundColor: [],
+                    label: 'Size'
+                }],
             labels: []
         },
         options: {
@@ -969,6 +1060,34 @@ function drawChart_PerThirdParty(data, target) {
     window.graph1 = new Chart(ctx, configDo);
 
     update_thirdParty_Chart(1);
+}
+
+function toggleFalseNegative(executionId) {
+    if (falseNegative) {
+
+        $.ajax({
+            url: "api/executions/" + executionId + "/undeclareFalseNegative",
+            method: "POST",
+            data: {falseNegative: false},
+            success: function (data) {
+                falseNegative = false;
+                $("#false-negative-bar").hide();
+                $("#falseNegative .glyphicon").removeClass("glyphicon-remove").addClass("glyphicon-ok");
+            }
+        });
+
+    } else {
+        $.ajax({
+            url: "api/executions/" + executionId + "/declareFalseNegative",
+            method: "POST",
+            data: {falseNegative: true},
+            success: function (data) {
+                falseNegative = true;
+                $("#false-negative-bar").show();
+                $("#falseNegative .glyphicon").removeClass("glyphicon-ok").addClass("glyphicon-remove");
+            }
+        });
+    }
 }
 
 function update_thirdParty_Chart() {
@@ -1141,31 +1260,31 @@ function drawChart_GanttPerThirdParty(data, titletext, target) {
         },
         scales: {
             xAxes: [{
-                label: "Duration",
-                ticks: {
-                    beginAtZero: true,
-                    fontFamily: "'Open Sans Bold', sans-serif",
-                    fontSize: 11
-                },
-                scaleLabel: {
-                    display: false
-                },
-                gridLines: {},
-                stacked: true
-            }],
+                    label: "Duration",
+                    ticks: {
+                        beginAtZero: true,
+                        fontFamily: "'Open Sans Bold', sans-serif",
+                        fontSize: 11
+                    },
+                    scaleLabel: {
+                        display: false
+                    },
+                    gridLines: {},
+                    stacked: true
+                }],
             yAxes: [{
-                gridLines: {
-                    display: false,
-                    color: "#fff",
-                    zeroLineColor: "#fff",
-                    zeroLineWidth: 0
-                },
-                ticks: {
-                    fontFamily: "'Open Sans Bold', sans-serif",
-                    fontSize: 11
-                },
-                stacked: true
-            }]
+                    gridLines: {
+                        display: false,
+                        color: "#fff",
+                        zeroLineColor: "#fff",
+                        zeroLineWidth: 0
+                    },
+                    ticks: {
+                        fontFamily: "'Open Sans Bold', sans-serif",
+                        fontSize: 11
+                    },
+                    stacked: true
+                }]
         },
         legend: {
             display: true
@@ -1182,12 +1301,12 @@ function drawChart_GanttPerThirdParty(data, titletext, target) {
             labels: [],
 
             datasets: [{
-                label: "Start",
-                data: [],
-                backgroundColor: "rgba(63,103,126,0)",
-                hoverBackgroundColor: "rgba(50,90,100,0)"
+                    label: "Start",
+                    data: [],
+                    backgroundColor: "rgba(63,103,126,0)",
+                    hoverBackgroundColor: "rgba(50,90,100,0)"
 
-            },
+                },
                 {
                     label: "Duration",
                     data: [],
@@ -1294,27 +1413,27 @@ function createVideo(videos) {
         menuEntry += "            <a href=\"javascript:void(0);\" id=\"anchorToVideo" + videoIndex + "\" name=\"anchorToVideo\" index=\"" + videoIndex + "\" class=\"list-group-item row " + (videoIndex == 0 ? "active" : "") + " \" style=\"margin-left: 0px; margin-right: 0px;\">Part " + (videoIndex + 1) + "/" + videos.length + " </a>\n";
 
         videoEntry +=
-            "<source  id=\"video" + videoIndex + "\" index=\"" + videoIndex + "\" name='videoObject' " + (videoIndex == 0 ? "class='active'" : "") + " src=\"ReadTestCaseExecutionMedia?filename=" + video + "&filedesc=Video&filetype=MP4\" type=\"video/mp4\">\n";
+                "<source  id=\"video" + videoIndex + "\" index=\"" + videoIndex + "\" name='videoObject' " + (videoIndex == 0 ? "class='active'" : "") + " src=\"ReadTestCaseExecutionMedia?filename=" + video + "&filedesc=Video&filetype=MP4\" type=\"video/mp4\">\n";
 
         videoIndex++;
     });
 
     $("#testCaseDetails > div").append(
-        "<div class=\"center marginTop25 tab-pane fade\" id=\"tabVideo\">\n" +
-        "   <div class=\"row\">" +
-        "       <div class=\"col-md-2\">\n" +
-        "           <div class=\"list-group step-list side-item\">" +
-        menuEntry +
-        "           </div>\n" +
-        "       </div>" +
-        "       <div class=\"col-md-10\">" +
-        "           <video id=\"videoTest\" poster=\"images/loading_2.gif\" width=\"500\" height=\"700\" controls style=\"background:black\">" +
-        videoEntry +
-        "           Your browser does not support the video tag." +
-        "           </video>\n" +
-        "       </div>" +
-        "   </div>" +
-        "</div>");
+            "<div class=\"center marginTop25 tab-pane fade\" id=\"tabVideo\">\n" +
+            "   <div class=\"row\">" +
+            "       <div class=\"col-md-2\">\n" +
+            "           <div class=\"list-group step-list side-item\">" +
+            menuEntry +
+            "           </div>\n" +
+            "       </div>" +
+            "       <div class=\"col-md-10\">" +
+            "           <video id=\"videoTest\" poster=\"images/loading_2.gif\" width=\"500\" height=\"700\" controls style=\"background:black\">" +
+            videoEntry +
+            "           Your browser does not support the video tag." +
+            "           </video>\n" +
+            "       </div>" +
+            "   </div>" +
+            "</div>");
 
 
     var myvid = $('#videoTest').get(0);
@@ -1374,7 +1493,7 @@ function triggerTestCaseExecutionQueueandSee(queueId) {
             if (getAlertType(data.messageType) === "success") {
                 showMessageMainPage(getAlertType(data.messageType), data.message, false, 60000);
                 var url = "./TestCaseExecution.jsp?executionQueueId=" + data.testCaseExecutionQueueList[0].id;
-                console.info("redir : " + url);
+//                console.info("redir : " + url);
                 window.location.replace(url);
             } else {
                 showMessageMainPage(getAlertType(data.messageType), data.message, false, 60000);
@@ -1394,8 +1513,8 @@ function setConfigPanel(data) {
     configPanel.find("#testcase").text(data.testcase);
     configPanel.find("#exReturnMessage").text(data.controlMessage);
     configPanel.find("#controlstatus").text(data.controlStatus);
-    console.info(data.controlStatus);
-    console.info(getExeStatusRowColor(data.controlStatus));
+    configPanel.find("#AppName").text("[" + data.application + "]");
+
     var favicon = new Favico({
         animation: 'slide',
         bgColor: getExeStatusRowColor(data.controlStatus)
@@ -1410,6 +1529,7 @@ function setConfigPanel(data) {
     if (data.controlStatus !== "PE") {
         configPanel.find("#duration").text("(" + (data.end - data.start) / 1000 + " s)");
     }
+    configPanel.find("#duration").attr("data-original-title", new Date(data.start).toLocaleString());
 
     if (isTheExecutionManual) {
         var returnMessageField = $("<textarea style='width:100%;' class='form-control' id='returnMessageEx' placeholder='Execution Result Message'>");
@@ -1438,19 +1558,25 @@ function setConfigPanel(data) {
     configPanel.find("input#environmentData").val(data.environmentData);
     configPanel.find("input#status").val(data.status);
 
-    configPanel.find("input#end").val(getDate(data.end));
+    configPanel.find("input#end").val(new Date(data.end).toLocaleString());
     configPanel.find("input#finished").val(data.finished);
     configPanel.find("input#id").val(data.id);
     configPanel.find("input#controlstatus2").val(data.controlStatus);
     configPanel.find("textarea#controlmessage").val(data.controlMessage);
     configPanel.find("input#robot").val(data.robot);
+    if (isEmpty(data.robot)) {
+        configPanel.find("#editRobot").attr("disabled", true);
+    } else {
+        configPanel.find("#editRobot").attr("disabled", false);
+    }
+
     configPanel.find("input#robotexe").val(data.robotExecutor);
     configPanel.find("input#robothost").val(data.robotHost);
     configPanel.find("input#robotport").val(data.robotPort);
     configPanel.find("input#platform").val(data.platform);
     if (data.platform !== "") {
         $("#exOS").text(data.platform);
-        $("#exOSLogo").attr("src", "./images/platform-" + data.platform + ".png");
+        $("#exOSLogo").attr("src", "./images/platform-" + data.platform.toUpperCase() + ".png");
     }
     configPanel.find("input#browser").val(data.browser);
     if (data.browser !== "") {
@@ -1466,7 +1592,7 @@ function setConfigPanel(data) {
     configPanel.find("input#executor").val(data.executor);
     configPanel.find("input#screenSize").val(data.screenSize);
     configPanel.find("input#userAgent").val(data.userAgent);
-    configPanel.find("input#start").val(new Date(data.start));
+    configPanel.find("input#start").val(new Date(data.start).toLocaleString());
     configPanel.find("input#tag").val(data.tag);
     configPanel.find("input#url").val(data.url);
     configPanel.find("input#exetest").val(data.test);
@@ -1478,6 +1604,9 @@ function setConfigPanel(data) {
     if (data.robotProvider === "BROWSERSTACK") {
         if (data.tagObj !== undefined) {
             let targetUrl = "https://automate.browserstack.com/builds/" + data.tagObj.browserstackBuildHash + "/sessions/" + data.robotProviderSessionId;
+            if (data.tagObj.browserstackAppBuildHash.length > 8) {
+                targetUrl = "https://app-automate.browserstack.com/builds/" + data.tagObj.browserstackAppBuildHash + "/sessions/" + data.robotProviderSessionId;
+            }
             let provImg = $('<img src="./images/browserstack.png" width="20">');
             $("#sessionLinkHeader").empty().append(provImg).show();
             $("#sessionLinkHeader").parent().attr("href", targetUrl).attr("target", "_blank");
@@ -1522,9 +1651,9 @@ function setConfigPanel(data) {
     }
 
     configPanel.find("input#usrcreated").val(data.usrCreated);
-    configPanel.find("input#datecreated").val(data.dateCreated);
+    configPanel.find("input#datecreated").val(getDate(data.dateCreated));
     configPanel.find("input#usrmodif").val(data.usrModif);
-    configPanel.find("input#datemodif").val(data.dateModif);
+    configPanel.find("input#datemodif").val(getDate(data.dateModif));
 
 
     //setTestCaseControlStatue(data.controlStatus);
@@ -1568,6 +1697,8 @@ function setLinkOnEditTCStepInfoButton() {
 }
 
 function setLoadBar(data) {
+
+    // progress calculation in %. We compare nb of step, controls, action vs testcase definition.
     var total = 0;
     var ended = 0;
     if (data.testCaseObj !== undefined && data.testCaseObj.steps !== undefined) {
@@ -1600,8 +1731,8 @@ function setLoadBar(data) {
             }
         }
     }
-
     var progress = ended / total * 100;
+
     updateDataBarVisual(data.controlStatus, progress);
 
 }
@@ -1669,7 +1800,7 @@ function sortProperties(identifier) {
     list.sort(function (a, b) {
 
         var aProp = $(a).find("[name='masterProp']").data("property").property.toLowerCase(),
-            bProp = $(b).find("[name='masterProp']").data("property").property.toLowerCase();
+                bProp = $(b).find("[name='masterProp']").data("property").property.toLowerCase();
 
         if (aProp > bProp) {
             return 1;
@@ -1713,7 +1844,6 @@ function createProperties(propList) {
             $('#secondaryPropTableHeader').css("display", "block");
             // TO DO : link it to the docTable
             secondaryPropCount++;
-            console.log(secondaryPropCount);
             $('#secondaryPropCount').html(secondaryPropCount);
         }
     }
@@ -1776,7 +1906,7 @@ function drawProperty(property, table, isSecondary) {
     // Starting to reduce the size of the row by the length of elements.
     $(row).find("#contentField").removeClass("col-sm-10").addClass("col-sm-" + (9 - property.fileList.length)).addClass("col-sm-" + (9 - property.fileList.length));
     // Adding all media attached to action execution.
-    addFileLink(property.fileList, $(row).find("#contentRow"), isTheExecutionManual);
+    addFileLink(property.fileList, $(row).find("#contentRow"), $(row).find("#contentRow"), isTheExecutionManual);
 
     htmlElement.prepend(button);
     htmlElement.prepend(row);
@@ -1818,6 +1948,8 @@ function getPropertyContent(property) {
     var value1InitField = $("<textarea type='text' rows='1' class='form-control' id='value1init'>").prop("readonly", true);
     var value2Field = $("<textarea type='text' rows='1' class='form-control' id='value2'>").prop("readonly", true);
     var value2InitField = $("<textarea type='text' rows='1' class='form-control' id='value2init'>").prop("readonly", true);
+    var value3Field = $("<textarea type='text' rows='1' class='form-control' id='value3'>").prop("readonly", true);
+    var value3InitField = $("<textarea type='text' rows='1' class='form-control' id='value3init'>").prop("readonly", true);
     var timeField = $("<input type='text' class='form-control' id='time'>").prop("readonly", true);
     var valueField = $("<textarea type='text' rows='1' class='form-control' id='value'>").prop("readonly", true);
     var returnCodeField = $("<input type='text' class='form-control' id='returncode'>").prop("readonly", true);
@@ -1845,6 +1977,8 @@ function getPropertyContent(property) {
     var valueGroup = $("<div class='form-group'></div>").append($("<label for='value'>" + doc.getDocLabel("testcaseexecutiondata", "Value") + "</label>")).append(valueField);
     var value2Group = $("<div class='form-group'></div>").append($("<label for='value2'>" + doc.getDocLabel("page_executiondetail", "value2") + "</label>")).append(value2Field);
     var value2InitGroup = $("<div class='form-group'></div>").append($("<label for='value2init'>" + doc.getDocLabel("page_executiondetail", "value2init") + "</label>")).append(value2InitField);
+    var value3Group = $("<div class='form-group'></div>").append($("<label for='value3'>" + doc.getDocLabel("page_executiondetail", "value3") + "</label>")).append(value3Field);
+    var value3InitGroup = $("<div class='form-group'></div>").append($("<label for='value3init'>" + doc.getDocLabel("page_executiondetail", "value3init") + "</label>")).append(value3InitField);
     var returncodeGroup = $("<div class='form-group'></div>").append($("<label for='returncode'>" + doc.getDocLabel("page_executiondetail", "return_code") + "</label>")).append(returnCodeField);
     var returnmessageGroup = $("<div class='form-group'></div>").append($("<label for='returnmessage'>" + doc.getDocLabel("page_executiondetail", "return_message") + "</label>")).append(returnMessageField);
     var indexGroup = $("<div class='form-group'></div>").append($("<label for='sort'>" + doc.getDocLabel("testcaseexecutiondata", "index") + "</label>")).append(indexField);
@@ -1863,6 +1997,8 @@ function getPropertyContent(property) {
     value1InitField.val(property.value1Init);
     value2Field.val(property.value2);
     value2InitField.val(property.value2Init);
+    value3Field.val(property.value3);
+    value3InitField.val(property.value3Init);
     if (property.endLong !== 19700101010000000 && property.endLong !== 0) {
         timeField.val((convToDate(property.endLong) - convToDate(property.startLong)) + " ms");
     } else {
@@ -1883,10 +2019,12 @@ function getPropertyContent(property) {
     row2.append($("<div></div>").addClass("col-sm-2"));
     row2.append($("<div></div>").addClass("col-sm-5").append(value1InitGroup));
     row2.append($("<div></div>").addClass("col-sm-5").append(value2InitGroup));
+    row2.append($("<div></div>").addClass("col-sm-5").append(value3InitGroup));
     row3.append($("<div></div>").addClass("col-sm-1").append(typeGroup));
     row3.append($("<div></div>").addClass("col-sm-1").append(rankGroup));
     row3.append($("<div></div>").addClass("col-sm-5").append(value1Group));
     row3.append($("<div></div>").addClass("col-sm-5").append(value2Group));
+    row3.append($("<div></div>").addClass("col-sm-5").append(value3Group));
     row4.append($("<div></div>").addClass("col-sm-2").append(indexGroup));
     row4.append($("<div></div>").addClass("col-sm-8").append(valueGroup));
     row4.append($("<div></div>").addClass("col-sm-2").append(timeGroup));
@@ -1950,6 +2088,8 @@ function createPropertiesOld(propList) {
         var value1InitInput = $("<textarea style='width:100%;' rows='1' placeholder='" + doc.getDocLabel("page_testcasescript", "value1init_field") + "' readonly></textarea>").addClass("form-control input-sm").val(property.value1Init);
         var value2Input = $("<textarea style='width:100%;' rows='1' placeholder='" + doc.getDocLabel("page_testcasescript", "value2_field") + "' readonly></textarea>").addClass("form-control input-sm").val(property.value2);
         var value2InitInput = $("<textarea style='width:100%;' rows='1' placeholder='" + doc.getDocLabel("page_testcasescript", "value2init_field") + "' readonly></textarea>").addClass("form-control input-sm").val(property.value2Init);
+        var value3Input = $("<textarea style='width:100%;' rows='1' placeholder='" + doc.getDocLabel("page_testcasescript", "value3_field") + "' readonly></textarea>").addClass("form-control input-sm").val(property.value3);
+        var value3InitInput = $("<textarea style='width:100%;' rows='1' placeholder='" + doc.getDocLabel("page_testcasescript", "value3init_field") + "' readonly></textarea>").addClass("form-control input-sm").val(property.value3Init);
         var lengthInput = $("<input placeholder='" + doc.getDocLabel("page_testcasescript", "length_field") + "' readonly>").addClass("form-control input-sm").val(property.length);
         var rowLimitInput = $("<input placeholder='" + doc.getDocLabel("page_testcasescript", "rowlimit_field") + "' readonly>").addClass("form-control input-sm").val(property.rowLimit);
         var rcInput = $("<input placeholder='" + doc.getDocLabel("page_testcasescript", "rc") + "' readonly>").addClass("form-control input-sm").val(property.RC);
@@ -1984,6 +2124,8 @@ function createPropertiesOld(propList) {
         var value1Init = $("<div class='col-sm-6 form-group'></div>").append($("<label></label>").text(doc.getDocLabel("page_testcasescript", "value1init_field"))).append(value1InitInput);
         var value2 = $("<div class='col-sm-6 form-group'></div>").append($("<label></label>").text(doc.getDocLabel("page_testcasescript", "value2_field"))).append(value2Input);
         var value2Init = $("<div class='col-sm-6 form-group'></div>").append($("<label></label>").text(doc.getDocLabel("page_testcasescript", "value2init_field"))).append(value2InitInput);
+        var value3 = $("<div class='col-sm-6 form-group'></div>").append($("<label></label>").text(doc.getDocLabel("page_testcasescript", "value3_field"))).append(value3Input);
+        var value3Init = $("<div class='col-sm-6 form-group'></div>").append($("<label></label>").text(doc.getDocLabel("page_testcasescript", "value3init_field"))).append(value3InitInput);
         var length = $("<div class='col-sm-2 form-group'></div>").append($("<label></label>").text(doc.getDocLabel("page_testcasescript", "length_field"))).append(lengthInput);
         var rowLimit = $("<div class='col-sm-2 form-group'></div>").append($("<label></label>").text(doc.getDocLabel("page_testcasescript", "rowlimit_field"))).append(rowLimitInput);
         var nature = $("<div class='col-sm-2 form-group'></div>").append($("<label></label>").text(doc.getDocLabel("page_testcasescript", "nature_field"))).append(selectNature.clone().val(property.nature));
@@ -2006,10 +2148,12 @@ function createPropertiesOld(propList) {
 
         row3.append(value1Init);
         row3.append(value2Init);
+        row3.append(value3Init);
         props.append(row3);
 
         row4.append(value1);
         row4.append(value2);
+        row4.append(value3);
         props.append(row4);
 
         row6.append(index);
@@ -2083,7 +2227,20 @@ function createStepList(data, steps) {
         steps.push(step);
     }
 
-    if (steps.length > 0) {
+    if ((stepFocus !== undefined) && (stepFocus !== 99999)) {
+        var find = false;
+        for (var i = 0; i < steps.length; i++) {
+            let curStepIndex = steps[i].step + "-" + steps[i].index;
+            // Use == in stead of ===
+            if (curStepIndex == stepFocus) {
+                find = true;
+                $(steps[i].html[0]).click();
+            }
+        }
+        if ((!find) && (steps.length > 0)) {
+            $(steps[0].html[0]).click();
+        }
+    } else if (steps.length > 0) {
         $("#steps a:last-child").trigger("click");
     }
     $("#steps").data("listOfStep", steps);
@@ -2144,33 +2301,36 @@ function Step(json, steps, id) {
 
     var stepLabelContainer = $("<div class='col-sm-12 stepLabelContainer' style='padding-left: 0px;margin-top:10px'></div>");
 
-    var conditionTooltip = "<b>Condition : </b>" + this.conditionOperator + "</br>"
-    conditionTooltip += "<b>Val1 : </b>" + this.conditionVal1 + "</br>"
-    conditionTooltip += "<b>Val2 : </b>" + this.conditionVal2 + "</br>"
-    conditionTooltip += "<b>Val3 : </b>" + this.conditionVal3 + "</br>"
+    var conditionTooltip = "<b>Condition : </b>" + this.conditionOperator + "</br>";
+    if (conditionVal1 !== undefined)
+        conditionTooltip += "<b>Val1 : </b>" + this.conditionVal1.replaceAll("'", '').replaceAll('"', '') + "</br>";
+    if (conditionVal2 !== undefined)
+        conditionTooltip += "<b>Val2 : </b>" + this.conditionVal2.replaceAll("'", '').replaceAll('"', '') + "</br>";
+    if (conditionVal3 !== undefined)
+        conditionTooltip += "<b>Val3 : </b>" + this.conditionVal3.replaceAll("'", '').replaceAll('"', '') + "</br>";
 
     if (this.loop !== "onceIfConditionTrue" && this.loop !== "onceIfConditionFalse") {
         var labelOptions = $('<span class="label label-primary optionLabel labelLightGreen">Loop</span>');
         stepLabelContainer.append(labelOptions[0]);
     } else if ((this.conditionOperator !== "never")
-        && (this.conditionOperator !== "always")) {
+            && (this.conditionOperator !== "always")) {
         if (this.returnCode !== "NE") {
 
             var labelOptions = $('<span class="label label-primary optionLabel labelLight">Condition verified</span>')
-                .attr("data-toggle", "tooltip").attr("data-html", "true").attr("data-original-title", conditionTooltip);
+                    .attr("data-toggle", "tooltip").attr("data-html", "true").attr("data-original-title", conditionTooltip);
             stepLabelContainer.append(labelOptions[0]);
         } else {
             var labelOptions = $('<span class="label label-primary optionLabel labelLight">Not executed due to condition</span>')
-                .attr("data-toggle", "tooltip").attr("data-html", "true").attr("data-original-title", conditionTooltip);
+                    .attr("data-toggle", "tooltip").attr("data-html", "true").attr("data-original-title", conditionTooltip);
             stepLabelContainer.append(labelOptions[0]);
 
         }
 
     }
     if ((this.loop === "onceIfConditionTrue" && this.conditionOperator === "never")
-        || (this.loop === "onceIfConditionFalse" && this.conditionOperator === "always")) {
+            || (this.loop === "onceIfConditionFalse" && this.conditionOperator === "always")) {
         var labelOptions = $('<span class="label label-primary optionLabel labelLight">Not executed due to condition</span>')
-            .attr("data-toggle", "tooltip").attr("data-html", "true").attr("data-original-title", conditionTooltip);
+                .attr("data-toggle", "tooltip").attr("data-html", "true").attr("data-original-title", conditionTooltip);
         stepLabelContainer.append(labelOptions[0]);
     }
 
@@ -2226,11 +2386,22 @@ Step.prototype.update = function (idStep) {
 };
 
 
-Step.prototype.show = function () {
+Step.prototype.show = function (a) {
     var doc = new Doc();
     var object = $(this).data("item");
     var stepDesc = $("<div>").addClass("col-xs-10");
     var stepButton = $("<div id='stepPlus'></a>").addClass("col-xs-1").addClass("paddingLeft0").addClass("paddingTop30").append($("<span class='glyphicon glyphicon-chevron-down'></span>").attr("style", "font-size:1.5em"));
+
+    if (a.cancelable) {
+        // the show action comes from a click so we save the step/index where focus was done and save it inside stepFocus for next refresh and inside the URL in case of F5.
+        const url = new URL(window.location);
+        url.hash = '#stepId=' + object.step + "-" + object.index;
+        stepFocus = object.step + "-" + object.index;
+        window.history.pushState({}, '', url);
+        $("#editTcStepInfo").parent().attr("href", "./TestCaseScript.jsp?test=" + encodeURI(object.test) + "&testcase=" + encodeURI(object.testcase) + '&stepId=' + object.step);
+    } else if (stepFocus != 99999) {
+        $("#editTcStepInfo").parent().attr("href", "./TestCaseScript.jsp?test=" + encodeURI(object.test) + "&testcase=" + encodeURI(object.testcase) + '&stepId=' + object.step);
+    }
 
     for (var i = 0; i < object.steps.length; i++) {
         var step = object.steps[i];
@@ -2544,12 +2715,8 @@ Action.prototype.draw = function (idMotherStep, id) {
         media.append(buttonGroup).append(buttonUpload);
         showSaveTestCaseExecutionButton();
     } else {
-
-        if (this.endlong !== 19700101010000000 && this.endlong !== 0) {
-            elapsedTime.append((convToDate(this.endlong) - convToDate(this.startlong)) + " ms");
-        } else {
-            elapsedTime.append("...");
-        }
+        elapsedTime.append("<br><br>");
+        elapsedTime.append(generateCleanElapsed(this.endlong, this.startlong));
     }
 
     if (action.returnCode === "OK") {
@@ -2600,8 +2767,23 @@ Action.prototype.draw = function (idMotherStep, id) {
     fullActionElement.append(htmlElement);
     fullActionElement.append(content);
     this.parentStep.stepActionContainer.append(fullActionElement);
-    addFileLink(this.fileList, media, isTheExecutionManual, idMotherStep);
+    addFileLink(this.fileList, media, media, isTheExecutionManual, idMotherStep);
 };
+
+
+function generateCleanElapsed(endlong, startlong) {
+    if (endlong !== 19700101010000000 && endlong !== 0) {
+        let e1 = convToDate(endlong) - convToDate(startlong);
+        if (e1 > 999) {
+            return ((convToDate(endlong) - convToDate(startlong)) / 1000).toFixed(2) + ' s';
+        } else {
+            return e1 + " ms";
+        }
+    } else {
+        return "...";
+    }
+}
+
 
 Action.prototype.setControls = function (controls, idMotherStep, idMotherAction) {
     for (var i = 0; i < controls.length; i++) {
@@ -2655,13 +2837,13 @@ function triggerActionExecution(element, id, status) {
     var newReturnCode = "WE";
     //update first all element of actionDiv in case of control change
     /*$(element).parents("[name='fullActionDiv']").find(".action-group").find(".status").find("span.glyphicon").removeClass().addClass("glyphicon glyphicon-ok pull-left");
-    $(element).parents("[name='fullActionDiv']").find(".action-group").find(".status").find("span.label").removeClass().addClass("label label-primary labelGreen optionLabel pull-left");
-    $(element).parents("[name='fullActionDiv']").find(".action-group").find("input[name='returncode']").val("OK").change();
-    $(element).parents("[name='fullActionDiv']").find(".action-group").find("input[name='returncode']").attr("data-modified", "true");
-    $(element).parents("[name='fullActionDiv']").find(".action").addClass("itemStatusOK");
-    $(element).parents("[name='fullActionDiv']").find(".control").addClass("itemStatusOK");
-    $(element).parents("[name='fullActionDiv']").removeClass("initialStatus");
-    $(element).parents("[name='fullActionDiv']").find(".action-group").data("item").returnCode = "OK";*/
+     $(element).parents("[name='fullActionDiv']").find(".action-group").find(".status").find("span.label").removeClass().addClass("label label-primary labelGreen optionLabel pull-left");
+     $(element).parents("[name='fullActionDiv']").find(".action-group").find("input[name='returncode']").val("OK").change();
+     $(element).parents("[name='fullActionDiv']").find(".action-group").find("input[name='returncode']").attr("data-modified", "true");
+     $(element).parents("[name='fullActionDiv']").find(".action").addClass("itemStatusOK");
+     $(element).parents("[name='fullActionDiv']").find(".control").addClass("itemStatusOK");
+     $(element).parents("[name='fullActionDiv']").removeClass("initialStatus");
+     $(element).parents("[name='fullActionDiv']").find(".action-group").data("item").returnCode = "OK";*/
 
     // update element checked
     if (status === "OK") {
@@ -2787,6 +2969,7 @@ function triggerActionExecution(element, id, status) {
     var configPanel = $("#testCaseConfig");
     configPanel.find("#controlstatus").text(testCaseNewReturnCode);
     configPanel.find("input#controlstatus2").val(testCaseNewReturnCode);
+
     updateDataBarVisual(testCaseNewReturnCode);
 }
 
@@ -2796,6 +2979,7 @@ function setTestCaseReturnCodeToNA() {
 
     configPanel.find("#controlstatus").text(testCaseNewReturnCode);
     configPanel.find("input#controlstatus2").val(testCaseNewReturnCode);
+
     updateDataBarVisual(testCaseNewReturnCode);
 }
 
@@ -3114,13 +3298,8 @@ Control.prototype.draw = function (idMotherStep, idMotherAction, idControl) {
         media.append(buttonGroup).append(buttonUpload);
         showSaveTestCaseExecutionButton();
     } else {
-
-        var elapsedTime = $("<span>").attr("style", "font-size:0.9em;margin:0px;line-height:1;height:0.9em;overflow:hidden;word-wrap: break-word;text-overflow: ellipsis;");
-        if (this.endlong !== 19700101010000000 && this.endlong !== 0) {
-            elapsedTime.append((convToDate(this.endlong) - convToDate(this.startlong)) + " ms");
-        } else {
-            elapsedTime.append("...");
-        }
+        elapsedTime.append("<br><br>");
+        elapsedTime.append(generateCleanElapsed(this.endlong, this.startlong));
     }
 
 
@@ -3172,7 +3351,7 @@ Control.prototype.draw = function (idMotherStep, idMotherAction, idControl) {
     // Starting to reduce the size of the row by the length of elements.
     //$(header).find("#contentField").removeClass("col-xs-12").addClass("col-xs-" + (12 - this.fileList.length * 2)).addClass("col-sm-" + (12 - this.fileList.length * 2));
     // Adding all media attached to control execution.
-    addFileLink(this.fileList, media, isTheExecutionManual, idMotherStep);
+    addFileLink(this.fileList, media, media, isTheExecutionManual, idMotherStep);
 };
 
 Control.prototype.setStep = function (step) {
@@ -3384,27 +3563,28 @@ function changeClickIfManual(isTheExecutionManual, container, idStep, file, even
         event.preventDefault()
         event.stopPropagation()
     } else {
-        openModalFile(null, null, "EDIT", null, file, !isTheExecutionManual)
+        openModalFile(null, null, "VIEW", null, file, !isTheExecutionManual)
     }
 }
 
 
 // Function in order to add the Media files links into TestCase, step, action and control level.
-function addFileLink(fileList, container, manual, idStep) {
+function addFileLink(fileList, container, containerExe, manual, idStep) {
     var auto = manual == true ? false : true;
     $(container).find($("div[name='mediaMiniature']")).remove();
+    $(containerExe).find($("div[name='mediaMiniature']")).remove();
     for (var i = 0; i < fileList.length; i++) {
         let index = i
         if ((fileList[i].fileType === "JPG") || (fileList[i].fileType === "PNG")) {
             var urlImage = "ReadTestCaseExecutionMedia?filename=" + fileList[i].fileName + "&filetype=" + fileList[i].fileType + "&filedesc=" + fileList[i].fileDesc + "&auto=" + auto;
             var fileDesc = fileList[i].fileDesc;
             var linkBox = $("<div name='mediaMiniature'>").addClass("col-sm-12").css("margin-bottom", "5px")
-                .append($("<img>").attr("src", urlImage + "&h=30&w=60").css("max-height", "30px").css("max-width", "60px")
-                    .attr("data-toggle", "tooltip").attr("data-original-title", fileList[i].fileDesc)
-                    .click(function (e) {
-                        changeClickIfManual(isTheExecutionManual, container, idStep, fileList[index], e)
-                        return false;
-                    }));
+                    .append($("<img>").attr("src", urlImage + "&h=30&w=60").css("max-height", "30px").css("max-width", "60px")
+                            .attr("data-toggle", "tooltip").attr("data-original-title", fileList[i].fileDesc)
+                            .click(function (e) {
+                                changeClickIfManual(isTheExecutionManual, container, idStep, fileList[index], e)
+                                return false;
+                            }));
             container.append(linkBox);
 
 
@@ -3415,40 +3595,18 @@ function addFileLink(fileList, container, manual, idStep) {
             ;
             var fileDesctxt = fileList[i].fileDesc;
             var filetypetxt = fileList[i].fileType.toLowerCase();
-            if (i === 0) {
-                var linkBoxtxt = $("<div name='mediaMiniature'>").addClass("col-sm-12").css("margin-bottom", "5px")
+            var linkBoxtxt = $("<div name='mediaMiniature'>").addClass("col-sm-12").css("margin-bottom", "5px")
                     .prepend("<br>").prepend($("<img>").attr("src", "images/f-" + filetypetxt + ".svg")
-                        .attr("data-toggle", "tooltip").attr("data-original-title", fileList[i].fileDesc)
-                        .css("height", "30px").click(function (f) {
-                            changeClickIfManual(isTheExecutionManual, container, idStep, fileList[index], f)
-                            return false;
-                        }));
-            } else if (i === 1) {
-                var linkBoxtxt = $("<div name='mediaMiniature'>").addClass("col-sm-12").css("margin-bottom", "5px")
-                    .prepend("<br>").prepend($("<img>").attr("src", "images/f-" + filetypetxt + ".svg")
-                        .attr("data-toggle", "tooltip").attr("data-original-title", fileList[i].fileDesc)
-                        .css("height", "30px").click(function (f) {
-                            changeClickIfManual(isTheExecutionManual, container, idStep, fileList[index], f)
-                            return false;
-                        }));
-            } else if (i === 2) {
-                var linkBoxtxt = $("<div name='mediaMiniature'>").addClass("col-sm-12").css("margin-bottom", "5px")
-                    .prepend("<br>").prepend($("<img>").attr("src", "images/f-" + filetypetxt + ".svg")
-                        .attr("data-toggle", "tooltip").attr("data-original-title", fileList[i].fileDesc)
-                        .css("height", "30px").click(function (f) {
-                            changeClickIfManual(isTheExecutionManual, container, idStep, fileList[index], f)
-                            return false;
-                        }));
-            } else if (i === 3) {
-                var linkBoxtxt = $("<div name='mediaMiniature'>").addClass("col-sm-12").css("margin-bottom", "5px")
-                    .prepend("<br>").prepend($("<img>").attr("src", "images/f-" + filetypetxt + ".svg")
-                        .attr("data-toggle", "tooltip").attr("data-original-title", fileList[i].fileDesc)
-                        .css("height", "30px").click(function (f) {
-                            changeClickIfManual(isTheExecutionManual, container, idStep, fileList[index], f)
-                            return false;
-                        }));
+                    .attr("data-toggle", "tooltip").attr("data-original-title", fileList[i].fileDesc)
+                    .css("height", "30px").click(function (e) {
+                changeClickIfManual(isTheExecutionManual, container, idStep, fileList[index], e)
+                return false;
+            }));
+            if (fileList[i].fileDesc === "Execution Log") {
+                containerExe.append(linkBoxtxt);
+            } else {
+                container.append(linkBoxtxt);
             }
-            container.append(linkBoxtxt);
         } else if ((fileList[i].fileType === "BIN") || (fileList[i].fileType === "PDF")) {
 
             var linkBoxtxt = null;
@@ -3456,18 +3614,18 @@ function addFileLink(fileList, container, manual, idStep) {
             if (fileList[i].fileType === "BIN") {
                 linkBoxtxt = $("<div name='mediaMiniature'>").addClass("col-sm-12").css("margin-bottom", "5px")
 
-                    .prepend("<br>").prepend($("<img>").attr("src", "images/f-binaire.png").css("height", "30px")
+                        .prepend("<br>").prepend($("<img>").attr("src", "images/f-binaire.png").css("height", "30px")
                         .attr("data-toggle", "tooltip").attr("data-original-title", fileList[i].fileDesc).click(function (f) {
-                            changeClickIfManual(isTheExecutionManual, container, idStep, fileList[index], f)
-                            return false;
-                        }))
+                    changeClickIfManual(isTheExecutionManual, container, idStep, fileList[index], f)
+                    return false;
+                }))
             } else if (fileList[i].fileType === "PDF") {
                 linkBoxtxt = $("<div name='mediaMiniature'>").addClass("col-sm-12").css("margin-bottom", "5px")
-                    .prepend("<br>").prepend($("<img>").attr("src", "images/f-pdf.svg").css("height", "30px")
+                        .prepend("<br>").prepend($("<img>").attr("src", "images/f-pdf.svg").css("height", "30px")
                         .attr("data-toggle", "tooltip").attr("data-original-title", fileList[i].fileDesc).click(function (f) {
-                            changeClickIfManual(isTheExecutionManual, container, idStep, fileList[index], f)
-                            return false;
-                        }))
+                    changeClickIfManual(isTheExecutionManual, container, idStep, fileList[index], f)
+                    return false;
+                }))
             }
 
             container.append(linkBoxtxt);

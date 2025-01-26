@@ -1,5 +1,5 @@
 /**
- * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * Cerberus Copyright (C) 2013 - 2025 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -29,6 +29,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.sql.Timestamp;
+import lombok.Builder;
 
 /**
  * @author bcivel
@@ -37,6 +38,7 @@ import java.sql.Timestamp;
 @Setter
 @EqualsAndHashCode
 @ToString
+@Builder
 public class TestCaseDep {
 
     private long id;
@@ -46,6 +48,7 @@ public class TestCaseDep {
     private String dependencyTest;
     private String dependencyTestcase;
     private String dependencyEvent;
+    private Integer dependencyTCDelay;
     private boolean isActive;
     private String description;
     @EqualsAndHashCode.Exclude
@@ -63,8 +66,10 @@ public class TestCaseDep {
     @EqualsAndHashCode.Exclude
     private String testcaseDescription;
 
-    public static final String TYPE_TCEXEEND = "TCEXEEND"; // End of a testcase Execution.
+    public static final String TYPE_TCEXEEND = "TCEXEEND"; // End of a testCase Execution any status.
+    public static final String TYPE_TCEXEENDOK = "TCEXEENDOK"; // End of a testCase Execution only OK.
     public static final String TYPE_EVENT = "EVENT"; // Creation of an Event.
+    public static final String TYPE_TIMING = "TIMING"; // Waiting for a specific timing.
 
     private static final Logger LOG = LogManager.getLogger(TestCaseDep.class);
 
@@ -81,6 +86,7 @@ public class TestCaseDep {
             testCaseDependencyJson.put("id", this.getId());
             testCaseDependencyJson.put("dependencyTest", this.getDependencyTest());
             testCaseDependencyJson.put("dependencyTestcase", this.getDependencyTestcase());
+            testCaseDependencyJson.put("dependencyTCDelay", this.getDependencyTCDelay());
             testCaseDependencyJson.put("type", this.getType());
             testCaseDependencyJson.put("isActive", this.isActive());
             testCaseDependencyJson.put("description", this.getDescription());
@@ -99,6 +105,7 @@ public class TestCaseDep {
             testCaseDependencyJson.put("id", this.getId());
             testCaseDependencyJson.put("dependencyTestFolder", this.getDependencyTest());
             testCaseDependencyJson.put("dependencyTestcase", this.getDependencyTestcase());
+            testCaseDependencyJson.put("dependencyTCDelay", this.getDependencyTCDelay());
             testCaseDependencyJson.put("type", this.getType());
             testCaseDependencyJson.put("isActive", this.isActive());
             testCaseDependencyJson.put("description", this.getDescription());

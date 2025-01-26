@@ -1,5 +1,5 @@
 /**
- * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * Cerberus Copyright (C) 2013 - 2025 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -19,7 +19,6 @@
  */
 package org.cerberus.core.crud.dao.impl;
 
-import com.google.common.base.Strings;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -83,6 +82,25 @@ public class InvariantDAO implements IInvariantDAO {
                 ps -> {
                     ps.setString(1, id);
                     ps.setString(2, value);
+                },
+                resultSet -> {
+                    return loadFromResultSet(resultSet);
+                }
+            );
+    }
+
+    @Override
+    public Invariant readFirstByIdName(String id) throws CerberusException {
+        final String query = "SELECT * FROM `invariant` WHERE `idname` = ? order by sort LIMIT 1;";
+
+        // Debug message on SQL.
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("SQL.param.id : " + id);
+        }
+
+        return RequestDbUtils.executeQuery(databaseSpring, query,
+                ps -> {
+                    ps.setString(1, id);
                 },
                 resultSet -> {
                     return loadFromResultSet(resultSet);
@@ -381,10 +399,10 @@ public class InvariantDAO implements IInvariantDAO {
         StringBuilder query = new StringBuilder();
         query.append("SELECT SQL_CALC_FOUND_ROWS * FROM invariant ");
 
-        if (!Strings.isNullOrEmpty(searchTerm)) {
+        if (!StringUtil.isEmptyOrNull(searchTerm)) {
             searchSQL.append(" and (idname like ? or value like ? or sort like ? or description like ? or VeryShortDesc like ? or gp1 like ? or gp2 like ? or gp3 like ?)");
         }
-        if (!Strings.isNullOrEmpty(PublicPrivateFilter)) {
+        if (!StringUtil.isEmptyOrNull(PublicPrivateFilter)) {
             searchSQL.append(" and ");
             searchSQL.append(PublicPrivateFilter);
         }
@@ -423,7 +441,7 @@ public class InvariantDAO implements IInvariantDAO {
             PreparedStatement preStat = connection.prepareStatement(query.toString());
 
             int i = 1;
-            if (!StringUtil.isEmpty(searchTerm)) {
+            if (!StringUtil.isEmptyOrNull(searchTerm)) {
                 preStat.setString(i++, "%" + searchTerm + "%");
                 preStat.setString(i++, "%" + searchTerm + "%");
                 preStat.setString(i++, "%" + searchTerm + "%");
@@ -514,10 +532,10 @@ public class InvariantDAO implements IInvariantDAO {
         query.append(columnName);
         query.append(" as distinctValues FROM invariant");
 
-        if (!Strings.isNullOrEmpty(searchTerm)) {
+        if (!StringUtil.isEmptyOrNull(searchTerm)) {
             searchSQL.append(" and (idname like ? or value like ? or sort like ? or description like ? or VeryShortDesc like ? or gp1 like ? or gp2 like ? or gp3 like ?)");
         }
-        if (!Strings.isNullOrEmpty(PublicPrivateFilter)) {
+        if (!StringUtil.isEmptyOrNull(PublicPrivateFilter)) {
             searchSQL.append(" and ");
             searchSQL.append(PublicPrivateFilter);
         }
@@ -546,7 +564,7 @@ public class InvariantDAO implements IInvariantDAO {
 
             int i = 1;
 
-            if (!StringUtil.isEmpty(searchTerm)) {
+            if (!StringUtil.isEmptyOrNull(searchTerm)) {
                 preStat.setString(i++, "%" + searchTerm + "%");
                 preStat.setString(i++, "%" + searchTerm + "%");
                 preStat.setString(i++, "%" + searchTerm + "%");
@@ -899,7 +917,7 @@ public class InvariantDAO implements IInvariantDAO {
     }
 
     private String getSearchString(String searchTerm) {
-        if (StringUtil.isEmpty(searchTerm)) {
+        if (StringUtil.isEmptyOrNull(searchTerm)) {
             return "";
         } else {
             StringBuilder gSearch = new StringBuilder();

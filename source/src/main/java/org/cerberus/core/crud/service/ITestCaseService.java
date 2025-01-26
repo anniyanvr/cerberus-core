@@ -1,5 +1,5 @@
 /**
- * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * Cerberus Copyright (C) 2013 - 2025 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -30,6 +30,7 @@ import javax.servlet.http.HttpServletRequest;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+import org.json.JSONObject;
 
 /**
  * @author bcivel
@@ -70,6 +71,13 @@ public interface ITestCaseService {
     List<TestCase> findTestCaseByTest(String test);
 
     /**
+     *
+     * @param systems
+     * @return
+     */
+    Integer getnbtc(List<String> systems);
+
+    /**
      * @param system
      * @param test
      * @param startPosition
@@ -103,9 +111,9 @@ public interface ITestCaseService {
      * @param testFilter
      * @param applicationFilter
      * @param country
-     * @param system            system of the main test case.
-     * @param build             current build
-     * @param revision          current revision
+     * @param system system of the main test case.
+     * @param build current build
+     * @param revision current revision
      * @return
      */
     List<TestCase> getTestCaseForPrePostTesting(String testFilter, String applicationFilter, String country, String system, String build, String revision);
@@ -117,11 +125,35 @@ public interface ITestCaseService {
     boolean updateTestCaseInformation(TestCase testCase);
 
     /**
+     * This method update all testcases where an application could be defined
+     * when it is renamed.
+     *
      * @param application
      * @param oldObject
      * @param newObject
      */
     public void updateApplicationObject(String application, String oldObject, String newObject);
+
+    /**
+     *
+     * @param testcase
+     * @return
+     */
+    boolean isBugAlreadyOpen(TestCase testcase);
+
+    /**
+     * Add the corresponding bug key to the list of bugs only if no other active
+     * bug already exist.
+     *
+     * @param tc
+     * @param test
+     * @param testFolder
+     * @param bugKey
+     * @param bugURL
+     * @param description
+     * @return 
+     */
+    public JSONObject addNewBugEntry(TestCase tc, String test, String testFolder, String bugKey, String bugURL, String description);
 
     /**
      * @param tCase
@@ -160,7 +192,7 @@ public interface ITestCaseService {
     AnswerList<TestCase> findTestCaseByCampaign(String campaign);
 
     /**
-     * @param campaign  the campaign name
+     * @param campaign the campaign name
      * @param countries arrays of country
      * @return the list of TCase used in the campaign and activated for the
      * countries
@@ -212,13 +244,12 @@ public interface ITestCaseService {
      * Method that get all the testcases that use a determined testdatalib entry
      *
      * @param testDataLibId testdatalib unique identifier
-     * @param name          testdatalib name
-     * @param country       country for which testdatalib is defined
+     * @param name testdatalib name
+     * @param country country for which testdatalib is defined
      * @return an answer with the test cases and a message indicating the status
      * of the operation
      */
     AnswerList<TestListDTO> findTestCasesThatUseTestDataLib(int testDataLibId, String name, String country);
-
 
     /**
      * @param system
@@ -261,7 +292,7 @@ public interface ITestCaseService {
      * @return
      */
     public AnswerList<TestCase> readByVarious(String[] test, String[] app, String[] creator, String[] implementer, String[] system,
-                                              String[] campaign, List<Integer> labelid, String[] priority, String[] type, String[] status, int length);
+            String[] campaign, List<Integer> labelid, String[] priority, String[] type, String[] status, int length);
 
     /**
      * @param system
@@ -349,6 +380,17 @@ public interface ITestCaseService {
     boolean hasPermissionsUpdate(TestCase testCase, HttpServletRequest request);
 
     /**
+     * This method returns a boolean that define if the object can be updated by
+     * user authenticated by request. in case object is null it return if the
+     * user defined by request can globally update any object
+     *
+     * @param status
+     * @param request
+     * @return
+     */
+    boolean hasPermissionsUpdateFromStatus(String status, HttpServletRequest request);
+
+    /**
      * This method returns a boolean that define if the object can be deleted by
      * user authenticated by request. in case object is null it return if the
      * user defined by request can globally delete any object
@@ -399,4 +441,12 @@ public interface ITestCaseService {
      */
     public TestCase updateTestcaseAPI(String testFolderId, String testcaseId, TestCase newTestcase) throws CerberusException;
 
+    /**
+     *
+     * @param origin
+     * @param refOrigin
+     * @param system
+     * @return
+     */
+    public String getRefOriginUrl(String origin, String refOrigin, String system);
 }

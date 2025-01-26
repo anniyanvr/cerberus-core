@@ -1,5 +1,5 @@
 /**
- * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * Cerberus Copyright (C) 2013 - 2025 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -52,6 +52,7 @@ import java.sql.Timestamp;
 import java.util.*;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.cerberus.core.crud.entity.LogEvent;
 
 /**
  *
@@ -134,13 +135,13 @@ public class UpdateApplicationObject extends HttpServlet {
         /**
          * Checking all constrains before calling the services.
          */
-        if (StringUtil.isEmpty(application)) {
+        if (StringUtil.isEmptyOrNull(application)) {
             msg = new MessageEvent(MessageEventEnum.DATA_OPERATION_ERROR_EXPECTED);
             msg.setDescription(msg.getDescription().replace("%ITEM%", "ApplicationObject")
                     .replace("%OPERATION%", "Update")
                     .replace("%REASON%", "Application name (applicationobject) is missing."));
             ans.setResultMessage(msg);
-        } else if (StringUtil.isEmpty(object)) {
+        } else if (StringUtil.isEmptyOrNull(object)) {
             msg = new MessageEvent(MessageEventEnum.DATA_OPERATION_ERROR_EXPECTED);
             msg.setDescription(msg.getDescription().replace("%ITEM%", "ApplicationObject")
                     .replace("%OPERATION%", "Update")
@@ -190,7 +191,7 @@ public class UpdateApplicationObject extends HttpServlet {
                      * Update was successful. Adding Log entry.
                      */
                     ILogEventService logEventService = appContext.getBean(LogEventService.class);
-                    logEventService.createForPrivateCalls("/UpdateApplicationObject", "UPDATE", "Updated Application Object : ['" + application + "'|'" + object + "']", request);
+                    logEventService.createForPrivateCalls("/UpdateApplicationObject", "UPDATE", LogEvent.STATUS_INFO, "Updated Application Object : ['" + application + "'|'" + object + "']", request);
                 }
                 finalAnswer = AnswerUtil.agregateAnswer(finalAnswer, ans);
             }

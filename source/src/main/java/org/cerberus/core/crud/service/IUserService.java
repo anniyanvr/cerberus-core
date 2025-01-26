@@ -1,5 +1,5 @@
 /**
- * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * Cerberus Copyright (C) 2013 - 2025 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -93,7 +93,7 @@ public interface IUserService {
      * @return
      */
     boolean verifyPassword(User user, String password);
-    
+
     /**
      * @param user
      * @param password
@@ -105,8 +105,8 @@ public interface IUserService {
      * @param apiKey
      * @return
      */
-    boolean verifyAPIKey(String apiKey);
-    
+    String verifyAPIKey(String apiKey);
+
     /**
      *
      * @param user
@@ -232,7 +232,7 @@ public interface IUserService {
      * @throws CerberusException
      */
     void convert(Answer answer) throws CerberusException;
-    
+
     /**
      * @param user
      * @param newGeneratedPassword

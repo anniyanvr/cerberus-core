@@ -1,5 +1,5 @@
 /**
- * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * Cerberus Copyright (C) 2013 - 2025 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -23,11 +23,15 @@ import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
 import java.util.List;
+
+import org.cerberus.core.crud.entity.TestCaseExecution;
 import org.cerberus.core.engine.entity.Identifier;
 import org.cerberus.core.engine.entity.MessageEvent;
 import org.cerberus.core.engine.entity.Session;
 import org.cerberus.core.exception.CerberusEventException;
+import org.cerberus.core.util.answer.AnswerItem;
 import org.json.JSONArray;
+import org.openqa.selenium.WebElement;
 
 /**
  *
@@ -37,7 +41,17 @@ public interface IWebDriverService {
 
     String getValueFromHTMLVisible(Session session, Identifier identifier);
 
-    String getValueFromHTML(Session session, Identifier identifier);
+    String getValueFromHTML(Session session, Identifier identifier, boolean random, Integer rank);
+
+    AnswerItem<WebElement> getWebElement(Session session, Identifier identifier, boolean random, int rank);
+
+    String getElementPosition(Session session, Identifier identifier, boolean random, Integer rank);
+
+    String getElements(Session session, Identifier identifier);
+
+    String getElementsValues(Session session, Identifier identifier);
+
+    String getElementsValuesSum(TestCaseExecution testCaseExecution, Identifier identifier);
 
     String getAlertText(Session session);
 
@@ -83,7 +97,7 @@ public interface IWebDriverService {
      */
     String getCurrentUrl(Session session, String url) throws CerberusEventException;
 
-    String getAttributeFromHtml(Session session, Identifier identifier, String attribute);
+    String getAttributeFromHtml(Session session, Identifier identifier, String attribute, boolean random, Integer rank);
 
     String getFromCookie(Session session, String cookieName, String cookieParameter);
 
@@ -99,13 +113,13 @@ public interface IWebDriverService {
 
     JSONArray getJSONConsoleLog(Session session);
 
-    MessageEvent scrollTo(Session session, Identifier identifier, String text);
+    MessageEvent scrollTo(Session session, Identifier identifier, String text, String offsets);
 
-    MessageEvent doSeleniumActionClick(Session session, Identifier identifier, boolean waitForVisibility, boolean waitForClickability);
+    MessageEvent doSeleniumActionClick(Session session, Identifier identifier, Integer hOffset, Integer vOffset, boolean waitForVisibility, boolean waitForClickability);
 
-    MessageEvent doSeleniumActionMouseDown(Session session, Identifier identifier, boolean waitForVisibility, boolean waitForClickability);
+    MessageEvent doSeleniumActionMouseDown(Session session, Identifier identifier, Integer hOffset, Integer vOffset, boolean waitForVisibility, boolean waitForClickability);
 
-    MessageEvent doSeleniumActionMouseUp(Session session, Identifier identifier, boolean waitForVisibility, boolean waitForClickability);
+    MessageEvent doSeleniumActionMouseUp(Session session, Identifier identifier, Integer hOffset, Integer vOffset, boolean waitForVisibility, boolean waitForClickability);
 
     MessageEvent doSeleniumActionSwitchToWindow(Session session, Identifier identifier);
 
@@ -113,11 +127,11 @@ public interface IWebDriverService {
 
     MessageEvent doSeleniumActionManageDialogKeyPress(Session session, String valueToPress);
 
-    MessageEvent doSeleniumActionDoubleClick(Session session, Identifier identifier, boolean waitForVisibility, boolean waitForClickability);
+    MessageEvent doSeleniumActionDoubleClick(Session session, Identifier identifier, Integer hOffset, Integer vOffset, boolean waitForVisibility, boolean waitForClickability);
 
     MessageEvent doSeleniumActionType(Session session, Identifier identifier, String valueToType, String propertyName, boolean waitForVisibility, boolean waitForClickability);
 
-    MessageEvent doSeleniumActionMouseOver(Session session, Identifier identifier, boolean waitForVisibility, boolean waitForClickability);
+    MessageEvent doSeleniumActionMouseOver(Session session, Identifier identifier, Integer hOffset, Integer vOffset, boolean waitForVisibility, boolean waitForClickability);
 
     MessageEvent doSeleniumActionWait(Session session, Identifier identifier);
 
@@ -135,9 +149,15 @@ public interface IWebDriverService {
 
     MessageEvent doSeleniumActionFocusDefaultIframe(Session session);
 
-    MessageEvent doSeleniumActionRightClick(Session session, Identifier identifier);
+    MessageEvent doSeleniumActionRightClick(Session session, Identifier identifier, Integer hOffset, Integer vOffset);
 
     MessageEvent doSeleniumActionDragAndDrop(Session session, Identifier object, Identifier property, boolean waitForVisibility, boolean waitForClickability) throws IOException;
 
+    MessageEvent doSeleniumActionDragAndDropByOffset(Session session, Identifier object, Identifier offset, boolean waitForVisibility, boolean waitForClickability) throws IOException;
+
     MessageEvent doSeleniumActionRefreshCurrentPage(Session session);
+
+    MessageEvent doSeleniumActionReturnPreviousPage(Session session);
+
+    MessageEvent doSeleniumActionForwardNextPage(Session session);
 }

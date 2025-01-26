@@ -1,5 +1,5 @@
 /**
- * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * Cerberus Copyright (C) 2013 - 2025 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -50,6 +50,7 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import org.cerberus.core.crud.entity.LogEvent;
 
 /**
  * @author bcivel
@@ -95,7 +96,7 @@ public class UpdateTestCaseProperties extends HttpServlet {
         /**
          * Checking all constrains before calling the services.
          */
-        if (StringUtil.isEmpty(test) || StringUtil.isEmpty(testCase)) {
+        if (StringUtil.isEmptyOrNull(test) || StringUtil.isEmptyOrNull(testCase)) {
             msg = new MessageEvent(MessageEventEnum.DATA_OPERATION_ERROR_EXPECTED);
             msg.setDescription(msg.getDescription().replace("%ITEM%", "Test Case")
                     .replace("%OPERATION%", "Update")
@@ -126,7 +127,7 @@ public class UpdateTestCaseProperties extends HttpServlet {
                     msg = new MessageEvent(MessageEventEnum.DATA_OPERATION_ERROR_EXPECTED);
                     msg.setDescription(msg.getDescription().replace("%ITEM%", "TestCase")
                             .replace("%OPERATION%", "Update")
-                            .replace("%REASON%", "Not enought privilege to update the testcase. You mut belong to Test Privilege or even TestAdmin in case the test is in WORKING status."));
+                            .replace("%REASON%", "Not enought privilege to update the testcase. You mut belong to Test Privilege or even TestAdmin in case the test is in " + TestCase.TESTCASE_STATUS_WORKING + " status."));
                     ans.setResultMessage(msg);
 
                 } else {
@@ -146,7 +147,7 @@ public class UpdateTestCaseProperties extends HttpServlet {
                          * Update was successful. Adding Log entry.
                          */
                         ILogEventService logEventService = appContext.getBean(LogEventService.class);
-                        logEventService.createForPrivateCalls("/UpdateTestCaseProperties", "UPDATE", "Update testcaseProperties : ['" + tc.getTest() + "'|'" + tc.getTestcase() + "']", request);
+                        logEventService.createForPrivateCalls("/UpdateTestCaseProperties", "UPDATE", LogEvent.STATUS_INFO, "Update testcaseProperties : ['" + tc.getTest() + "'|'" + tc.getTestcase() + "']", request);
                     }
 
                 }

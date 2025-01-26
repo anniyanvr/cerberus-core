@@ -1,5 +1,5 @@
 /*
- * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * Cerberus Copyright (C) 2013 - 2025 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -17,9 +17,11 @@
  * You should have received a copy of the GNU General Public License
  * along with Cerberus.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 package org.cerberus.core.api.mappers;
 
+import java.util.Optional;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.mapstruct.Mapper;
 
 import static org.cerberus.core.util.StringUtil.parseBoolean;
@@ -30,7 +32,24 @@ import static org.cerberus.core.util.StringUtil.parseBoolean;
 @Mapper(componentModel = "spring")
 public interface BooleanMapper {
 
+    static final Logger LOG = LogManager.getLogger(BooleanMapper.class);
+
     public default boolean toBoolean(String text) {
         return parseBoolean(text);
+    }
+
+    default boolean toBoolean(Optional<Boolean> value) {
+        boolean products = true;
+        LOG.debug("mapping from Optional " + value + " to boolean");
+
+        //add your custom mapping implementation
+        return products;
+    }
+
+    default Optional<Boolean> toOptionalBoolean(boolean value) {
+        Optional<Boolean> products = null;
+        LOG.debug("mapping from boolean : " + value + " to Optional ");
+        //add your custom mapping implementation
+        return products;
     }
 }

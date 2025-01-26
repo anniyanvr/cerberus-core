@@ -1,5 +1,5 @@
 /**
- * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * Cerberus Copyright (C) 2013 - 2025 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -31,14 +31,15 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.cerberus.core.crud.entity.Application;
 import org.cerberus.core.crud.entity.CountryEnvironmentParameters;
-import org.cerberus.core.engine.entity.MessageEvent;
+import org.cerberus.core.crud.entity.LogEvent;
 import org.cerberus.core.crud.factory.IFactoryCountryEnvironmentParameters;
-import org.cerberus.core.enums.MessageEventEnum;
-import org.cerberus.core.exception.CerberusException;
 import org.cerberus.core.crud.service.IApplicationService;
 import org.cerberus.core.crud.service.ICountryEnvironmentParametersService;
 import org.cerberus.core.crud.service.ILogEventService;
 import org.cerberus.core.crud.service.impl.LogEventService;
+import org.cerberus.core.engine.entity.MessageEvent;
+import org.cerberus.core.enums.MessageEventEnum;
+import org.cerberus.core.exception.CerberusException;
 import org.cerberus.core.util.ParameterParserUtil;
 import org.cerberus.core.util.StringUtil;
 import org.cerberus.core.util.answer.Answer;
@@ -94,18 +95,22 @@ public class UpdateApplication extends HttpServlet {
          * Parsing and securing all required parameters.
          */
         // Parameter that are already controled by GUI (no need to decode) --> We SECURE them
-        String system = policy.sanitize(request.getParameter("system"));
+        String system = ParameterParserUtil.parseStringParamAndDecode(request.getParameter("system"), "", charset);
         String type = policy.sanitize(request.getParameter("type"));
         String deployType = policy.sanitize(request.getParameter("deploytype"));
         // Parameter that needs to be secured --> We SECURE+DECODE them
         String application = ParameterParserUtil.parseStringParamAndDecodeAndSanitize(request.getParameter("application"), null, charset);
         String originalApplication = ParameterParserUtil.parseStringParamAndDecodeAndSanitize(request.getParameter("originalApplication"), null, charset);
-        String subSystem = ParameterParserUtil.parseStringParamAndDecodeAndSanitize(request.getParameter("subsystem"), "", charset);
+        String subSystem = ParameterParserUtil.parseStringParamAndDecode(request.getParameter("subsystem"), "", charset);
         String mavenGpID = ParameterParserUtil.parseStringParamAndDecodeAndSanitize(request.getParameter("mavengroupid"), "", charset);
-        String description = ParameterParserUtil.parseStringParamAndDecodeAndSanitize(request.getParameter("description"), "", charset);
+        String description = ParameterParserUtil.parseStringParamAndDecode(request.getParameter("description"), "", charset);
         // Parameter that we cannot secure as we need the html --> We DECODE them
         int poolSize = ParameterParserUtil.parseIntegerParam(request.getParameter("poolSize"), 0);
-        String svnURL = ParameterParserUtil.parseStringParamAndDecode(request.getParameter("svnurl"), "", charset);
+        String repoURL = ParameterParserUtil.parseStringParamAndDecode(request.getParameter("repourl"), "", charset);
+        String bugTrackerConnector = ParameterParserUtil.parseStringParamAndDecode(request.getParameter("bugtrackerconnector"), "", charset);
+        String bugTrackerParam1 = ParameterParserUtil.parseStringParamAndDecode(request.getParameter("bugtrackerparam1"), "", charset);
+        String bugTrackerParam2 = ParameterParserUtil.parseStringParamAndDecode(request.getParameter("bugtrackerparam2"), "", charset);
+        String bugTrackerParam3 = ParameterParserUtil.parseStringParamAndDecode(request.getParameter("bugtrackerparam3"), "", charset);
         String bugTrackerURL = ParameterParserUtil.parseStringParamAndDecode(request.getParameter("bugtrackerurl"), "", charset);
         String newBugURL = ParameterParserUtil.parseStringParamAndDecode(request.getParameter("bugtrackernewurl"), "", charset);
         Integer sort = 10;
@@ -123,6 +128,13 @@ public class UpdateApplication extends HttpServlet {
         List<CountryEnvironmentParameters> ceaList = new ArrayList<>();
         ceaList = getCountryEnvironmentApplicationFromParameter(request, appContext, system, application, objApplicationArray);
 
+        boolean emptycountryenv_error = false;
+        for (CountryEnvironmentParameters cea : ceaList) {
+            if ((StringUtil.isEmptyOrNull(cea.getCountry())) || (StringUtil.isEmptyOrNull(cea.getEnvironment()))) {
+                emptycountryenv_error = true;
+            }
+        }
+
         // Prepare the final answer.
         MessageEvent msg1 = new MessageEvent(MessageEventEnum.GENERIC_OK);
         Answer finalAnswer = new Answer(msg1);
@@ -130,24 +142,30 @@ public class UpdateApplication extends HttpServlet {
         /**
          * Checking all constrains before calling the services.
          */
-        if (StringUtil.isEmpty(application)) {
+        if (StringUtil.isEmptyOrNull(application)) {
             msg = new MessageEvent(MessageEventEnum.DATA_OPERATION_ERROR_EXPECTED);
             msg.setDescription(msg.getDescription().replace("%ITEM%", "Application")
                     .replace("%OPERATION%", "Update")
                     .replace("%REASON%", "Application ID (application) is missing."));
-            ans.setResultMessage(msg);
-        } else if (StringUtil.isEmpty(system)) {
+            finalAnswer.setResultMessage(msg);
+        } else if (StringUtil.isEmptyOrNull(system)) {
             msg = new MessageEvent(MessageEventEnum.DATA_OPERATION_ERROR_EXPECTED);
             msg.setDescription(msg.getDescription().replace("%ITEM%", "Application")
                     .replace("%OPERATION%", "Update")
                     .replace("%REASON%", "System is missing!"));
-            ans.setResultMessage(msg);
+            finalAnswer.setResultMessage(msg);
         } else if (sort_error) {
             msg = new MessageEvent(MessageEventEnum.DATA_OPERATION_ERROR_EXPECTED);
             msg.setDescription(msg.getDescription().replace("%ITEM%", "Application")
                     .replace("%OPERATION%", "Update")
                     .replace("%REASON%", "Could not manage to convert sort to an integer value."));
-            ans.setResultMessage(msg);
+            finalAnswer.setResultMessage(msg);
+        } else if (emptycountryenv_error) {
+            msg = new MessageEvent(MessageEventEnum.DATA_OPERATION_ERROR_EXPECTED);
+            msg.setDescription(msg.getDescription().replace("%ITEM%", "Application")
+                    .replace("%OPERATION%", "Update")
+                    .replace("%REASON%", "One of the environment defined has an empty value on country or environment value."));
+            finalAnswer.setResultMessage(msg);
         } else {
             /**
              * All data seems cleans so we can call the services.
@@ -173,9 +191,13 @@ public class UpdateApplication extends HttpServlet {
                 applicationData.setType(type);
                 applicationData.setMavengroupid(mavenGpID);
                 applicationData.setDeploytype(deployType);
-                applicationData.setSvnurl(svnURL);
+                applicationData.setRepoUrl(repoURL);
                 applicationData.setPoolSize(poolSize);
                 applicationData.setBugTrackerUrl(bugTrackerURL);
+                applicationData.setBugTrackerConnector(bugTrackerConnector);
+                applicationData.setBugTrackerParam1(bugTrackerParam1);
+                applicationData.setBugTrackerParam2(bugTrackerParam2);
+                applicationData.setBugTrackerParam3(bugTrackerParam3);
                 applicationData.setBugTrackerNewUrl(newBugURL);
                 applicationData.setDescription(description);
                 applicationData.setSort(sort);
@@ -188,7 +210,7 @@ public class UpdateApplication extends HttpServlet {
                      * Update was successful. Adding Log entry.
                      */
                     ILogEventService logEventService = appContext.getBean(LogEventService.class);
-                    logEventService.createForPrivateCalls("/UpdateApplication", "UPDATE", "Updated Application : ['" + originalApplication + "']", request);
+                    logEventService.createForPrivateCalls("/UpdateApplication", "UPDATE", LogEvent.STATUS_INFO, "Updated Application : ['" + originalApplication + "']", request);
 
                     // Update the Database with the new list.
                     ans = ceaService.compareListAndUpdateInsertDeleteElements(system, application, ceaList);
@@ -223,6 +245,7 @@ public class UpdateApplication extends HttpServlet {
             boolean delete = tcsaJson.getBoolean("toDelete");
             String country = policy.sanitize(tcsaJson.getString("country"));
             String environment = policy.sanitize(tcsaJson.getString("environment"));
+            boolean isActive = tcsaJson.getBoolean("isActive");
             // Parameter that needs to be secured --> We SECURE+DECODE them
             // Parameter that we cannot secure as we need the html --> We DECODE them
             String ip = tcsaJson.getString("ip");
@@ -233,24 +256,14 @@ public class UpdateApplication extends HttpServlet {
             String var2 = tcsaJson.getString("var2");
             String var3 = tcsaJson.getString("var3");
             String var4 = tcsaJson.getString("var4");
-            String strPoolSize = tcsaJson.getString("poolSize");
+            String secret1 = tcsaJson.getString("secret1");
+            String secret2 = tcsaJson.getString("secret2");
+            int poolSize = tcsaJson.getInt("poolSize");
             String mobileActivity = tcsaJson.getString("mobileActivity");
             String mobilePackage = tcsaJson.getString("mobilePackage");
 
-            int poolSize;
-            if (strPoolSize.isEmpty()) {
-                poolSize = CountryEnvironmentParameters.DEFAULT_POOLSIZE;
-            } else {
-                try {
-                    poolSize = Integer.parseInt(strPoolSize);
-                } catch (NumberFormatException e) {
-                    LOG.warn("Unable to parse pool size: " + strPoolSize + ". Applying default value");
-                    poolSize = CountryEnvironmentParameters.DEFAULT_POOLSIZE;
-                }
-            }
-
             if (!delete) {
-                CountryEnvironmentParameters ced = cedFactory.create(system, country, environment, application, ip, domain, url, urlLogin, var1, var2, var3, var4, poolSize, mobileActivity, mobilePackage);
+                CountryEnvironmentParameters ced = cedFactory.create(system, country, environment, application, isActive, ip, domain, url, urlLogin, var1, var2, var3, var4, secret1, secret2, poolSize, mobileActivity, mobilePackage, request.getRemoteUser(), null, request.getRemoteUser(), null);
                 cedList.add(ced);
             }
         }

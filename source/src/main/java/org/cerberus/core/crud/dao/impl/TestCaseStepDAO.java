@@ -1,5 +1,5 @@
 /**
- * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * Cerberus Copyright (C) 2013 - 2025 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -85,8 +85,7 @@ public class TestCaseStepDAO implements ITestCaseStepDAO {
             LOG.debug("SQL.param.testcase : " + testcase);
         }
 
-        try (Connection connection = this.databaseSpring.connect();
-                PreparedStatement preStat = connection.prepareStatement(query);) {
+        try (Connection connection = this.databaseSpring.connect(); PreparedStatement preStat = connection.prepareStatement(query);) {
 
             preStat.setString(1, test);
             preStat.setString(2, testcase);
@@ -115,8 +114,7 @@ public class TestCaseStepDAO implements ITestCaseStepDAO {
             LOG.debug("SQL : " + query);
         }
 
-        try (Connection connection = this.databaseSpring.connect();
-                PreparedStatement preStat = connection.prepareStatement(query);) {
+        try (Connection connection = this.databaseSpring.connect(); PreparedStatement preStat = connection.prepareStatement(query);) {
 
             try (ResultSet resultSet = preStat.executeQuery();) {
                 while (resultSet.next()) {
@@ -142,8 +140,7 @@ public class TestCaseStepDAO implements ITestCaseStepDAO {
             LOG.debug("SQL : " + query);
         }
 
-        try (Connection connection = this.databaseSpring.connect();
-                PreparedStatement preStat = connection.prepareStatement(query);) {
+        try (Connection connection = this.databaseSpring.connect(); PreparedStatement preStat = connection.prepareStatement(query);) {
 
             try (ResultSet resultSet = preStat.executeQuery();) {
                 while (resultSet.next()) {
@@ -168,8 +165,7 @@ public class TestCaseStepDAO implements ITestCaseStepDAO {
             LOG.debug("SQL : " + query);
         }
 
-        try (Connection connection = this.databaseSpring.connect();
-                PreparedStatement preStat = connection.prepareStatement(query);) {
+        try (Connection connection = this.databaseSpring.connect(); PreparedStatement preStat = connection.prepareStatement(query);) {
 
             preStat.setString(1, testFolderId);
 
@@ -197,8 +193,7 @@ public class TestCaseStepDAO implements ITestCaseStepDAO {
             LOG.debug("SQL : " + query);
         }
 
-        try (Connection connection = this.databaseSpring.connect();
-                PreparedStatement preStat = connection.prepareStatement(query, ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY);) {
+        try (Connection connection = this.databaseSpring.connect(); PreparedStatement preStat = connection.prepareStatement(query, ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY);) {
 
             preStat.setString(1, test);
             preStat.setString(2, testcase);
@@ -226,8 +221,7 @@ public class TestCaseStepDAO implements ITestCaseStepDAO {
             LOG.debug("SQL : " + query);
         }
 
-        try (Connection connection = this.databaseSpring.connect();
-                PreparedStatement preStat = connection.prepareStatement(query);) {
+        try (Connection connection = this.databaseSpring.connect(); PreparedStatement preStat = connection.prepareStatement(query);) {
 
             preStat.setString(1, tcs.getTest());
             preStat.setString(2, tcs.getTestcase());
@@ -247,10 +241,10 @@ public class TestCaseStepDAO implements ITestCaseStepDAO {
         StringBuilder query = new StringBuilder();
         query.append("UPDATE testcasestep SET ");
         query.append(" `Description` = ?, `isUsingLibraryStep`=? ");
-        if (!StringUtil.isEmpty(tcs.getLibraryStepTest())) {
+        if (!StringUtil.isEmptyOrNull(tcs.getLibraryStepTest())) {
             query.append(",`libraryStepTest`=? ");
         }
-        if (!StringUtil.isEmpty(tcs.getLibraryStepTestcase())) {
+        if (!StringUtil.isEmptyOrNull(tcs.getLibraryStepTestcase())) {
             query.append(",`libraryStepTestcase`=? ");
         }
         if (tcs.getLibraryStepStepId() >= 0) {
@@ -262,16 +256,15 @@ public class TestCaseStepDAO implements ITestCaseStepDAO {
             LOG.debug("SQL : " + query.toString());
         }
 
-        try (Connection connection = this.databaseSpring.connect();
-                PreparedStatement preStat = connection.prepareStatement(query.toString());) {
+        try (Connection connection = this.databaseSpring.connect(); PreparedStatement preStat = connection.prepareStatement(query.toString());) {
 
             int i = 1;
             preStat.setString(i++, tcs.getDescription());
             preStat.setBoolean(i++, tcs.isUsingLibraryStep());
-            if (!StringUtil.isEmpty(tcs.getLibraryStepTest())) {
+            if (!StringUtil.isEmptyOrNull(tcs.getLibraryStepTest())) {
                 preStat.setString(i++, tcs.getLibraryStepTest());
             }
-            if (!StringUtil.isEmpty(tcs.getLibraryStepTestcase())) {
+            if (!StringUtil.isEmptyOrNull(tcs.getLibraryStepTestcase())) {
                 preStat.setString(i++, tcs.getLibraryStepTestcase());
             }
             if (tcs.getLibraryStepStepId() >= 0) {
@@ -316,8 +309,7 @@ public class TestCaseStepDAO implements ITestCaseStepDAO {
             LOG.debug("SQL.param.service " + "%\\%object." + oldObject + ".%");
         }
 
-        try (Connection connection = this.databaseSpring.connect();
-                PreparedStatement preStat = connection.prepareStatement(query);) {
+        try (Connection connection = this.databaseSpring.connect(); PreparedStatement preStat = connection.prepareStatement(query);) {
 
             int i = 1;
             preStat.setString(i++, application);
@@ -338,8 +330,7 @@ public class TestCaseStepDAO implements ITestCaseStepDAO {
             LOG.debug("SQL : " + query);
         }
 
-        try (Connection connection = this.databaseSpring.connect();
-                PreparedStatement preStat = connection.prepareStatement(query);) {
+        try (Connection connection = this.databaseSpring.connect(); PreparedStatement preStat = connection.prepareStatement(query);) {
 
             preStat.setString(1, test);
             preStat.setString(2, testcase);
@@ -368,8 +359,7 @@ public class TestCaseStepDAO implements ITestCaseStepDAO {
             LOG.debug("SQL : " + query);
         }
 
-        try (Connection connection = this.databaseSpring.connect();
-                PreparedStatement preStat = connection.prepareStatement(query);) {
+        try (Connection connection = this.databaseSpring.connect(); PreparedStatement preStat = connection.prepareStatement(query);) {
 
             preStat.setString(1, test);
             preStat.setString(2, testcase);
@@ -393,8 +383,7 @@ public class TestCaseStepDAO implements ITestCaseStepDAO {
     public List<TestCaseStep> getTestCaseStepsUsingTestInParameter(final String test) throws CerberusException {
         final String query = "SELECT * FROM testcasestep WHERE isUsingLibraryStep IS true AND libraryStepTest = ?";
         List<TestCaseStep> steps = new ArrayList<>();
-        try (final Connection connection = databaseSpring.connect();
-                final PreparedStatement preStat = connection.prepareStatement(query)) {
+        try (final Connection connection = databaseSpring.connect(); final PreparedStatement preStat = connection.prepareStatement(query)) {
 
             preStat.setString(1, test);
             try (ResultSet resultSet = preStat.executeQuery();) {
@@ -427,8 +416,7 @@ public class TestCaseStepDAO implements ITestCaseStepDAO {
             LOG.debug("SQL : " + query);
         }
 
-        try (Connection connection = this.databaseSpring.connect();
-                PreparedStatement preStat = connection.prepareStatement(query.toString());) {
+        try (Connection connection = this.databaseSpring.connect(); PreparedStatement preStat = connection.prepareStatement(query.toString());) {
 
             preStat.setString(1, system);
             list = new ArrayList<>();
@@ -476,8 +464,7 @@ public class TestCaseStepDAO implements ITestCaseStepDAO {
             LOG.debug("SQL.param.test : " + test);
         }
 
-        try (Connection connection = this.databaseSpring.connect();
-                PreparedStatement preStat = connection.prepareStatement(query.toString());) {
+        try (Connection connection = this.databaseSpring.connect(); PreparedStatement preStat = connection.prepareStatement(query.toString());) {
 
             int i = 1;
             if (system != null) {
@@ -538,8 +525,7 @@ public class TestCaseStepDAO implements ITestCaseStepDAO {
             LOG.debug("SQL.param.testcase : " + testcase);
         }
 
-        try (Connection connection = this.databaseSpring.connect();
-                PreparedStatement preStat = connection.prepareStatement(query.toString());) {
+        try (Connection connection = this.databaseSpring.connect(); PreparedStatement preStat = connection.prepareStatement(query.toString());) {
 
             int i = 1;
             if (system != null) {
@@ -594,8 +580,7 @@ public class TestCaseStepDAO implements ITestCaseStepDAO {
             LOG.debug("SQL.param.testcase : " + testcase);
         }
 
-        try (Connection connection = this.databaseSpring.connect();
-                PreparedStatement preStat = connection.prepareStatement(query.toString());) {
+        try (Connection connection = this.databaseSpring.connect(); PreparedStatement preStat = connection.prepareStatement(query.toString());) {
 
             preStat.setString(1, test);
             preStat.setString(2, testcase);
@@ -644,11 +629,19 @@ public class TestCaseStepDAO implements ITestCaseStepDAO {
         msg.setDescription(msg.getDescription().replace("%DESCRIPTION%", ""));
         List<TestCaseStep> stepList = new ArrayList<>();
         StringBuilder query = new StringBuilder();
-        query.append("SELECT * FROM testcasestep tcs WHERE tcs.isUsingLibraryStep = true ");
+        query.append("SELECT * FROM testcasestep tcs ");
+        query.append(" JOIN testcase tec ON tec.test=tcs.test and tec.testcase=tcs.testcase ");
+        query.append(" WHERE tcs.isUsingLibraryStep = true ");
         query.append("AND tcs.libraryStepTest = ? AND tcs.libraryStepTestcase = ? AND tcs.libraryStepStepId = ?");
 
-        try (Connection connection = this.databaseSpring.connect();
-                PreparedStatement preStat = connection.prepareStatement(query.toString());) {
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("SQL : " + query.toString());
+            LOG.debug("SQL.param.test : " + test);
+            LOG.debug("SQL.param.testcase : " + testcase);
+            LOG.debug("SQL.param.stepId : " + stepId);
+        }
+
+        try (Connection connection = this.databaseSpring.connect(); PreparedStatement preStat = connection.prepareStatement(query.toString());) {
 
             preStat.setString(1, test);
             preStat.setString(2, testcase);
@@ -694,35 +687,27 @@ public class TestCaseStepDAO implements ITestCaseStepDAO {
         MessageEvent msg = null;
         StringBuilder query = new StringBuilder();
         query.append("INSERT INTO `testcasestep` (`Test`,`TestCase`,`StepId`,`Sort`,`Description`,`isUsingLibraryStep` ");
-        LOG.warn("SQL : " + query.toString());
-        if (!StringUtil.isEmpty(testCaseStep.getLibraryStepTest())) {
+        if (!StringUtil.isEmptyOrNull(testCaseStep.getLibraryStepTest())) {
             query.append(",`libraryStepTest` ");
         }
-        LOG.warn("SQL2 : " + query.toString());
-        if (!StringUtil.isEmpty(testCaseStep.getLibraryStepTestcase())) {
+        if (!StringUtil.isEmptyOrNull(testCaseStep.getLibraryStepTestcase())) {
             query.append(",`libraryStepTestcase` ");
         }
-        LOG.warn("SQL3 : " + query.toString());
         if (testCaseStep.getLibraryStepStepId() >= 0) {
             query.append(",`libraryStepStepId` ");
         }
-        LOG.warn("SQL4 : " + query.toString());
         query.append(", `isLibraryStep`, `loop`, `conditionOperator`, `conditionOptions`, `conditionValue1`, `conditionValue2`, `conditionValue3`, `isExecutionForced`, `usrCreated`) ");
         query.append("VALUES (?,?,?,?,?,?,?,?");
-        LOG.warn("SQL5 : " + query.toString());
-        if (!StringUtil.isEmpty(testCaseStep.getLibraryStepTest())) {
+        if (!StringUtil.isEmptyOrNull(testCaseStep.getLibraryStepTest())) {
             query.append(",?");
         }
-        LOG.warn("SQL6 : " + query.toString());
-        if (!StringUtil.isEmpty(testCaseStep.getLibraryStepTestcase())) {
+        if (!StringUtil.isEmptyOrNull(testCaseStep.getLibraryStepTestcase())) {
             query.append(",?");
         }
-        LOG.warn("SQL7 : " + query.toString());
         if (testCaseStep.getLibraryStepStepId() >= 0) {
             query.append(",?");
         }
         query.append(",?,?,?,?,?,?,?)");
-        LOG.warn("SQL8 : " + query.toString());
         if (LOG.isDebugEnabled()) {
             LOG.debug("SQL : " + query.toString());
             LOG.debug("SQL.param.libraryStepTest : " + testCaseStep.getLibraryStepTest());
@@ -730,8 +715,7 @@ public class TestCaseStepDAO implements ITestCaseStepDAO {
             LOG.debug("SQL.param.libraryStepStepId : " + testCaseStep.getLibraryStepStepId());
         }
 
-        try (Connection connection = databaseSpring.connect();
-                PreparedStatement preStat = connection.prepareStatement(query.toString())) {
+        try (Connection connection = databaseSpring.connect(); PreparedStatement preStat = connection.prepareStatement(query.toString())) {
             // Prepare and execute query
             int i = 1;
             preStat.setString(i++, testCaseStep.getTest());
@@ -740,10 +724,10 @@ public class TestCaseStepDAO implements ITestCaseStepDAO {
             preStat.setInt(i++, testCaseStep.getSort());
             preStat.setString(i++, testCaseStep.getDescription());
             preStat.setBoolean(i++, testCaseStep.isUsingLibraryStep());
-            if (!StringUtil.isEmpty(testCaseStep.getLibraryStepTest())) {
+            if (!StringUtil.isEmptyOrNull(testCaseStep.getLibraryStepTest())) {
                 preStat.setString(i++, testCaseStep.getLibraryStepTest());
             }
-            if (!StringUtil.isEmpty(testCaseStep.getLibraryStepTestcase())) {
+            if (!StringUtil.isEmptyOrNull(testCaseStep.getLibraryStepTestcase())) {
                 preStat.setString(i++, testCaseStep.getLibraryStepTestcase());
             }
             if (testCaseStep.getLibraryStepStepId() >= 0) {
@@ -815,6 +799,13 @@ public class TestCaseStepDAO implements ITestCaseStepDAO {
 
         if (SqlUtil.hasColumn(resultSet, "libraryStepSort")) {
             tcs.setLibraryStepSort(resultSet.getInt("libraryStepSort"));
+        }
+        try {
+            String tcDescription = resultSet.getString("tec.description");
+            TestCase tc = new TestCase();
+            tc.setDescription(tcDescription);
+            tcs.setTestcaseObj(tc);
+        } catch (SQLException e) {
         }
 
         LOG.debug(tcs.toJson());

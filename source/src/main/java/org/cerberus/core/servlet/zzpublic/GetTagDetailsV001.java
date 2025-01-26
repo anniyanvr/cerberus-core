@@ -1,5 +1,5 @@
 /**
- * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * Cerberus Copyright (C) 2013 - 2025 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -50,6 +50,7 @@ import org.springframework.web.util.JavaScriptUtils;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.cerberus.core.crud.entity.LogEvent;
 import org.cerberus.core.util.StringUtil;
 
 /**
@@ -88,7 +89,7 @@ public class GetTagDetailsV001 extends HttpServlet {
          * Adding Log entry.
          */
         ILogEventService logEventService = appContext.getBean(LogEventService.class);
-        logEventService.createForPublicCalls("/GetTagDetailsV001", "CALL", "TagDetails called : " + request.getRequestURL(),
+        logEventService.createForPublicCalls("/GetTagDetailsV001", "CALL", LogEvent.STATUS_INFO, "TagDetails called : " + request.getRequestURL(),
                 request);
 
         apiKeyService = appContext.getBean(IAPIKeyService.class);
@@ -105,14 +106,14 @@ public class GetTagDetailsV001 extends HttpServlet {
                 Tag tag = tagService.convert(tagService.readByKey(Tag));
 
                 cerberusUrlParameter = parameterService.getParameterStringByKey("cerberus_gui_url", "", "");
-                if (StringUtil.isEmpty(cerberusUrlParameter)) {
+                if (StringUtil.isEmptyOrNull(cerberusUrlParameter)) {
                     cerberusUrlParameter = parameterService.getParameterStringByKey("cerberus_url", "", "");
                 }
 
                 if (tag != null) {
                     jsonResponse.put("tag", Tag);
                     jsonResponse.put("tagDurationInMs",
-                            (tag.getDateEndQueue().getTime() - tag.getDateCreated().getTime()));
+                            (tag.getDateEndQueue().getTime() - tag.getDateStartExe().getTime()));
                     jsonResponse.put("CI", tag.getCiResult());
                     jsonResponse.put("start", tag.getDateCreated());
                     jsonResponse.put("end", tag.getDateEndQueue());

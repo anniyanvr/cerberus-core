@@ -1,5 +1,5 @@
 /**
- * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * Cerberus Copyright (C) 2013 - 2025 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -223,7 +223,7 @@ public class DeployTypeDAO implements IDeployTypeDAO {
 
         searchSQL.append(" where 1=1 ");
 
-        if (!StringUtil.isEmpty(searchTerm)) {
+        if (!StringUtil.isEmptyOrNull(searchTerm)) {
             searchSQL.append(" and (`deploytype` like ?");
             searchSQL.append(" or `description`  like ?)");
         }
@@ -238,7 +238,7 @@ public class DeployTypeDAO implements IDeployTypeDAO {
         }
         query.append(searchSQL);
 
-        if (!StringUtil.isEmpty(column)) {
+        if (!StringUtil.isEmptyOrNull(column)) {
             query.append("order by `").append(column).append("` ").append(dir);
         }
 
@@ -257,7 +257,7 @@ public class DeployTypeDAO implements IDeployTypeDAO {
             PreparedStatement preStat = connection.prepareStatement(query.toString());
             try {
                 int i = 1;
-                if (!StringUtil.isEmpty(searchTerm)) {
+                if (!StringUtil.isEmptyOrNull(searchTerm)) {
                     preStat.setString(i++, "%" + searchTerm + "%");
                     preStat.setString(i++, "%" + searchTerm + "%");
                 }
@@ -492,14 +492,14 @@ public class DeployTypeDAO implements IDeployTypeDAO {
 
         searchSQL.append("WHERE 1=1");
 
-        if (!StringUtil.isEmpty(searchTerm)) {
+        if (!StringUtil.isEmptyOrNull(searchTerm)) {
             searchSQL.append(" and (`application` like ?");
             searchSQL.append(" or `description` like ?");
             searchSQL.append(" or `sort` like ?");
             searchSQL.append(" or `type` like ?");
             searchSQL.append(" or `System` like ?");
             searchSQL.append(" or `Subsystem` like ?");
-            searchSQL.append(" or `svnURL` like ?");
+            searchSQL.append(" or `repoURL` like ?");
             searchSQL.append(" or `bugtrackerurl` like ?");
             searchSQL.append(" or `bugtrackernewurl` like ?");
             searchSQL.append(" or `deploytype` like ?");
@@ -526,7 +526,7 @@ public class DeployTypeDAO implements IDeployTypeDAO {
              Statement stm = connection.createStatement();) {
 
             int i = 1;
-            if (!StringUtil.isEmpty(searchTerm)) {
+            if (!StringUtil.isEmptyOrNull(searchTerm)) {
                 preStat.setString(i++, "%" + searchTerm + "%");
                 preStat.setString(i++, "%" + searchTerm + "%");
                 preStat.setString(i++, "%" + searchTerm + "%");

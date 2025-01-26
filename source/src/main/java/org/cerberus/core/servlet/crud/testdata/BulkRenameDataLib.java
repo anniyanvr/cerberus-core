@@ -1,5 +1,5 @@
 /**
- * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * Cerberus Copyright (C) 2013 - 2025 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -31,6 +31,7 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.cerberus.core.crud.entity.LogEvent;
 import org.cerberus.core.crud.service.ILogEventService;
 import org.cerberus.core.crud.service.ITestDataLibService;
 import org.cerberus.core.crud.service.impl.LogEventService;
@@ -93,7 +94,7 @@ public class BulkRenameDataLib extends HttpServlet {
                  * entry must be added.
                  */
                 ILogEventService logEventService = appContext.getBean(LogEventService.class);
-                logEventService.createForPrivateCalls("/BulkRenameDataLib", "UPDATE", "Rename TestDataLib : ['" + oldname + "'] - new name: '" + newname + "'", request);
+                logEventService.createForPrivateCalls("/BulkRenameDataLib", "UPDATE", LogEvent.STATUS_INFO, "Rename TestDataLib : ['" + oldname + "'] - new name: '" + newname + "'", request);
 
                 MessageEvent msg = new MessageEvent(MessageEventEnum.GENERIC_OK);
                 ans.setResultMessage(msg);

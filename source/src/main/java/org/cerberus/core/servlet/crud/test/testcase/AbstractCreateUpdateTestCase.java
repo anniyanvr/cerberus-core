@@ -1,5 +1,5 @@
 /**
- * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * Cerberus Copyright (C) 2013 - 2025 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -29,7 +29,6 @@ import org.cerberus.core.crud.entity.TestCaseStep;
 import org.cerberus.core.crud.entity.TestCaseStepAction;
 import org.cerberus.core.crud.entity.TestCaseStepActionControl;
 import org.cerberus.core.crud.factory.IFactoryTestCaseCountry;
-import org.cerberus.core.crud.factory.IFactoryTestCaseDep;
 import org.cerberus.core.crud.factory.IFactoryTestCaseLabel;
 import org.cerberus.core.crud.service.ITestCaseCountryPropertiesService;
 import org.cerberus.core.crud.service.ITestCaseCountryService;
@@ -69,8 +68,6 @@ public abstract class AbstractCreateUpdateTestCase extends AbstractCrudTestCase 
     private IFactoryTestCaseLabel testCaseLabelFactory;
     @Autowired
     private IFactoryTestCaseCountry testCaseCountryFactory;
-    @Autowired
-    private IFactoryTestCaseDep testCaseDepFactory;
     @Autowired
     private ITestCaseLabelService testCaseLabelService;
     @Autowired
@@ -125,7 +122,7 @@ public abstract class AbstractCreateUpdateTestCase extends AbstractCrudTestCase 
         /**
          * Checking all constrains before calling the services.
          */
-        if (StringUtil.isEmpty(test) && StringUtil.isEmpty(testcase)) {
+        if (StringUtil.isEmptyOrNull(test) && StringUtil.isEmptyOrNull(testcase)) {
             msg = new MessageEvent(MessageEventEnum.DATA_OPERATION_ERROR_EXPECTED);
             msg.setDescription(msg.getDescription().replace("%ITEM%", "Test Case")
                     .replace("%OPERATION%", this.getTypeOperation())
@@ -137,7 +134,7 @@ public abstract class AbstractCreateUpdateTestCase extends AbstractCrudTestCase 
                 TestCase tc = getTestCaseFromRequest(request, getTestCaseBeforeTraitment(originalTest, originalTestCase));
                 updateTestCase(originalTest, originalTestCase, tc);
 
-                if (StringUtil.isEmpty(originalTest)) {
+                if (StringUtil.isEmptyOrNull(originalTest)) {
                     fireLogEvent(test, testcase, tc, request, response);
                 } else {
                     fireLogEvent(originalTest, originalTestCase, tc, request, response);
@@ -290,12 +287,21 @@ public abstract class AbstractCreateUpdateTestCase extends AbstractCrudTestCase 
         jsonArrayFoEach(request, "dependencies", (jsonObj) -> {
             String testcaseId = jsonObj.getString("testcase");
             Long testcaseDependencyId = jsonObj.getLong("id");
+            Integer testcaseDependencyDelay = Integer.parseInt(jsonObj.getString("depDelay"));
             String test = jsonObj.getString("test");
+            String type = jsonObj.getString("type");
             String description = jsonObj.getString("description");
-            boolean isActive = Boolean.valueOf(jsonObj.getString("isActive"));
+            boolean isActive = jsonObj.getBoolean("isActive");
             Timestamp creationDate = new Timestamp(new Date().getTime());
 
-            testcaseDependencies.add(testCaseDepFactory.create(testcaseDependencyId, testcase.getTest(), testcase.getTestcase(), test, testcaseId, "", TestCaseExecutionQueueDep.TYPE_TCEXEEND, isActive, description, request.getRemoteUser(), creationDate, request.getRemoteUser(), creationDate));
+            testcaseDependencies.add(
+                    TestCaseDep.builder()
+                            .id(testcaseDependencyId).test(testcase.getTest()).testcase(testcase.getTestcase())
+                            .dependencyTest(test).dependencyTestcase(testcaseId).dependencyTCDelay(testcaseDependencyDelay)
+                            .type(type).isActive(isActive)
+                            .description(description)
+                            .dateCreated(creationDate).dateModif(creationDate).usrCreated(request.getRemoteUser()).usrModif(request.getRemoteUser())
+                            .build());
         });
         return testcaseDependencies;
     }

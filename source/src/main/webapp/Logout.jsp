@@ -1,6 +1,6 @@
 <%--
 
-    Cerberus Copyright (C) 2013 - 2017 cerberustesting
+    Cerberus Copyright (C) 2013 - 2025 cerberustesting
     DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 
     This file is part of Cerberus.
@@ -41,7 +41,8 @@
     <body style="background-color: #fff">
         <script type="text/javascript">
             envTuning("<%=System.getProperty("org.cerberus.environment")%>");
-            sessionStorage.removeItem("user");
+            sessionStorage.clear();
+            // JSESSIONID cookie to remove.
         </script>
         <div align="center" style="padding-top: 12%;">
             <h1>Logout Successfully</h1>

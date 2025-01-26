@@ -1,5 +1,5 @@
 /**
- * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * Cerberus Copyright (C) 2013 - 2025 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -76,8 +76,7 @@ public class ApplicationDAO implements IApplicationDAO {
         LOG.debug("SQL : {}", query);
         LOG.debug("SQL.param.application : {}", application);
 
-        try (Connection connection = this.databaseSpring.connect();
-             PreparedStatement preStat = connection.prepareStatement(query, ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY)) {
+        try (Connection connection = this.databaseSpring.connect(); PreparedStatement preStat = connection.prepareStatement(query, ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY)) {
             preStat.setString(1, application);
             try (ResultSet resultSet = preStat.executeQuery()) {
                 if (resultSet.first()) {
@@ -111,14 +110,14 @@ public class ApplicationDAO implements IApplicationDAO {
         query.append("SELECT SQL_CALC_FOUND_ROWS * FROM application app ");
         searchSQL.append(" where 1=1 ");
 
-        if (StringUtil.isNotEmpty(searchTerm)) {
+        if (StringUtil.isNotEmptyOrNull(searchTerm)) {
             searchSQL.append(" and (app.`application` like ?");
             searchSQL.append(" or app.`description` like ?");
             searchSQL.append(" or app.`sort` like ?");
             searchSQL.append(" or app.`type` like ?");
             searchSQL.append(" or app.`System` like ?");
             searchSQL.append(" or app.`Subsystem` like ?");
-            searchSQL.append(" or app.`svnURL` like ?");
+            searchSQL.append(" or app.`repoURL` like ?");
             searchSQL.append(" or app.`bugtrackerurl` like ?");
             searchSQL.append(" or app.`bugtrackernewurl` like ?");
             searchSQL.append(" or app.`deploytype` like ?");
@@ -140,7 +139,7 @@ public class ApplicationDAO implements IApplicationDAO {
         }
         query.append(searchSQL);
 
-        if (StringUtil.isNotEmpty(column)) {
+        if (StringUtil.isNotEmptyOrNull(column)) {
             query.append(" order by `").append(column).append("` ").append(dir);
         }
 
@@ -151,12 +150,11 @@ public class ApplicationDAO implements IApplicationDAO {
         }
 
         LOG.debug("SQL : {}", query);
+        LOG.debug("SQL.param.system : {}", systems);
 
-        try (Connection connection = this.databaseSpring.connect();
-             PreparedStatement preStat = connection.prepareStatement(query.toString());
-             Statement stm = connection.createStatement()) {
+        try (Connection connection = this.databaseSpring.connect(); PreparedStatement preStat = connection.prepareStatement(query.toString()); Statement stm = connection.createStatement()) {
             int i = 1;
-            if (StringUtil.isNotEmpty(searchTerm)) {
+            if (StringUtil.isNotEmptyOrNull(searchTerm)) {
                 preStat.setString(i++, "%" + searchTerm + "%");
                 preStat.setString(i++, "%" + searchTerm + "%");
                 preStat.setString(i++, "%" + searchTerm + "%");
@@ -178,8 +176,7 @@ public class ApplicationDAO implements IApplicationDAO {
                 }
             }
 
-            try (ResultSet resultSet = preStat.executeQuery();
-                 ResultSet rowSet = stm.executeQuery("SELECT FOUND_ROWS()")) {
+            try (ResultSet resultSet = preStat.executeQuery(); ResultSet rowSet = stm.executeQuery("SELECT FOUND_ROWS()")) {
 
                 while (resultSet.next()) {
                     objectList.add(this.loadFromResultSet(resultSet));
@@ -214,6 +211,51 @@ public class ApplicationDAO implements IApplicationDAO {
     }
 
     @Override
+    public Integer getNbApplications(List<String> systems) {
+        MessageEvent msg = new MessageEvent(MessageEventEnum.DATA_OPERATION_ERROR_UNEXPECTED);
+        msg.setDescription(msg.getDescription().replace("%DESCRIPTION%", ""));
+
+        StringBuilder query = new StringBuilder();
+        query.append("SELECT SQL_CALC_FOUND_ROWS count(*) FROM application app ");
+        query.append(" where 1=1 ");
+
+        if (CollectionUtils.isNotEmpty(systems)) {
+            query.append(" and ");
+            query.append(SqlUtil.generateInClause("`System`", systems));
+        }
+
+        LOG.debug("SQL : {}", query);
+
+        try (Connection connection = this.databaseSpring.connect(); PreparedStatement preStat = connection.prepareStatement(query.toString()); Statement stm = connection.createStatement()) {
+            int i = 1;
+            if (CollectionUtils.isNotEmpty(systems)) {
+                for (String system : systems) {
+                    preStat.setString(i++, system);
+                }
+            }
+
+            try (ResultSet resultSet = preStat.executeQuery(); ResultSet rowSet = stm.executeQuery("SELECT FOUND_ROWS()")) {
+
+                while (resultSet.next()) {
+                    return resultSet.getInt(1);
+                }
+
+                int nrTotalRows = 0;
+                if (rowSet != null && rowSet.next()) {
+                    nrTotalRows = rowSet.getInt(1);
+                }
+
+            }
+        } catch (SQLException exception) {
+            LOG.error("Unable to execute query : {}", exception.toString());
+            msg = new MessageEvent(MessageEventEnum.DATA_OPERATION_ERROR_UNEXPECTED);
+            msg.setDescription(msg.getDescription().replace("%DESCRIPTION%", exception.toString()));
+        }
+
+        return 0;
+    }
+
+    @Override
     public AnswerItem<HashMap<String, HashMap<String, Integer>>> readTestCaseCountersBySystemByStatus(List<String> system) {
         AnswerItem<HashMap<String, HashMap<String, Integer>>> response = new AnswerItem<>();
         MessageEvent msg = new MessageEvent(MessageEventEnum.DATA_OPERATION_ERROR_UNEXPECTED);
@@ -235,8 +277,7 @@ public class ApplicationDAO implements IApplicationDAO {
 
         LOG.debug("SQL : {}", query);
 
-        try (Connection connection = this.databaseSpring.connect();
-             PreparedStatement preStat = connection.prepareStatement(query.toString())) {
+        try (Connection connection = this.databaseSpring.connect(); PreparedStatement preStat = connection.prepareStatement(query.toString())) {
 
             int i = 1;
             for (String string : system) {
@@ -281,19 +322,17 @@ public class ApplicationDAO implements IApplicationDAO {
     public Answer create(Application object) {
         MessageEvent msg;
         StringBuilder query = new StringBuilder();
-        query.append("INSERT INTO application (`application`, `description`, `sort`, `type`, `system`, `SubSystem`, `svnurl`, `poolSize`, `BugTrackerUrl`, `BugTrackerNewUrl`, `deploytype`");
+        query.append("INSERT INTO application (`application`, `description`, `sort`, `type`, `system`, `SubSystem`, `repourl`, `poolSize`, `BugTrackerConnector`, `BugTrackerParam1`, `BugTrackerParam2`, `BugTrackerParam3`, `BugTrackerUrl`, `BugTrackerNewUrl`, `deploytype`");
         query.append(", `mavengroupid`, `usrcreated` ) ");
-        if (StringUtil.isEmpty(object.getDeploytype())) {
-            query.append("VALUES (?,?,?,?,?,?,?,?,?,?,null,?,?)");
+        if (StringUtil.isEmptyOrNull(object.getDeploytype())) {
+            query.append("VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,null,?,?)");
         } else {
-            query.append("VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)");
+            query.append("VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
         }
 
         LOG.debug("SQL : {}", query);
 
-
-        try (Connection connection = this.databaseSpring.connect();
-             PreparedStatement preStat = connection.prepareStatement(query.toString())) {
+        try (Connection connection = this.databaseSpring.connect(); PreparedStatement preStat = connection.prepareStatement(query.toString())) {
 
             int i = 1;
             preStat.setString(i++, object.getApplication());
@@ -302,11 +341,15 @@ public class ApplicationDAO implements IApplicationDAO {
             preStat.setString(i++, object.getType());
             preStat.setString(i++, object.getSystem());
             preStat.setString(i++, object.getSubsystem());
-            preStat.setString(i++, object.getSvnurl());
+            preStat.setString(i++, object.getRepoUrl());
             preStat.setInt(i++, object.getPoolSize());
+            preStat.setString(i++, object.getBugTrackerConnector());
+            preStat.setString(i++, object.getBugTrackerParam1());
+            preStat.setString(i++, object.getBugTrackerParam2());
+            preStat.setString(i++, object.getBugTrackerParam3());
             preStat.setString(i++, object.getBugTrackerUrl());
             preStat.setString(i++, object.getBugTrackerNewUrl());
-            if (!StringUtil.isEmpty(object.getDeploytype())) {
+            if (!StringUtil.isEmptyOrNull(object.getDeploytype())) {
                 preStat.setString(i++, object.getDeploytype());
             }
             preStat.setString(i++, object.getMavengroupid());
@@ -336,8 +379,7 @@ public class ApplicationDAO implements IApplicationDAO {
 
         LOG.debug("SQL : {}", query);
 
-        try (Connection connection = this.databaseSpring.connect();
-             PreparedStatement preStat = connection.prepareStatement(query)) {
+        try (Connection connection = this.databaseSpring.connect(); PreparedStatement preStat = connection.prepareStatement(query)) {
 
             preStat.setString(1, object.getApplication());
             preStat.executeUpdate();
@@ -355,17 +397,16 @@ public class ApplicationDAO implements IApplicationDAO {
     @Override
     public Answer update(String application, Application object) {
         MessageEvent msg;
-        if (StringUtil.isEmpty(object.getDeploytype())) {
+        if (StringUtil.isEmptyOrNull(object.getDeploytype())) {
             object.setDeploytype(null);
         }
-        final String query = "UPDATE application SET Application = ?, description = ?, sort = ?, `type` = ?, `system` = ?, SubSystem = ?, svnurl = ?, poolSize = ?, BugTrackerUrl = ?, BugTrackerNewUrl = ?, "
+        final String query = "UPDATE application SET Application = ?, description = ?, sort = ?, `type` = ?, `system` = ?, SubSystem = ?, repourl = ?, poolSize = ?, BugTrackerConnector = ?, BugTrackerParam1 = ?, BugTrackerParam2 = ?, BugTrackerParam3 = ?, BugTrackerUrl = ?, BugTrackerNewUrl = ?, "
                 + "deploytype = ?, mavengroupid = ?, dateModif = NOW(), usrModif= ?  WHERE Application = ?";
 
         LOG.debug("SQL : {}", query);
         LOG.debug("SQL.param.application : {}", object.getApplication());
 
-        try (Connection connection = this.databaseSpring.connect();
-             PreparedStatement preStat = connection.prepareStatement(query)) {
+        try (Connection connection = this.databaseSpring.connect(); PreparedStatement preStat = connection.prepareStatement(query)) {
 
             int i = 1;
             preStat.setString(i++, object.getApplication());
@@ -374,8 +415,12 @@ public class ApplicationDAO implements IApplicationDAO {
             preStat.setString(i++, object.getType());
             preStat.setString(i++, object.getSystem());
             preStat.setString(i++, object.getSubsystem());
-            preStat.setString(i++, object.getSvnurl());
+            preStat.setString(i++, object.getRepoUrl());
             preStat.setInt(i++, object.getPoolSize());
+            preStat.setString(i++, object.getBugTrackerConnector());
+            preStat.setString(i++, object.getBugTrackerParam1());
+            preStat.setString(i++, object.getBugTrackerParam2());
+            preStat.setString(i++, object.getBugTrackerParam3());
             preStat.setString(i++, object.getBugTrackerUrl());
             preStat.setString(i++, object.getBugTrackerNewUrl());
             preStat.setString(i++, object.getDeploytype());
@@ -403,9 +448,7 @@ public class ApplicationDAO implements IApplicationDAO {
 
         LOG.debug("SQL : {}", query);
 
-        try (Connection connection = this.databaseSpring.connect();
-             PreparedStatement preStat = connection.prepareStatement(query);
-             ResultSet resultSet = preStat.executeQuery()) {
+        try (Connection connection = this.databaseSpring.connect(); PreparedStatement preStat = connection.prepareStatement(query); ResultSet resultSet = preStat.executeQuery()) {
 
             while (resultSet.next()) {
                 result.add(resultSet.getString("system"));
@@ -438,9 +481,9 @@ public class ApplicationDAO implements IApplicationDAO {
         List<String> individualColumnSearchValues = new ArrayList<>();
 
         StringBuilder query = new StringBuilder()
-                .append("SELECT distinct ")
+                .append("SELECT distinct `")
                 .append(columnName)
-                .append(" as distinctValues FROM application ");
+                .append("` as distinctValues FROM application ");
 
         searchSQL.append("WHERE 1=1");
         if (CollectionUtils.isNotEmpty(systems)) {
@@ -448,14 +491,14 @@ public class ApplicationDAO implements IApplicationDAO {
             searchSQL.append(SqlUtil.generateInClause("`System`", systems));
         }
 
-        if (StringUtil.isNotEmpty(searchTerm)) {
+        if (StringUtil.isNotEmptyOrNull(searchTerm)) {
             searchSQL.append(" and (`application` like ?");
             searchSQL.append(" or `description` like ?");
             searchSQL.append(" or `sort` like ?");
             searchSQL.append(" or `type` like ?");
             searchSQL.append(" or `System` like ?");
             searchSQL.append(" or `Subsystem` like ?");
-            searchSQL.append(" or `svnURL` like ?");
+            searchSQL.append(" or `repoURL` like ?");
             searchSQL.append(" or `bugtrackerurl` like ?");
             searchSQL.append(" or `bugtrackernewurl` like ?");
             searchSQL.append(" or `deploytype` like ?");
@@ -471,13 +514,11 @@ public class ApplicationDAO implements IApplicationDAO {
             searchSQL.append(" )");
         }
         query.append(searchSQL);
-        query.append(" order by ").append(columnName).append(" asc");
+        query.append(" order by `").append(columnName).append("` asc");
 
         LOG.debug("SQL : {}", query);
 
-        try (Connection connection = databaseSpring.connect();
-             PreparedStatement preStat = connection.prepareStatement(query.toString());
-             Statement stm = connection.createStatement()) {
+        try (Connection connection = databaseSpring.connect(); PreparedStatement preStat = connection.prepareStatement(query.toString()); Statement stm = connection.createStatement()) {
 
             int i = 1;
             if (CollectionUtils.isNotEmpty(systems)) {
@@ -485,7 +526,7 @@ public class ApplicationDAO implements IApplicationDAO {
                     preStat.setString(i++, system);
                 }
             }
-            if (StringUtil.isNotEmpty(searchTerm)) {
+            if (StringUtil.isNotEmptyOrNull(searchTerm)) {
                 preStat.setString(i++, "%" + searchTerm + "%");
                 preStat.setString(i++, "%" + searchTerm + "%");
                 preStat.setString(i++, "%" + searchTerm + "%");
@@ -502,8 +543,7 @@ public class ApplicationDAO implements IApplicationDAO {
                 preStat.setString(i++, individualColumnSearchValue);
             }
 
-            try (ResultSet resultSet = preStat.executeQuery();
-                 ResultSet rowSet = stm.executeQuery("SELECT FOUND_ROWS()")) {
+            try (ResultSet resultSet = preStat.executeQuery(); ResultSet rowSet = stm.executeQuery("SELECT FOUND_ROWS()")) {
 
                 while (resultSet.next()) {
                     distinctValues.add(resultSet.getString("distinctValues") == null ? "" : resultSet.getString("distinctValues"));
@@ -547,10 +587,14 @@ public class ApplicationDAO implements IApplicationDAO {
         String type = ParameterParserUtil.parseStringParam(rs.getString("app.type"), "");
         String system = ParameterParserUtil.parseStringParam(rs.getString("app.system"), "");
         String subsystem = ParameterParserUtil.parseStringParam(rs.getString("app.subsystem"), "");
-        String svnUrl = ParameterParserUtil.parseStringParam(rs.getString("app.svnurl"), "");
+        String repoUrl = ParameterParserUtil.parseStringParam(rs.getString("app.repourl"), "");
         int poolSize = ParameterParserUtil.parseIntegerParam(rs.getString("app.poolSize"), 0);
         String deployType = ParameterParserUtil.parseStringParam(rs.getString("app.deploytype"), "");
         String mavenGroupId = ParameterParserUtil.parseStringParam(rs.getString("app.mavengroupid"), "");
+        String bugTrackerConnector = ParameterParserUtil.parseStringParam(rs.getString("app.bugtrackerconnector"), "");
+        String bugTrackerParam1 = ParameterParserUtil.parseStringParam(rs.getString("app.bugtrackerparam1"), "");
+        String bugTrackerParam2 = ParameterParserUtil.parseStringParam(rs.getString("app.bugtrackerparam2"), "");
+        String bugTrackerParam3 = ParameterParserUtil.parseStringParam(rs.getString("app.bugtrackerparam3"), "");
         String bugTrackerUrl = ParameterParserUtil.parseStringParam(rs.getString("app.bugtrackerurl"), "");
         String bugTrackerNewUrl = ParameterParserUtil.parseStringParam(rs.getString("app.bugtrackernewurl"), "");
         String usrModif = ParameterParserUtil.parseStringParam(rs.getString("app.UsrModif"), "");
@@ -564,17 +608,21 @@ public class ApplicationDAO implements IApplicationDAO {
                 .type(type)
                 .system(system)
                 .subsystem(subsystem)
-                .svnurl(svnUrl)
+                .repoUrl(repoUrl)
+                .bugTrackerConnector(bugTrackerConnector)
+                .bugTrackerParam1(bugTrackerParam1)
+                .bugTrackerParam2(bugTrackerParam2)
+                .bugTrackerParam3(bugTrackerParam3)
                 .bugTrackerUrl(bugTrackerUrl)
                 .bugTrackerNewUrl(bugTrackerNewUrl)
                 .poolSize(poolSize)
                 .deploytype(deployType)
                 .mavengroupid(mavenGroupId)
                 .description(description)
-                .UsrCreated(usrCreated)
-                .DateCreated(dateCreated)
-                .UsrModif(usrModif)
-                .DateModif(dateModif)
+                .usrCreated(usrCreated)
+                .dateCreated(dateCreated)
+                .usrModif(usrModif)
+                .dateModif(dateModif)
                 .build();
     }
 }

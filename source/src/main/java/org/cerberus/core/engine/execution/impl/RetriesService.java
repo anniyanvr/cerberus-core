@@ -1,5 +1,5 @@
 /**
- * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * Cerberus Copyright (C) 2013 - 2025 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -19,6 +19,7 @@
  */
 package org.cerberus.core.engine.execution.impl;
 
+import java.util.HashMap;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.cerberus.core.crud.entity.TestCaseExecution;
@@ -78,7 +79,7 @@ public class RetriesService implements IRetriesService {
         tCExecutionQueue.setState(TestCaseExecutionQueue.State.QUEUED);
         tCExecutionQueue.setRetries(newRetry);
         // Insert execution to the Queue.
-        executionQueueService.create(tCExecutionQueue, false, exeQueue, TestCaseExecutionQueue.State.QUEUED);
+        executionQueueService.create(tCExecutionQueue, false, exeQueue, TestCaseExecutionQueue.State.QUEUED, new HashMap<>());
         return true;
     }
 }

@@ -1,5 +1,5 @@
 /**
- * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * Cerberus Copyright (C) 2013 - 2025 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -75,6 +75,8 @@ import java.util.Map;
 import java.util.TreeMap;
 
 import static java.util.Arrays.asList;
+import org.cerberus.core.crud.entity.Parameter;
+import org.cerberus.core.crud.service.IParameterService;
 
 /**
  * @author bcivel
@@ -88,6 +90,7 @@ public class ReadTestCaseExecutionByTag extends HttpServlet {
     private ITestCaseLabelService testCaseLabelService;
     private ILabelService labelService;
     private IFactoryTestCase factoryTestCase;
+    private IParameterService parameterService;
 
     private static final Logger LOG = LogManager.getLogger("ReadTestCaseExecutionByTag");
 
@@ -95,10 +98,10 @@ public class ReadTestCaseExecutionByTag extends HttpServlet {
      * Processes requests for both HTTP <code>GET</code> and <code>POST</code>
      * methods.
      *
-     * @param request  servlet request
+     * @param request servlet request
      * @param response servlet response
      * @throws ServletException if a servlet-specific error occurs
-     * @throws IOException      if an I/O error occurs
+     * @throws IOException if an I/O error occurs
      */
     protected void processRequest(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
@@ -117,12 +120,14 @@ public class ReadTestCaseExecutionByTag extends HttpServlet {
         tagService = appContext.getBean(ITagService.class);
         factoryTestCase = appContext.getBean(IFactoryTestCase.class);
         testCaseExecutionInQueueService = appContext.getBean(ITestCaseExecutionQueueService.class);
+        parameterService = appContext.getBean(IParameterService.class);
 
         try {
             // Data/Filter Parameters.
             String Tag = ParameterParserUtil.parseStringParam(request.getParameter("Tag"), "");
             List<String> outputReport = ParameterParserUtil.parseListParamAndDecode(request.getParameterValues("outputReport"), new ArrayList<>(), "UTF-8");
             boolean fullList = ParameterParserUtil.parseBooleanParam(request.getParameter("fullList"), false);
+            boolean fullListDefined = request.getQueryString().contains("fullList=");
 
             JSONObject jsonResponse = new JSONObject();
             JSONObject statusFilter = getStatusList(request);
@@ -152,7 +157,7 @@ public class ReadTestCaseExecutionByTag extends HttpServlet {
 
             // Table that contain the list of testcases and corresponding executions
             if (outputReport.isEmpty() || outputReport.contains("table")) {
-                jsonResponse.put("table", generateTestCaseExecutionTable(appContext, testCaseExecutions, statusFilter, countryFilter, testCaseLabelScopeList, fullList));
+                jsonResponse.put("table", generateTestCaseExecutionTable(appContext, testCaseExecutions, statusFilter, countryFilter, testCaseLabelScopeList, fullList, fullListDefined));
             }
             // Table that contain the list of testcases and corresponding executions
             if (outputReport.isEmpty() || outputReport.contains("table")) {
@@ -188,7 +193,7 @@ public class ReadTestCaseExecutionByTag extends HttpServlet {
             if (mytag != null) {
                 JSONObject tagJSON = convertTagToJSONObject(mytag);
                 jsonResponse.put("tagObject", tagJSON);
-                jsonResponse.put("tagDuration", (mytag.getDateEndQueue().getTime() - mytag.getDateCreated().getTime()) / 60000);
+                jsonResponse.put("tagDuration", (mytag.getDateEndQueue().getTime() - mytag.getDateStartExe().getTime()) / 60000);
             }
 
             answer.setItem(jsonResponse);
@@ -288,7 +293,7 @@ public class ReadTestCaseExecutionByTag extends HttpServlet {
         return countryList;
     }
 
-    private JSONObject generateTestCaseExecutionTable(ApplicationContext appContext, List<TestCaseExecution> testCaseExecutions, JSONObject statusFilter, JSONObject countryFilter, List<TestCaseLabel> testCaseLabelList, boolean fullList) {
+    private JSONObject generateTestCaseExecutionTable(ApplicationContext appContext, List<TestCaseExecution> testCaseExecutions, JSONObject statusFilter, JSONObject countryFilter, List<TestCaseLabel> testCaseLabelList, boolean fullList, boolean fullListDefined) {
         JSONObject testCaseExecutionTable = new JSONObject();
         LinkedHashMap<String, JSONObject> ttc = new LinkedHashMap<>();
         LinkedHashMap<String, JSONObject> columnMap = new LinkedHashMap<>();
@@ -446,7 +451,7 @@ public class ReadTestCaseExecutionByTag extends HttpServlet {
                 // building Bug Status.
                 for (Map.Entry<String, JSONObject> entry : ttc.entrySet()) {
                     JSONObject val = entry.getValue();
-                    JSONArray bugA = new JSONArray(val.getString("bugs"));
+                    JSONArray bugA = val.getJSONArray("bugs");
                     int nbBug = bugA.length();
                     if (nbBug > 0) {
                         for (int i = 0; i < nbBug; i++) {
@@ -503,41 +508,60 @@ public class ReadTestCaseExecutionByTag extends HttpServlet {
                 bugRes.put("nbBugs", bugMapUniq.size());
                 testCaseExecutionTable.put("bugContent", bugRes);
 
-                // Now loading only necessary records to final structure (filtering testcase that have all usefull executions OK of QU).
-                if (fullList) {
-                    testCaseExecutionTable.put("tableContent", ttc.values());
-                    testCaseExecutionTable.put("iTotalRecords", ttc.size());
-                    testCaseExecutionTable.put("iTotalDisplayRecords", ttc.size());
-                } else {
-                    LinkedHashMap<String, JSONObject> newttc = new LinkedHashMap<>();
-                    for (Map.Entry<String, JSONObject> entry : ttc.entrySet()) {
-                        String key = entry.getKey();
-                        JSONObject val = entry.getValue();
-                        if ((val.getInt("NbExeUsefullToHide") != val.getInt("NbExeUsefull")) // One of the execution of the test case has a status <> QU and OK
-                                || (val.getJSONArray("bugs").length() > 0) // At least 1 bug has been assigned to the testcase.
-                        ) {
-                            newttc.put(key, val);
-                        }
-                    }
-                    testCaseExecutionTable.put("tableContent", newttc.values());
-                    testCaseExecutionTable.put("iTotalRecords", newttc.size());
-                    testCaseExecutionTable.put("iTotalDisplayRecords", newttc.size());
-                }
-
                 Map<String, JSONObject> treeMap = new TreeMap<>(columnMap);
                 testCaseExecutionTable.put("tableColumns", treeMap.values());
+
             } catch (JSONException ex) {
                 LOG.error("Error on generateTestCaseExecutionTable : " + ex, ex);
             } catch (Exception ex) {
                 LOG.error("Error on generateTestCaseExecutionTable : " + ex, ex);
             }
         }
+
+        try {
+
+            // Now loading only necessary records to final structure (filtering testcase that have all usefull executions OK of QU).
+            if (!fullListDefined) { // If nb of exe is low, we force them to be displayed
+                if (ttc.size() < parameterService.getParameterIntegerByKey(Parameter.VALUE_cerberus_reportbytag_nblinestotriggerautohide_int, "", 50)) {
+                    LOG.debug("Not defined and size lower than target. " + ttc.size() + " param : " + parameterService.getParameterIntegerByKey(Parameter.VALUE_cerberus_reportbytag_nblinestotriggerautohide_int, "", 50));
+                    fullList = true;
+                }
+            }
+
+            if (fullList) {
+                testCaseExecutionTable.put("tableContent", ttc.values());
+                testCaseExecutionTable.put("iTotalRecords", ttc.size());
+                testCaseExecutionTable.put("iTotalDisplayRecords", ttc.size());
+                testCaseExecutionTable.put("fullList", fullList);
+            } else {
+                LinkedHashMap<String, JSONObject> newttc = new LinkedHashMap<>();
+                for (Map.Entry<String, JSONObject> entry : ttc.entrySet()) {
+                    String key = entry.getKey();
+                    JSONObject val = entry.getValue();
+                    if ((val.getInt("NbExeUsefullToHide") != val.getInt("NbExeUsefull")) // One of the execution of the test case has a status <> QU and OK
+                            || (val.getJSONArray("bugs").length() > 0) // At least 1 bug has been assigned to the testcase.
+                            ) {
+                        newttc.put(key, val);
+                    }
+                }
+                testCaseExecutionTable.put("tableContent", newttc.values());
+                testCaseExecutionTable.put("iTotalRecords", newttc.size());
+                testCaseExecutionTable.put("iTotalDisplayRecords", newttc.size());
+                testCaseExecutionTable.put("fullList", fullList);
+            }
+
+        } catch (JSONException ex) {
+            LOG.error("Error on generateTestCaseExecutionTable : " + ex, ex);
+        } catch (Exception ex) {
+            LOG.error("Error on generateTestCaseExecutionTable : " + ex, ex);
+        }
+
         return testCaseExecutionTable;
     }
 
     // We hide is status is QU of OK and there were no previous execution.
     private boolean isToHide(String controlStatus, String previousControlStatus) {
-        return (controlStatus.equals(TestCaseExecution.CONTROLSTATUS_QU) && (StringUtil.isEmpty(previousControlStatus))
+        return (controlStatus.equals(TestCaseExecution.CONTROLSTATUS_QU) && (StringUtil.isEmptyOrNull(previousControlStatus))
                 || controlStatus.equals(TestCaseExecution.CONTROLSTATUS_OK));
     }
 
@@ -571,7 +595,7 @@ public class ReadTestCaseExecutionByTag extends HttpServlet {
                         totalManualExecution++;
 
                         String executor = "NoExecutorDefined";
-                        if (!StringUtil.isEmpty(testCaseExecution.getExecutor())) {
+                        if (!StringUtil.isEmptyOrNull(testCaseExecution.getExecutor())) {
                             executor = testCaseExecution.getExecutor();
                         }
 
@@ -952,13 +976,13 @@ public class ReadTestCaseExecutionByTag extends HttpServlet {
                 // Standard pills
                 List<String> attributList = new ArrayList<>();
                 if (Label.TYPE_REQUIREMENT.equals(label.getType())) {
-                    if (!StringUtil.isEmpty(label.getRequirementType()) && !"unknown".equalsIgnoreCase(label.getRequirementType())) {
+                    if (!StringUtil.isEmptyOrNull(label.getRequirementType()) && !"unknown".equalsIgnoreCase(label.getRequirementType())) {
                         attributList.add("<span class='badge badge-pill badge-secondary'>" + label.getRequirementType() + "</span>");
                     }
-                    if (!StringUtil.isEmpty(label.getRequirementStatus()) && !"unknown".equalsIgnoreCase(label.getRequirementStatus())) {
+                    if (!StringUtil.isEmptyOrNull(label.getRequirementStatus()) && !"unknown".equalsIgnoreCase(label.getRequirementStatus())) {
                         attributList.add("<span class='badge badge-pill badge-secondary'>" + label.getRequirementStatus() + "</span>");
                     }
-                    if (!StringUtil.isEmpty(label.getRequirementCriticity()) && !"unknown".equalsIgnoreCase(label.getRequirementCriticity())) {
+                    if (!StringUtil.isEmptyOrNull(label.getRequirementCriticity()) && !"unknown".equalsIgnoreCase(label.getRequirementCriticity())) {
                         attributList.add("<span class='badge badge-pill badge-secondary'>" + label.getRequirementCriticity() + "</span>");
                     }
                 }
@@ -1086,14 +1110,13 @@ public class ReadTestCaseExecutionByTag extends HttpServlet {
     }
 
     // <editor-fold defaultstate="collapsed" desc="HttpServlet methods. Click on the + sign on the left to edit the code.">
-
     /**
      * Handles the HTTP <code>GET</code> method.
      *
-     * @param request  servlet request
+     * @param request servlet request
      * @param response servlet response
      * @throws ServletException if a servlet-specific error occurs
-     * @throws IOException      if an I/O error occurs
+     * @throws IOException if an I/O error occurs
      */
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
@@ -1104,10 +1127,10 @@ public class ReadTestCaseExecutionByTag extends HttpServlet {
     /**
      * Handles the HTTP <code>POST</code> method.
      *
-     * @param request  servlet request
+     * @param request servlet request
      * @param response servlet response
      * @throws ServletException if a servlet-specific error occurs
-     * @throws IOException      if an I/O error occurs
+     * @throws IOException if an I/O error occurs
      */
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)

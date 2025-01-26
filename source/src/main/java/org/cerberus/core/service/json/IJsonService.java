@@ -1,5 +1,5 @@
 /**
- * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * Cerberus Copyright (C) 2013 - 2025 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -21,6 +21,7 @@ package org.cerberus.core.service.json;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.jayway.jsonpath.InvalidPathException;
+import org.cerberus.core.crud.entity.TestCaseExecution;
 
 import java.net.MalformedURLException;
 import java.util.List;
@@ -43,7 +44,7 @@ public interface IJsonService {
      * @return
      * @throws java.lang.Exception
      */
-    String getFromJson(String jsonMessage, String url, String attribute) throws InvalidPathException;
+    String getFromJson(TestCaseExecution testCaseExecution, String jsonMessage, String url, String attribute, boolean random, Integer rank, String output) throws InvalidPathException, JsonProcessingException;
 
     /**
      * @param jsonMessage

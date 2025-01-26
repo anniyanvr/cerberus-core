@@ -1,5 +1,5 @@
 /**
- * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * Cerberus Copyright (C) 2013 - 2025 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -69,6 +69,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import org.cerberus.core.engine.entity.ExecutionLog;
 
 /**
  * @author bcivel
@@ -100,6 +101,7 @@ public class RecorderService implements IRecorderService {
 
         TestCaseExecution myExecution;
         boolean doScreenshot;
+        boolean doScreenshotAfter;
         boolean getPageSource;
         String applicationType;
         String returnCode;
@@ -108,12 +110,14 @@ public class RecorderService implements IRecorderService {
         if (controlExecution == null) {
             myExecution = actionExecution.getTestCaseStepExecution().gettCExecution();
             doScreenshot = actionExecution.getActionResultMessage().isDoScreenshot();
+            doScreenshotAfter = actionExecution.isDoScreenshotAfter();
             getPageSource = actionExecution.getActionResultMessage().isGetPageSource();
             applicationType = actionExecution.getTestCaseStepExecution().gettCExecution().getAppTypeEngine();
             returnCode = actionExecution.getReturnCode();
         } else {
             myExecution = controlExecution.getTestCaseStepActionExecution().getTestCaseStepExecution().gettCExecution();
             doScreenshot = controlExecution.getControlResultMessage().isDoScreenshot();
+            doScreenshotAfter = controlExecution.isDoScreenshotAfter();
             getPageSource = controlExecution.getControlResultMessage().isGetPageSource();
             applicationType = controlExecution.getTestCaseStepActionExecution().getTestCaseStepExecution().gettCExecution().getAppTypeEngine();
             returnCode = controlExecution.getReturnCode();
@@ -126,7 +130,8 @@ public class RecorderService implements IRecorderService {
          * correct doScreenshot flag on the last action MessageEvent.
          */
         if (Screenshot.printScreenSystematicaly(myExecution.getScreenshot())
-                || (Screenshot.printScreenOnError(myExecution.getScreenshot()) && (doScreenshot))) {
+                || (Screenshot.printScreenOnError(myExecution.getScreenshot()) && (doScreenshot))
+                || (doScreenshotAfter)) {
             if (applicationType.equals(Application.TYPE_GUI)
                     || applicationType.equals(Application.TYPE_APK)
                     || applicationType.equals(Application.TYPE_IPA)
@@ -136,7 +141,7 @@ public class RecorderService implements IRecorderService {
                  * connectivity with selenium.
                  */
                 if (!returnCode.equals("CA")) {
-                    objectFileList.addAll(this.recordScreenshot(myExecution, actionExecution, controlNumber, ""));
+                    objectFileList.addAll(this.recordScreenshot(myExecution, actionExecution, controlNumber, "", "Screenshot After", "screenshot-after"));
                 } else {
                     LOG.debug("{}Not Doing screenshot because connectivity with selenium server lost.", logPrefix);
                 }
@@ -187,7 +192,68 @@ public class RecorderService implements IRecorderService {
     }
 
     @Override
-    public AnswerItem<TestCaseExecutionFile> recordManuallyFile(TestCaseStepActionExecution actionExecution, TestCaseStepActionControlExecution controlExecution, String extension, String desc, FileItem file, Integer id, String fileName, Integer fileID) {
+    public List<TestCaseExecutionFile> recordExecutionInformationBeforeStepActionAndControl(TestCaseStepActionExecution actionExecution, TestCaseStepActionControlExecution controlExecution) {
+        List<TestCaseExecutionFile> objectFileList = new ArrayList<>();
+
+        // Used for logging purposes
+        String logPrefix = Infos.getInstance().getProjectNameAndVersion() + " - ";
+
+        TestCaseExecution myExecution;
+        boolean doScreenshot;
+        boolean doScreenshotBefore;
+        boolean getPageSource;
+        String applicationType;
+        String returnCode;
+        Integer controlNumber = -1;
+
+        if (controlExecution == null) {
+            myExecution = actionExecution.getTestCaseStepExecution().gettCExecution();
+            doScreenshot = actionExecution.getActionResultMessage().isDoScreenshot();
+            doScreenshotBefore = actionExecution.isDoScreenshotBefore();
+            getPageSource = actionExecution.getActionResultMessage().isGetPageSource();
+            applicationType = actionExecution.getTestCaseStepExecution().gettCExecution().getAppTypeEngine();
+            returnCode = actionExecution.getReturnCode();
+        } else {
+            myExecution = controlExecution.getTestCaseStepActionExecution().getTestCaseStepExecution().gettCExecution();
+            doScreenshot = controlExecution.getControlResultMessage().isDoScreenshot();
+            doScreenshotBefore = controlExecution.isDoScreenshotBefore();
+            getPageSource = controlExecution.getControlResultMessage().isGetPageSource();
+            applicationType = controlExecution.getTestCaseStepActionExecution().getTestCaseStepExecution().gettCExecution().getAppTypeEngine();
+            returnCode = controlExecution.getReturnCode();
+            controlNumber = controlExecution.getControlId();
+        }
+
+        /*
+         * SCREENSHOT Management. Screenshot only done when : screenshot
+         * parameter is eq to 2 or screenshot parameter is eq to 1 with the
+         * correct doScreenshot flag on the last action MessageEvent.
+         */
+        if (doScreenshotBefore) {
+            if (applicationType.equals(Application.TYPE_GUI)
+                    || applicationType.equals(Application.TYPE_APK)
+                    || applicationType.equals(Application.TYPE_IPA)
+                    || applicationType.equals(Application.TYPE_FAT)) {
+                /*
+                 * Only if the return code is not equal to Cancel, meaning lost
+                 * connectivity with selenium.
+                 */
+                if (!returnCode.equals("CA")) {
+                    objectFileList.addAll(this.recordScreenshot(myExecution, actionExecution, controlNumber, "", "Screenshot Before", "screenshot-before"));
+                } else {
+                    LOG.debug("{}Not Doing screenshot because connectivity with selenium server lost.", logPrefix);
+                }
+
+            }
+        } else {
+            LOG.debug("{}Not Doing screenshot because of the screenshot parameter or flag on the last Action result.", logPrefix);
+        }
+
+        return objectFileList;
+    }
+
+    @Override
+    public AnswerItem<TestCaseExecutionFile> recordManuallyFile(TestCaseStepActionExecution actionExecution, TestCaseStepActionControlExecution controlExecution,
+            String extension, String desc, FileItem file, Integer id, String fileName, Integer fileID) {
         MessageEvent msg = new MessageEvent(MessageEventEnum.DATA_OPERATION_ERROR_UNEXPECTED).resolveDescription("DESCRIPTION", "Can't upload file");
         AnswerItem<TestCaseExecutionFile> a = new AnswerItem<>();
         TestCaseExecutionFile object = null;
@@ -303,7 +369,7 @@ public class RecorderService implements IRecorderService {
     }
 
     @Override
-    public List<TestCaseExecutionFile> recordScreenshot(TestCaseExecution execution, TestCaseStepActionExecution actionExecution, Integer control, String cropValues) {
+    public List<TestCaseExecutionFile> recordScreenshot(TestCaseExecution execution, TestCaseStepActionExecution actionExecution, Integer control, String cropValues, String fileDescription, String fileName) {
 
         List<TestCaseExecutionFile> objectList = new ArrayList<>();
         TestCaseExecutionFile object = null;
@@ -339,11 +405,11 @@ public class RecorderService implements IRecorderService {
             newImage = this.sikuliService.takeScreenShotFile(execution.getSession());
         }
 
+        long maxSizeParam = parameterService.getParameterIntegerByKey("cerberus_screenshot_max_size", "", 1048576);
         if (newImage != null) {
             try {
-                long maxSizeParam = parameterService.getParameterIntegerByKey("cerberus_screenshot_max_size", "", 1048576);
 
-                Recorder recorder = this.initFilenames(runId, test, testCase, step, index, sequence, controlString, null, 0, "screenshot", "png", false);
+                Recorder recorder = this.initFilenames(runId, test, testCase, step, index, sequence, controlString, null, 0, fileName, "png", false);
                 LOG.debug("{}FullPath {}", logPrefix, recorder.getFullPath());
 
                 File dir = new File(recorder.getFullPath());
@@ -352,7 +418,7 @@ public class RecorderService implements IRecorderService {
                     dir.mkdirs();
                 }
                 // Getting the max size of the screenshot.
-                String fileDesc = "Screenshot";
+                String fileDesc = fileDescription;
                 if (maxSizeParam < newImage.length()) {
                     LOG.warn("{}Screenshot size exceeds the maximum defined in configurations ({}>={}) {} destination: {}", logPrefix, newImage.length(), maxSizeParam, newImage.getName(), recorder.getRelativeFilenameURL());
                     fileDesc = "Screenshot Too Big !!";
@@ -373,38 +439,45 @@ public class RecorderService implements IRecorderService {
                 LOG.debug("{}Temp file deleted with success {}", logPrefix, newImage.getName());
                 LOG.debug("{}Screenshot done in : {}", logPrefix, recorder.getRelativeFilenameURL());
 
-                if (newImageDesktop != null) {
-                    Recorder recorderDestop = this.initFilenames(runId, test, testCase, step, index, sequence, controlString, null, 0, "screenshot-desktop", "png", false);
-                    LOG.debug("{}FullPath {}", logPrefix, recorderDestop.getFullPath());
-
-                    // Getting the max size of the screenshot.
-                    fileDesc = "Desktop Screenshot";
-                    if (maxSizeParam < newImageDesktop.length()) {
-                        LOG.warn("{}Screenshot size exceeds the maximum defined in configurations ({}>={}) {} destination: {}", logPrefix, newImageDesktop.length(), maxSizeParam, newImageDesktop.getName(), recorderDestop.getRelativeFilenameURL());
-                        fileDesc = "Desktop Screenshot Too Big !!";
-                    } else {
-                        // Copies the temp file to the execution file
-                        FileUtils.copyFile(newImageDesktop, new File(recorderDestop.getFullFilename()));
-                        LOG.debug("{}Copy file finished with success - source: {} destination: {}", logPrefix, newImageDesktop.getName(), recorderDestop.getRelativeFilenameURL());
-                        LOG.info("File saved : {}", recorderDestop.getFullFilename());
-                    }
-
-                    // Index file created to database.
-                    object = testCaseExecutionFileFactory.create(0, execution.getId(), recorderDestop.getLevel(), fileDesc, recorderDestop.getRelativeFilenameURL(), "PNG", "", null, "", null);
-                    objectList.add(object);
-                    testCaseExecutionFileService.save(object);
-
-                    //deletes the temporary file
-                    FileUtils.forceDelete(newImageDesktop);
-                    LOG.debug("{}Temp file deleted with success {}", logPrefix, newImageDesktop.getName());
-                    LOG.debug("{}Desktop Screenshot done in : {}", logPrefix, recorderDestop.getRelativeFilenameURL());
-                }
             } catch (IOException | CerberusException ex) {
                 LOG.error("{}{}", logPrefix, ex.toString(), ex);
             }
         } else {
             LOG.warn("{}Screenshot returned null.", logPrefix);
         }
+
+        if (newImageDesktop != null) {
+
+            try {
+
+                Recorder recorderDestop = this.initFilenames(runId, test, testCase, step, index, sequence, controlString, null, 0, fileName + "-desktop", "png", false);
+                LOG.debug("{}FullPath {}", logPrefix, recorderDestop.getFullPath());
+
+                // Getting the max size of the screenshot.
+                String fileDesc = "Desktop " + fileDescription;
+                if (maxSizeParam < newImageDesktop.length()) {
+                    LOG.warn("{}Screenshot size exceeds the maximum defined in configurations ({}>={}) {} destination: {}", logPrefix, newImageDesktop.length(), maxSizeParam, newImageDesktop.getName(), recorderDestop.getRelativeFilenameURL());
+                    fileDesc = "Desktop Screenshot Too Big !!";
+                } else {
+                    // Copies the temp file to the execution file
+                    FileUtils.moveFile(newImageDesktop, new File(recorderDestop.getFullFilename()));
+                    LOG.debug("{}Moving file finished with success - source: {} destination: {}", logPrefix, newImageDesktop.getName(), recorderDestop.getRelativeFilenameURL());
+                    LOG.info("File saved : {}", recorderDestop.getFullFilename());
+                }
+
+                // Index file created to database.
+                object = testCaseExecutionFileFactory.create(0, execution.getId(), recorderDestop.getLevel(), fileDesc, recorderDestop.getRelativeFilenameURL(), "PNG", "", null, "", null);
+                objectList.add(object);
+                testCaseExecutionFileService.save(object);
+
+                //deletes the temporary file
+                LOG.debug("{}Desktop Screenshot done in : {}", logPrefix, recorderDestop.getRelativeFilenameURL());
+            } catch (IOException | CerberusException ex) {
+                LOG.error("{}{}", logPrefix, ex.toString(), ex);
+            }
+
+        }
+
         return objectList;
     }
 
@@ -449,7 +522,8 @@ public class RecorderService implements IRecorderService {
             File newImage = new File(recorder.getFullFilename());
             OutputStream outStream = new FileOutputStream(newImage);
             outStream.write(bytes);
-            IOUtils.close(outStream);
+            outStream.close();
+//            IOUtils.close(outStream);
 
             // Index file created to database.
             object = testCaseExecutionFileFactory.create(0, runId, recorder.getLevel(), "Picture " + valueFieldName, recorder.getRelativeFilenameURL(), "PNG", "", null, "", null);
@@ -462,6 +536,50 @@ public class RecorderService implements IRecorderService {
             LOG.error("{}", ex.toString(), ex);
         }
         return object;
+    }
+
+    @Override
+    public TestCaseExecutionFile recordExeLog(TestCaseExecution execution) {
+        LOG.debug("Starting to save Execution log File.");
+
+        TestCaseExecutionFile object = null;
+        if ((execution != null) && (execution.getExecutionLog() != null)) {
+            String test = execution.getTest();
+            String testCase = execution.getTestCase();
+
+            try {
+                Recorder recorder = this.initFilenames(execution.getId(), test, testCase, null, null, null, null, null, 0, "exeLog", "log", false);
+                File dir = new File(recorder.getFullPath());
+                dir.mkdirs();
+
+                File file = new File(recorder.getFullFilename());
+
+                try (FileOutputStream fileOutputStream = new FileOutputStream(file);) {
+                    for (ExecutionLog executionLog : execution.getExecutionLog()) {
+                        fileOutputStream.write(executionLog.getLogText().getBytes());
+                        fileOutputStream.write("\r\n".getBytes());
+                        LOG.debug(executionLog.getLogText());
+                    }
+
+                    LOG.info("File saved : {}", recorder.getFullFilename());
+
+                    // Index file created to database.
+                    object = testCaseExecutionFileFactory.create(0, execution.getId(), recorder.getLevel(), "Execution Log", recorder.getRelativeFilenameURL(), "TXT", "", null, "", null);
+                    testCaseExecutionFileService.save(object);
+
+                } catch (IOException ex) {
+                    LOG.error(ex.toString(), ex);
+                } catch (WebDriverException ex) {
+                    LOG.debug("Exception recording execution log on execution : {}", execution.getId(), ex);
+                    object = testCaseExecutionFileFactory.create(0, execution.getId(), recorder.getLevel(), "Execution Log [ERROR]", recorder.getRelativeFilenameURL(), "TXT", "", null, "", null);
+                    testCaseExecutionFileService.save(object);
+                }
+            } catch (CerberusException ex) {
+                LOG.error(ex.toString(), ex);
+            }
+        }
+        return object;
+
     }
 
     @Override
@@ -531,7 +649,7 @@ public class RecorderService implements IRecorderService {
         String controlString = control.equals(0) ? null : String.valueOf(control);
         long runId = execution.getId();
         int propertyIndex = 0;
-        if (!(StringUtil.isEmpty(property))) {
+        if (!(StringUtil.isEmptyOrNull(property))) {
             propertyIndex = 1;
         }
         try {
@@ -547,7 +665,7 @@ public class RecorderService implements IRecorderService {
             objectFileList.add(object);
 
             // REQUEST.
-            if (!(StringUtil.isEmpty(service.getServiceRequest()))) {
+            if (!(StringUtil.isEmptyOrNull(service.getServiceRequest()))) {
                 String messageFormatExt = "txt";
                 String messageFormat = TestCaseExecutionFile.FILETYPE_TXT;
                 if (service.getServiceRequest().startsWith("{")) { // TODO find a better solution to guess the format of the request.
@@ -565,7 +683,7 @@ public class RecorderService implements IRecorderService {
                 objectFileList.add(object);
             }
             // RESPONSE if exists.
-            if (!(StringUtil.isEmpty(service.getResponseHTTPBody()))) {
+            if (!(StringUtil.isEmptyOrNull(service.getResponseHTTPBody()))) {
                 String messageFormatExt = "txt";
                 String messageFormat = TestCaseExecutionFile.FILETYPE_TXT;
                 switch (service.getResponseHTTPBodyContentType()) {
@@ -672,14 +790,14 @@ public class RecorderService implements IRecorderService {
         String controlString = control.equals(0) ? null : String.valueOf(control);
         long runId = execution.getId();
         int propertyIndex = 0;
-        if (!(StringUtil.isEmpty(property))) {
+        if (!(StringUtil.isEmptyOrNull(property))) {
             propertyIndex = 1;
         }
         try {
 
             // Full Network Traffic.
             if (withDetail) {
-                if (!(StringUtil.isEmpty(se.getResponseHTTPBody()))) {
+                if (!(StringUtil.isEmptyOrNull(se.getResponseHTTPBody()))) {
                     Recorder recorderResponse = this.initFilenames(runId, test, testCase, step, index, sequence, controlString, property, propertyIndex, "networktraffic_content", "json", false);
                     recordFile(recorderResponse.getFullPath(), recorderResponse.getFileName(), se.getResponseHTTPBody(), execution.getSecrets());
 
@@ -694,7 +812,7 @@ public class RecorderService implements IRecorderService {
             // Stat.
             LOG.debug("Size of HAR message : {}", se.getResponseHTTPBody().length());
             // If JSON Size is higher than 1 Meg, we save the stat.
-            if (!(StringUtil.isEmpty(se.getResponseHTTPBody())) && se.getResponseHTTPBody().length() > 1000000) {
+            if (!(StringUtil.isEmptyOrNull(se.getResponseHTTPBody())) && se.getResponseHTTPBody().length() > 1000000) {
                 JSONObject stat = new JSONObject(se.getResponseHTTPBody());
                 Recorder recorderResponse = this.initFilenames(runId, test, testCase, step, index, sequence, controlString, property, propertyIndex, "networktraffic_stat", "json", false);
                 if (stat.has("stat")) {
@@ -738,7 +856,7 @@ public class RecorderService implements IRecorderService {
         String controlString = control.equals(0) ? null : String.valueOf(control);
         long runId = execution.getId();
         int propertyIndex = 0;
-        if (!(StringUtil.isEmpty(property))) {
+        if (!(StringUtil.isEmptyOrNull(property))) {
             propertyIndex = 1;
         }
         try {
@@ -780,7 +898,7 @@ public class RecorderService implements IRecorderService {
         String controlString = control.equals(0) ? null : String.valueOf(control);
         long runId = execution.getId();
         int propertyIndex = 0;
-        if (!(StringUtil.isEmpty(property))) {
+        if (!(StringUtil.isEmptyOrNull(property))) {
             propertyIndex = 1;
         }
         try {
@@ -797,6 +915,42 @@ public class RecorderService implements IRecorderService {
             LOG.error(ex.toString(), ex);
         }
         return objectFileList;
+    }
+
+    @Override
+    public TestCaseExecutionFile recordRobotFile(TestCaseExecution execution, TestCaseStepActionExecution actionExecution, Integer control, String property, byte[] fileContent, String preFileName, String fileName, String ext) {
+        TestCaseExecutionFile object = null;
+        String test = null;
+        String testCase = null;
+        String step = null;
+        String index = null;
+        String sequence = null;
+        if (actionExecution != null) {
+            test = execution.getTest();
+            testCase = execution.getTestCase();
+            step = String.valueOf(actionExecution.getStepId());
+            index = String.valueOf(actionExecution.getIndex());
+            sequence = String.valueOf(actionExecution.getSequence());
+        }
+        String controlString = control.equals(0) ? null : String.valueOf(control);
+        long runId = execution.getId();
+        int propertyIndex = 0;
+        if (!(StringUtil.isEmptyOrNull(property))) {
+            propertyIndex = 1;
+        }
+        try {
+
+            Recorder recorderResponse = this.initFilenames(runId, test, testCase, step, index, sequence, controlString, property, propertyIndex, preFileName, fileName, false);
+            recordFile(recorderResponse.getFullPath(), recorderResponse.getFileName(), fileContent);
+
+            // Index file created to database.
+            object = testCaseExecutionFileFactory.create(0, runId, recorderResponse.getLevel(), fileName, recorderResponse.getRelativeFilenameURL(), ext, "", null, "", null);
+            testCaseExecutionFileService.save(object);
+
+        } catch (Exception ex) {
+            LOG.error(ex.toString(), ex);
+        }
+        return object;
     }
 
     @Override
@@ -923,6 +1077,39 @@ public class RecorderService implements IRecorderService {
 
         } catch (Exception ex) {
             LOG.error(ex.toString(), ex);
+        }
+
+        return object;
+    }
+
+    @Override
+    public TestCaseExecutionFile recordHar(TestCaseExecution execution, JSONObject har) {
+        TestCaseExecutionFile object = null;
+
+        LOG.debug("Starting to save Har file.");
+
+        if ((StringUtil.isEmptyOrNull(har.toString()))) {
+            LOG.debug("No har to record.");
+            return null;
+        }
+
+        if ((execution.getRobotLog() == 2 || (execution.getRobotLog() == 1 && !execution.getControlStatus().equals("OK")))
+                && parameterService.getParameterBooleanByKey("cerberus_executionloghar_enable", execution.getSystem(), true)) {
+
+            try {
+
+                // RESULT.
+                Recorder recorder = this.initFilenames(execution.getId(), null, null, null, null, null, null, null, 0, "enriched_har", "json", false);
+                recordFile(recorder.getFullPath(), recorder.getFileName(), har.toString(1), execution.getSecrets());
+
+                // Index file created to database.
+                object = testCaseExecutionFileFactory.create(0, execution.getId(), recorder.getLevel(), "Network HAR File", recorder.getRelativeFilenameURL(), "JSON", "", null, "", null);
+                testCaseExecutionFileService.save(object);
+
+            } catch (Exception ex) {
+                LOG.error(ex.toString(), ex);
+            }
+
         }
 
         return object;
@@ -1072,6 +1259,31 @@ public class RecorderService implements IRecorderService {
         }
     }
 
+    /**
+     * Auxiliary method that saves a file
+     *
+     * @param path - directory path
+     * @param fileName - name of the file
+     * @param content -content of the file
+     */
+    private void recordFile(String path, String fileName, byte[] content) {
+        LOG.debug("Starting to save File (recordRobotFile) : {} {}", path, fileName);
+
+        File dir = new File(path);
+        if (!dir.exists()) {
+            dir.mkdirs();
+        }
+
+        File outputFile = new File(dir.getAbsolutePath() + File.separator + fileName);
+        try (FileOutputStream outputStream = new FileOutputStream(outputFile)) {
+            outputStream.write(content);
+            LOG.info("File saved : {}{}{}", path, File.separator, fileName);
+        } catch (IOException ex) {
+            LOG.error("Unable to save : {}{}{} ex: {}", path, File.separator, fileName, ex, ex);
+        }
+
+    }
+
     @Override
     public Recorder initFilenames(long exeID, String test, String testCase, String stepID, String index, String actionID, String controlID, String property, int propertyIndex, String filename, String extention, boolean manual) throws CerberusException {
         Recorder newRecorder = new Recorder();
@@ -1110,31 +1322,31 @@ public class RecorderService implements IRecorderService {
 
             //  Filename. If filename is not define, we assign it from the test, testcase, step action and control.
             StringBuilder sbfileName = new StringBuilder();
-            if (!StringUtil.isEmpty(test)) {
+            if (!StringUtil.isEmptyOrNull(test)) {
                 sbfileName.append(test.replace("/", "").replace("\\", "")).append("-");
             }
-            if (!StringUtil.isEmpty(testCase)) {
+            if (!StringUtil.isEmptyOrNull(testCase)) {
                 sbfileName.append(testCase.replace("/", "").replace("\\", "")).append("-");
             }
-            if (!StringUtil.isEmpty(stepID)) {
+            if (!StringUtil.isEmptyOrNull(stepID)) {
                 sbfileName.append("S").append(stepID).append("-");
             }
-            if (!StringUtil.isEmpty(index)) {
+            if (!StringUtil.isEmptyOrNull(index)) {
                 sbfileName.append("I").append(index).append("-");
             }
-            if (!StringUtil.isEmpty(actionID)) {
+            if (!StringUtil.isEmptyOrNull(actionID)) {
                 sbfileName.append("A").append(actionID).append("-");
             }
-            if (!StringUtil.isEmpty(controlID)) {
+            if (!StringUtil.isEmptyOrNull(controlID)) {
                 sbfileName.append("C").append(controlID).append("-");
             }
-            if (!StringUtil.isEmpty(property)) {
+            if (!StringUtil.isEmptyOrNull(property)) {
                 sbfileName.append(property).append("-");
             }
             if (propertyIndex != 0) {
                 sbfileName.append(propertyIndex).append("-");
             }
-            if (!StringUtil.isEmpty(filename)) {
+            if (!StringUtil.isEmptyOrNull(filename)) {
                 sbfileName.append(filename).append("-");
             }
 
@@ -1150,13 +1362,13 @@ public class RecorderService implements IRecorderService {
              * Property level --> property+index
              */
             String level = "";
-            if (!(StringUtil.isEmpty(controlID))) {
+            if (!(StringUtil.isEmptyOrNull(controlID))) {
                 level = test + "-" + testCase + "-" + stepID + "-" + index + "-" + actionID + "-" + controlID;
-            } else if (!(StringUtil.isEmpty(actionID))) {
+            } else if (!(StringUtil.isEmptyOrNull(actionID))) {
                 level = test + "-" + testCase + "-" + stepID + "-" + index + "-" + actionID;
-            } else if (!(StringUtil.isEmpty(stepID))) {
+            } else if (!(StringUtil.isEmptyOrNull(stepID))) {
                 level = test + "-" + testCase + "-" + stepID + "-" + index;
-            } else if (!(StringUtil.isEmpty(property))) {
+            } else if (!(StringUtil.isEmptyOrNull(property))) {
                 level = property + "-" + propertyIndex;
             }
             newRecorder.setLevel(level);

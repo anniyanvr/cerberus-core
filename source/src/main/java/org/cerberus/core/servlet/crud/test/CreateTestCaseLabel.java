@@ -1,5 +1,5 @@
 /**
- * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * Cerberus Copyright (C) 2013 - 2025 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -29,6 +29,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.cerberus.core.crud.entity.Application;
 import org.cerberus.core.crud.entity.Label;
+import org.cerberus.core.crud.entity.LogEvent;
 import org.cerberus.core.crud.entity.TestCase;
 import org.cerberus.core.crud.entity.TestCaseLabel;
 import org.cerberus.core.crud.factory.IFactoryTestCaseLabel;
@@ -196,7 +197,7 @@ public class CreateTestCaseLabel extends HttpServlet {
 
                                 Application myApplication = (Application) resp.getItem();
 
-                                if ((StringUtil.isEmpty(myLab.getSystem())) || (myApplication.getSystem().equals(myLab.getSystem()))) {
+                                if ((StringUtil.isEmptyOrNull(myLab.getSystem())) || (myApplication.getSystem().equals(myLab.getSystem()))) {
                                     TestCaseLabel tcLabel = factoryTestCaseLabel.create(0, myTest, myTestCase, myIdInt, request.getRemoteUser(), null, "", null, null);
                                     ans = testCaseLabelService.create(tcLabel);
 
@@ -205,7 +206,7 @@ public class CreateTestCaseLabel extends HttpServlet {
                                          * Update was successful. Adding Log
                                          * entry.
                                          */
-                                        logEventService.createForPrivateCalls("/CreateTestCaseLabel", "CREATE", "Created TestCaseLabel : ['" + myIdInt + "'|'" + myTest + "'|'" + myTestCase + "']", request);
+                                        logEventService.createForPrivateCalls("/CreateTestCaseLabel", "CREATE", LogEvent.STATUS_INFO, "Created TestCaseLabel : ['" + myIdInt + "'|'" + myTest + "'|'" + myTestCase + "']", request);
                                     } else {
                                         massErrorCounter++;
                                         output_message.append("<br>Label : ").append(myLabelId).append(" Test : '").append(myTest).append("' TestCase : '").append(myTestCase).append("' - ").append(ans.getResultMessage().getDescription());
@@ -244,7 +245,7 @@ public class CreateTestCaseLabel extends HttpServlet {
                         .replace("%OPERATION%", "Mass Update") + "\n\nAll " + (myTestList.length * myLabelIdList.length) + " label links(s) created successfuly.");
                 ans.setResultMessage(msg);
             }
-            logEventService.createForPrivateCalls("/CreateTestCaseLabel", "MASSUPDATE", msg.getDescription(), request);
+            logEventService.createForPrivateCalls("/CreateTestCaseLabel", "MASSUPDATE", LogEvent.STATUS_INFO, msg.getDescription(), request);
         }
 
         /**

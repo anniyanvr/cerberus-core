@@ -1,5 +1,5 @@
 /**
- * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * Cerberus Copyright (C) 2013 - 2025 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -51,6 +51,16 @@ public interface IMyVersionService {
      * @return true if the update was done. False in case there were an issue.
      */
     boolean updateMyVersionString(String key, String value);
+
+    /**
+     *
+     * @param version epoch timing in ms
+     * @param value value of the MyVersion entry table
+     * @param lockDurationMs duration when the entry will not be refreshed.
+     * After that duration a new value will be authorized for update.
+     * @return true if the update was done. False in case there were an issue.
+     */
+    boolean updateAndLockVersionEntryDuringMs(String version, long value, long lockDurationMs);
 
     /**
      * Flag the key. Means that the method will return true if the previous

@@ -1,5 +1,5 @@
 /**
- * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * Cerberus Copyright (C) 2013 - 2025 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -85,6 +85,7 @@ import org.apache.avro.io.DatumReader;
 import org.apache.avro.io.DecoderFactory;
 import org.apache.avro.util.Utf8;
 import org.apache.kafka.common.errors.SerializationException;
+import org.cerberus.core.engine.entity.ExecutionLog;
 import org.json.JSONException;
 
 /**
@@ -200,11 +201,11 @@ public class KafkaService implements IKafkaService {
 
         MessageEvent message = new MessageEvent(MessageEventEnum.ACTION_FAILED_CALLSERVICE_PRODUCEKAFKA);
         AnswerItem<AppService> result = new AnswerItem<>();
-        AppService serviceREST = factoryAppService.create("", AppService.TYPE_KAFKA, AppService.METHOD_KAFKAPRODUCE, "", "", "", "", "", "", "", "", "", "", "", true, "", "", false, "", false, "", false, "", null,
+        AppService serviceREST = factoryAppService.create("", AppService.TYPE_KAFKA, AppService.METHOD_KAFKAPRODUCE, "", "", "", "", "", "", "", "", "", "", "", "", true, "", "", false, "", false, "", false, "", null,
                 "", null, "", null, null);
 
         // If token is defined, we add 'cerberus-token' on the http header.
-        if (!StringUtil.isEmpty(token)) {
+        if (!StringUtil.isEmptyOrNull(token)) {
             serviceHeader.add(factoryAppServiceHeader.create(null, "cerberus-token", token, true, 0, "", "", null, "", null));
         }
 
@@ -345,7 +346,7 @@ public class KafkaService implements IKafkaService {
     @SuppressWarnings("unchecked")
     @Override
     public AnswerItem<Map<TopicPartition, Long>> seekEvent(String topic, String bootstrapServers,
-            List<AppServiceContent> serviceContent, int timeoutMs) {
+            List<AppServiceContent> kafkaProps, int timeoutMs) {
 
         MessageEvent message = new MessageEvent(MessageEventEnum.ACTION_SUCCESS_CALLSERVICE_SEARCHKAFKA);
         AnswerItem<Map<TopicPartition, Long>> result = new AnswerItem<>();
@@ -355,17 +356,17 @@ public class KafkaService implements IKafkaService {
         try {
 
             Properties props = new Properties();
-            serviceContent.add(factoryAppServiceContent.create(null, ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers, true, 0, "", "", null, "", null));
-            serviceContent.add(factoryAppServiceContent.create(null, ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, "false", true, 0, "", "", null, "", null));
-            serviceContent.add(factoryAppServiceContent.create(null, ConsumerConfig.MAX_POLL_RECORDS_CONFIG, "10", true, 0, "", "", null, "", null));
-            serviceContent.add(factoryAppServiceContent.create(null, ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, "org.apache.kafka.common.serialization.StringDeserializer", true, 0, "", "", null, "", null));
-            serviceContent.add(factoryAppServiceContent.create(null, ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, "org.apache.kafka.common.serialization.StringDeserializer", true, 0, "", "", null, "", null));
+            kafkaProps.add(factoryAppServiceContent.create(null, ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers, true, 0, "", "", null, "", null));
+            kafkaProps.add(factoryAppServiceContent.create(null, ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, "false", true, 0, "", "", null, "", null));
+            kafkaProps.add(factoryAppServiceContent.create(null, ConsumerConfig.MAX_POLL_RECORDS_CONFIG, "10", true, 0, "", "", null, "", null));
+            kafkaProps.add(factoryAppServiceContent.create(null, ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, "org.apache.kafka.common.serialization.StringDeserializer", true, 0, "", "", null, "", null));
+            kafkaProps.add(factoryAppServiceContent.create(null, ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, "org.apache.kafka.common.serialization.StringDeserializer", true, 0, "", "", null, "", null));
             // Setting timeout although does not seem to work fine as result on aiven is always 60000 ms.
-            serviceContent.add(factoryAppServiceContent.create(null, ConsumerConfig.REQUEST_TIMEOUT_MS_CONFIG, String.valueOf(timeoutMs), true, 0, "", "", null, "", null));
-            serviceContent.add(factoryAppServiceContent.create(null, ConsumerConfig.SESSION_TIMEOUT_MS_CONFIG, String.valueOf(timeoutMs), true, 0, "", "", null, "", null));
-            serviceContent.add(factoryAppServiceContent.create(null, ConsumerConfig.DEFAULT_API_TIMEOUT_MS_CONFIG, String.valueOf(timeoutMs), true, 0, "", "", null, "", null));
+            kafkaProps.add(factoryAppServiceContent.create(null, ConsumerConfig.REQUEST_TIMEOUT_MS_CONFIG, String.valueOf(timeoutMs), true, 0, "", "", null, "", null));
+            kafkaProps.add(factoryAppServiceContent.create(null, ConsumerConfig.SESSION_TIMEOUT_MS_CONFIG, String.valueOf(timeoutMs), true, 0, "", "", null, "", null));
+            kafkaProps.add(factoryAppServiceContent.create(null, ConsumerConfig.DEFAULT_API_TIMEOUT_MS_CONFIG, String.valueOf(timeoutMs), true, 0, "", "", null, "", null));
 
-            for (AppServiceContent object : serviceContent) {
+            for (AppServiceContent object : kafkaProps) {
                 if (object.isActive()) {
                     props.put(object.getKey(), object.getValue());
                 }
@@ -828,7 +829,7 @@ public class KafkaService implements IKafkaService {
     private boolean isRecordMatch(String jsomEventMessage, String filterPath, String filterValue, String jsomMessage, String filterHeaderPath, String filterHeaderValue) {
         boolean match = true;
 
-        if (!StringUtil.isEmpty(filterPath)) {
+        if (!StringUtil.isEmptyOrNull(filterPath)) {
             String recordJSONfiltered = "";
             try {
                 recordJSONfiltered = jsonService.getStringFromJson(jsomEventMessage, filterPath);
@@ -847,7 +848,7 @@ public class KafkaService implements IKafkaService {
             }
         }
 
-        if (!StringUtil.isEmpty(filterHeaderPath)) {
+        if (!StringUtil.isEmptyOrNull(filterHeaderPath)) {
             String recordJSONfiltered = "";
             try {
                 recordJSONfiltered = jsonService.getStringFromJson(jsomMessage, filterHeaderPath);
@@ -979,15 +980,18 @@ public class KafkaService implements IKafkaService {
                                     decodedContent.add(object);
                                 }
 
+                                tCExecution.addExecutionLog(ExecutionLog.STATUS_INFO, "Seek Kafka topic '" + decodedTopic);
                                 resultConsume = seekEvent(decodedTopic, decodedServicePath, decodedContent, parameterService.getParameterIntegerByKey("cerberus_callservice_timeoutms", tCExecution.getSystem(), 60000));
 
                                 if (!(resultConsume.isCodeEquals(MessageEventEnum.ACTION_SUCCESS_CALLSERVICE_SEARCHKAFKA.getCode()))) {
                                     LOG.debug("TestCase interupted due to error when opening Kafka consume. " + resultConsume.getMessageDescription());
+                                    tCExecution.addExecutionLog(ExecutionLog.STATUS_WARN, "TestCase interupted due to error when opening Kafka consume. " + resultConsume.getMessageDescription());
                                     throw new CerberusException(new MessageGeneral(MessageGeneralEnum.VALIDATION_FAILED_KAFKACONSUMERSEEK).resolveDescription("SERVICE", localService.getItem().getService())
                                             .resolveDescription("DETAIL", resultConsume.getMessageDescription()));
                                 }
                                 LOG.debug("Saving Map to key : " + getKafkaConsumerKey(localService.getItem().getKafkaTopic(), localService.getItem().getServicePath()));
                                 tempKafka.put(getKafkaConsumerKey(decodedTopic, decodedServicePath), resultConsume.getItem());
+                                tCExecution.addExecutionLog(ExecutionLog.STATUS_INFO, "Saving Map to key : " + getKafkaConsumerKey(localService.getItem().getKafkaTopic(), localService.getItem().getServicePath()) + " " + resultConsume.getItem().toString());
 
                             } catch (CerberusEventException ex) {
                                 LOG.error(ex);
@@ -1000,6 +1004,7 @@ public class KafkaService implements IKafkaService {
             }
         }
         LOG.debug(tempKafka.size() + " consumers lastest offset retrieved.");
+        tCExecution.addExecutionLog(ExecutionLog.STATUS_INFO, tempKafka.size() + " consumers lastest offset retrieved.");
         return tempKafka;
     }
 

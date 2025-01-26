@@ -1,5 +1,5 @@
 /**
- * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * Cerberus Copyright (C) 2013 - 2025 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -26,7 +26,10 @@ import java.net.URL;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import org.cerberus.core.crud.entity.AppService;
+import org.cerberus.core.crud.entity.LogEvent;
+import org.cerberus.core.crud.entity.RobotExecutor;
 import org.cerberus.core.crud.entity.TestCaseExecution;
+import org.cerberus.core.crud.service.ILogEventService;
 import org.cerberus.core.crud.service.IParameterService;
 import org.cerberus.core.engine.entity.MessageEvent;
 import org.cerberus.core.enums.MessageEventEnum;
@@ -54,6 +57,8 @@ public class RobotProxyService implements IRobotProxyService {
     private IRestService restService;
     @Autowired
     private IHarService harService;
+    @Autowired
+    private ILogEventService logEventService;
 
     private static final org.apache.logging.log4j.Logger LOG = org.apache.logging.log4j.LogManager.getLogger(RobotProxyService.class);
 
@@ -66,7 +71,7 @@ public class RobotProxyService implements IRobotProxyService {
             url += "&port=" + tce.getRobotExecutorObj().getExecutorProxyPort();
         }
 
-        if (TestCaseExecution.ROBOTPROVIDER_BROWSERSTACK.equals(tce.getRobotProvider())){
+        if (TestCaseExecution.ROBOTPROVIDER_BROWSERSTACK.equals(tce.getRobotProvider())) {
             url += "&bsLocalProxyActive=true";
             url += "&bsLocalProxyHost=" + tce.getRobotExecutorObj().getExecutorExtensionHost();
             url += "&bsKey=" + tce.getRobotExecutorObj().getHostPassword();
@@ -91,6 +96,7 @@ public class RobotProxyService implements IRobotProxyService {
             LOG.debug("Cerberus Executor Proxy extention started on port : " + tce.getRemoteProxyPort() + " (uuid : " + tce.getRemoteProxyUUID() + ")");
 
         } catch (Exception ex) {
+            logEventService.createForPrivateCalls("", "EXEC", LogEvent.STATUS_ERROR, "Error when trying to open a remote proxy on Cerberus Robot Proxy. " + ex.toString());
             LOG.error("Exception Starting Remote Proxy " + tce.getRobotExecutorObj().getExecutorExtensionHost() + ":" + tce.getRobotExecutorObj().getExecutorExtensionPort() + " Exception :" + ex.toString(), ex);
         }
 
@@ -106,7 +112,7 @@ public class RobotProxyService implements IRobotProxyService {
              */
             try {
                 // Ask the Proxy to stop.
-                if (tce.getRobotExecutorObj() != null && "Y".equals(tce.getRobotExecutorObj().getExecutorProxyActive())) {
+                if (tce.getRobotExecutorObj() != null && RobotExecutor.PROXY_TYPE_NETWORKTRAFFIC.equals(tce.getRobotExecutorObj().getExecutorProxyType())) {
 
                     String urlStop = "http://" + tce.getRobotExecutorObj().getExecutorExtensionHost() + ":" + tce.getRobotExecutorObj().getExecutorExtensionPort() + "/stopProxy?uuid=" + tce.getRemoteProxyUUID();
 
@@ -143,7 +149,7 @@ public class RobotProxyService implements IRobotProxyService {
             Integer i = 0;
             for (i = 0; i < maxLoop; i++) {
                 AnswerItem<AppService> result = new AnswerItem<>();
-                result = restService.callREST(url, "", AppService.METHOD_HTTPGET, new ArrayList<>(), new ArrayList<>(), null, 10000, "", true, null);
+                result = restService.callREST(url, "", AppService.METHOD_HTTPGET, AppService.SRVBODYTYPE_RAW, new ArrayList<>(), new ArrayList<>(), null, 10000, "", true, null, "", "", "", "", "");
 
                 if (result.isCodeStringEquals("OK")) {
 
@@ -194,7 +200,7 @@ public class RobotProxyService implements IRobotProxyService {
 
             LOG.debug("Getting Network Traffic content from URL : " + url);
             AnswerItem<AppService> result = new AnswerItem<>();
-            result = restService.callREST(url, "", AppService.METHOD_HTTPGET, new ArrayList<>(), new ArrayList<>(), null, 10000, "", true, null);
+            result = restService.callREST(url, "", AppService.METHOD_HTTPGET, AppService.SRVBODYTYPE_RAW, new ArrayList<>(), new ArrayList<>(), null, 10000, "", true, null, "", "", "", "", "");
 
             AppService appSrv = result.getItem();
             har = new JSONObject(appSrv.getResponseHTTPBody());
@@ -215,7 +221,7 @@ public class RobotProxyService implements IRobotProxyService {
         LOG.debug("Building URL : " + exUuid);
         String url = "http://" + exHost + ":" + exPort
                 + "/getHar?uuid=" + exUuid;
-        if (!StringUtil.isEmpty(urlFilter)) {
+        if (!StringUtil.isEmptyOrNull(urlFilter)) {
             url += "&requestUrl=" + urlFilter;
         }
         if (!withContent) {
@@ -231,7 +237,7 @@ public class RobotProxyService implements IRobotProxyService {
         Integer nbHits = 0;
         try {
             AnswerItem<AppService> result = new AnswerItem<>();
-            result = restService.callREST(url, "", AppService.METHOD_HTTPGET, new ArrayList<>(), new ArrayList<>(), null, 10000, "", true, null);
+            result = restService.callREST(url, "", AppService.METHOD_HTTPGET, AppService.SRVBODYTYPE_RAW, new ArrayList<>(), new ArrayList<>(), null, 10000, "", true, null, "", "", "", "", "");
 
             if (result.isCodeStringEquals("OK")) {
 

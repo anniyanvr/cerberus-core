@@ -1,5 +1,5 @@
 /**
- * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * Cerberus Copyright (C) 2013 - 2025 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -42,11 +42,12 @@ public class Robot {
     private String platform;
     private String browser;
     private String version;
-    private String active;
+    private boolean isActive;
     private String userAgent;
     private String screenSize;
     private String profileFolder;
     private String extraParam;
+    private Integer acceptNotifications;
     private boolean isAcceptInsecureCerts;
     private String robotDecli;
     private String lbexemethod; // Contain the method used in order to spread the load against all executors of the robot.
@@ -186,12 +187,12 @@ public class Robot {
         this.robot = robot;
     }
 
-    public String getActive() {
-        return active;
+    public boolean isActive() {
+        return isActive;
     }
 
-    public void setActive(String active) {
-        this.active = active;
+    public void setIsActive(boolean active) {
+        this.isActive = active;
     }
 
     public String getDescription() {
@@ -242,6 +243,10 @@ public class Robot {
         this.type = type;
     }
 
+    public Integer getAcceptNotifications(){return acceptNotifications;}
+
+    public void setAcceptNotifications(Integer acceptNotifications){this.acceptNotifications = acceptNotifications;}
+
     /**
      * Convert the current TestCaseExecution into JSON format
      *
@@ -252,7 +257,7 @@ public class Robot {
     public JSONObject toJson(boolean withChilds, boolean secured) {
         JSONObject result = new JSONObject();
         try {
-            result.put("active", this.getActive());
+            result.put("isActive", this.isActive());
             result.put("description", this.getDescription());
             result.put("userAgent", this.getUserAgent());
             result.put("robotID", this.getRobotID());
@@ -265,6 +270,7 @@ public class Robot {
             result.put("lbexemethod", this.getLbexemethod());
             result.put("type", this.getType());
             result.put("isAcceptInsecureCerts", this.isAcceptInsecureCerts());
+            result.put("acceptNotifications", this.getAcceptNotifications());
             result.put("extraParam", this.getExtraParam());
 
             if (withChilds) {

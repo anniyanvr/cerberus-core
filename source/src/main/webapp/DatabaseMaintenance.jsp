@@ -1,6 +1,6 @@
 <%--
 
-    Cerberus Copyright (C) 2013 - 2017 cerberustesting
+    Cerberus Copyright (C) 2013 - 2025 cerberustesting
     DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 
     This file is part of Cerberus.
@@ -19,6 +19,7 @@
     along with Cerberus.  If not, see <http://www.gnu.org/licenses/>.
 
 --%>
+<%@page import="org.cerberus.core.crud.entity.LogEvent"%>
 <%@page import="org.cerberus.core.database.DocumentationDatabaseService"%>
 <%@page import="org.apache.logging.log4j.LogManager"%>
 <%@page import="org.apache.logging.log4j.Logger"%>
@@ -64,7 +65,7 @@
                 // this is used in order to execute only 1 instruction at a time as it make take a lot of time to process.
                 boolean SQLExecuted = false;
                 // SQL that has version equal to SQLLimit will not be executed automatically.
-                Integer SQLLimit = 1748; // 4.16 Version LEVEL.
+                Integer SQLLimit = 1882; // 4.19 Version LEVEL.
                 IFactoryMyversion factoryMyversion;
 
                 try {
@@ -146,7 +147,7 @@
                                         }
                                         if (i >= 4) { // The log table is only available after the Version 4
                                             // Log the SQL execution here
-                                            logEventService.createForPrivateCalls("/DatabaseMaintenance.jsp", "SQL", "SQL " + MySQLRC + ": ['" + MySQL + "']", request);
+                                            logEventService.createForPrivateCalls("/DatabaseMaintenance.jsp", "SQL", LogEvent.STATUS_INFO, "SQL " + MySQLRC + ": ['" + MySQL + "']", request);
                                         }
                                         out.print("<td><textarea class=\"form-control\" name=\"SQL\" rows=\"" + rowLine + "\" style=\"background-color:transparent;border:0px;font-size:x-small;width: 100%\" readonly>");
                                         out.print(MySQLRC);

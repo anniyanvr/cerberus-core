@@ -1,5 +1,5 @@
 /**
- * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * Cerberus Copyright (C) 2013 - 2025 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -102,6 +102,11 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import org.cerberus.core.engine.entity.ExecutionLog;
+import org.cerberus.core.engine.entity.Identifier;
+import org.cerberus.core.engine.execution.IIdentifierService;
+import org.cerberus.core.service.bug.IBugService;
+import org.cerberus.core.service.robotextension.impl.SikuliService;
 import org.cerberus.core.service.xray.IXRayService;
 import org.cerberus.core.service.robotproxy.IRobotProxyService;
 
@@ -153,6 +158,8 @@ public class ExecutionRunService implements IExecutionRunService {
     private IRobotProxyService executorService;
     private IEventService eventService;
     private IXRayService xRayService;
+    private IBugService bugService;
+    private IIdentifierService identifierService;
 
     @Override
     public TestCaseExecution executeTestCase(TestCaseExecution execution) throws CerberusException {
@@ -304,6 +311,7 @@ public class ExecutionRunService implements IExecutionRunService {
                 case TestCaseExecution.ROBOTPROVIDER_LAMBDATEST:
                     //TODO Why this variable has been declared ?
                     String newBuildHash = tagService.enrichTagWithCloudProviderBuild(execution.getRobotProvider(), execution.getSystem(), execution.getTag(), execution.getRobotExecutorObj().getHostUser(), execution.getRobotExecutorObj().getHostPassword());
+                    execution.addExecutionLog(ExecutionLog.STATUS_INFO, "Retrieved new cloud provider hash '" + newBuildHash + "'");
                     Tag newTag = tagService.convert(tagService.readByKey(execution.getTag()));
                     execution.setTagObj(newTag);
                     break;
@@ -341,6 +349,8 @@ public class ExecutionRunService implements IExecutionRunService {
             updateExecutionWebSocketOnly(execution, true);
 
             LOG.debug("{}Loading Pre-testcases.", logPrefix);
+            execution.addExecutionLog(ExecutionLog.STATUS_INFO, "Loading pre-testcases");
+
             List<TestCase> preTests = testCaseService.getTestCaseForPrePostTesting(Test.TEST_PRETESTING, execution.getTestCaseObj().getApplication(), execution.getCountry(),
                     execution.getSystem(), execution.getCountryEnvParam().getBuild(), execution.getCountryEnvParam().getRevision());
             List<TestCaseStep> preTestCaseStepList = new ArrayList<>();
@@ -359,6 +369,7 @@ public class ExecutionRunService implements IExecutionRunService {
             }
 
             //Load Post TestCase information
+            execution.addExecutionLog(ExecutionLog.STATUS_INFO, "Loading post-testcases");
             LOG.debug("{}Loading Post-testcases.", logPrefix);
             List<TestCase> postTests = testCaseService.getTestCaseForPrePostTesting(Test.TEST_POSTTESTING, execution.getTestCaseObj().getApplication(), execution.getCountry(),
                     execution.getSystem(), execution.getCountryEnvParam().getBuild(), execution.getCountryEnvParam().getRevision());
@@ -378,6 +389,7 @@ public class ExecutionRunService implements IExecutionRunService {
             }
 
             // Load Main TestCase with Step dependencies (Actions/Control)
+            execution.addExecutionLog(ExecutionLog.STATUS_INFO, "Loading steps information of main testcase");
             LOG.debug("{}Loading all Steps information of Main testcase.", logPrefix);
             List<TestCaseStep> testCaseStepList;
             testCaseStepList = this.loadTestCaseService.loadTestCaseStep(execution.getTestCaseObj());
@@ -427,8 +439,9 @@ public class ExecutionRunService implements IExecutionRunService {
             AnswerItem<Boolean> conditionAnswerTc;
             boolean conditionDecodeError = false;
 
-            // If execution is not manual, evaluate the condition at the step level
+            // If execution is not manual, evaluate the condition at the top level
             if (!execution.getManualExecution().equals("Y")) {
+                execution.addExecutionLog(ExecutionLog.STATUS_INFO, "Decode execution eondition variables");
                 try {
                     answerDecode = variableService.decodeStringCompletly(execution.getConditionVal1(), execution, null, false);
                     execution.setConditionVal1(answerDecode.getItem());
@@ -481,6 +494,8 @@ public class ExecutionRunService implements IExecutionRunService {
 
             if (!conditionDecodeError) {
 
+                execution.addExecutionLog(ExecutionLog.STATUS_INFO, "Evaluate testcase condition");
+
                 conditionAnswerTc = this.conditionService.evaluateCondition(execution.getConditionOperator(),
                         execution.getConditionVal1(), execution.getConditionVal2(), execution.getConditionVal3(),
                         execution, execution.getConditionOptions());
@@ -510,13 +525,18 @@ public class ExecutionRunService implements IExecutionRunService {
                                 LOG.debug("{}Start execution of testcasestep", logPrefix);
                                 long startStep = new Date().getTime();
 
+                                // Clean condition depending on the operatot.
+                                String condval1 = conditionService.cleanValue1(step.getConditionOperator(), step.getConditionValue1());
+                                String condval2 = conditionService.cleanValue2(step.getConditionOperator(), step.getConditionValue2());
+                                String condval3 = conditionService.cleanValue3(step.getConditionOperator(), step.getConditionValue3());
+
                                 //Create and Register TestCaseStepExecution
                                 MessageEvent stepMess = new MessageEvent(MessageEventEnum.STEP_PENDING)
                                         .resolveDescription("STEP", String.valueOf(step.getSort()))
                                         .resolveDescription("STEPINDEX", String.valueOf(stepIndex));
                                 stepExecution = factoryTestCaseStepExecution.create(
                                         runID, step.getTest(), step.getTestcase(),
-                                        step.getStepId(), stepIndex, step.getSort(), step.getLoop(), step.getConditionOperator(), step.getConditionValue1(), step.getConditionValue2(), step.getConditionValue3(), step.getConditionValue1(), step.getConditionValue2(), step.getConditionValue3(), null,
+                                        step.getStepId(), stepIndex, step.getSort(), step.getLoop(), step.getConditionOperator(), condval1, condval2, condval3, condval1, condval2, condval3, null,
                                         startStep, startStep, startStep, startStep, new BigDecimal("0"), null, stepMess, step, execution,
                                         step.isUsingLibraryStep(), step.getLibraryStepTest(), step.getLibraryStepTestcase(), step.getLibraryStepStepId(), step.getDescription());
                                 stepExecution.setLoop(step.getLoop());
@@ -620,8 +640,7 @@ public class ExecutionRunService implements IExecutionRunService {
                                         || stepIndex > 1) {
                                     if (!(descriptionOrConditionStepDecodeError)) {
 
-                                        conditionAnswer = this.conditionService.evaluateCondition(
-                                                stepExecution.getConditionOperator(),
+                                        conditionAnswer = this.conditionService.evaluateCondition(stepExecution.getConditionOperator(),
                                                 stepExecution.getConditionValue1(), stepExecution.getConditionValue2(), stepExecution.getConditionValue3(),
                                                 execution, stepExecution.getConditionOptions());
 
@@ -706,6 +725,7 @@ public class ExecutionRunService implements IExecutionRunService {
                                 //  Execute Step
                                 LOG.debug("{}Executing step : {} - {} - Step {} - Index {}",
                                         logPrefix, stepExecution.getTest(), stepExecution.getTestCase(), stepExecution.getStepId(), stepExecution.getStepId());
+                                execution.addExecutionLog(ExecutionLog.STATUS_INFO, "Executing step : " + stepExecution.getStepId() + " - " + stepExecution.getDescription());
 
                                 if (doExecuteStep) {
                                     // We execute the step
@@ -898,6 +918,12 @@ public class ExecutionRunService implements IExecutionRunService {
                 xRayService.createXRayTestExecution(execution);
             }
 
+            // JIRA Issue creation Connector is triggered at the end of every execution..
+            // TODO Add conditions in order to create it only when testcase is stable enought.
+            if (!willBeRetried) {
+                bugService.createBugAsync(execution, false);
+            }
+
             /*
              * After every execution finished, <br>
              * if the execution has a tag that has a campaign associated  <br>
@@ -916,6 +942,9 @@ public class ExecutionRunService implements IExecutionRunService {
             if (!willBeRetried) {
                 testCaseExecutionQueueDepService.manageDependenciesEndOfExecution(execution);
             }
+
+            // Write Execution log to file and make it available as a file on execution.
+            execution.addFileList(recorderService.recordExeLog(execution));
 
             // After every execution finished we try to trigger more from the queue;-).
             executionThreadPoolService.executeNextInQueueAsynchroneously(false);
@@ -989,25 +1018,34 @@ public class ExecutionRunService implements IExecutionRunService {
         List<TestCaseStepAction> testCaseStepActionList = stepExecution.getTestCaseStep().getActions();
         LOG.debug("{}Getting list of actions of the step. {} action(s) to perform.", logPrefix, testCaseStepActionList.size());
 
-        for (TestCaseStepAction testCaseStepAction : testCaseStepActionList) {
+        execution.setTestCaseStepInExecution(stepExecution);
+        for (TestCaseStepAction tcAction : testCaseStepActionList) {
 
             // Start Execution of TestCaseStepAction
             long startAction = new Date().getTime();
             DateFormat df = new SimpleDateFormat(DateUtil.DATE_FORMAT_TIMESTAMP);
             long startLongAction = Long.parseLong(df.format(startAction));
 
+            // Clean condition depending on the operatot.
+            String condval1 = conditionService.cleanValue1(tcAction.getConditionOperator(), tcAction.getConditionValue1());
+            String condval2 = conditionService.cleanValue2(tcAction.getConditionOperator(), tcAction.getConditionValue2());
+            String condval3 = conditionService.cleanValue3(tcAction.getConditionOperator(), tcAction.getConditionValue3());
+
             // Create and Register TestCaseStepActionExecution.
             TestCaseStepActionExecution actionExecution = factoryTestCaseStepActionExecution.create(
-                    stepExecution.getId(), testCaseStepAction.getTest(), testCaseStepAction.getTestcase(),
-                    testCaseStepAction.getStepId(), stepExecution.getIndex(), testCaseStepAction.getActionId(), testCaseStepAction.getSort(), null, null,
-                    testCaseStepAction.getConditionOperator(), testCaseStepAction.getConditionValue1(), testCaseStepAction.getConditionValue2(), testCaseStepAction.getConditionValue3(),
-                    testCaseStepAction.getConditionValue1(), testCaseStepAction.getConditionValue2(), testCaseStepAction.getConditionValue3(),
-                    testCaseStepAction.getAction(), testCaseStepAction.getValue1(), testCaseStepAction.getValue2(), testCaseStepAction.getValue3(), testCaseStepAction.getValue1(),
-                    testCaseStepAction.getValue2(), testCaseStepAction.getValue3(),
-                    (testCaseStepAction.isFatal() ? "Y" : "N"), startAction, startAction, startLongAction, startLongAction, new MessageEvent(MessageEventEnum.ACTION_PENDING),
-                    testCaseStepAction.getDescription(), testCaseStepAction, stepExecution);
-            actionExecution.setOptions(testCaseStepAction.getOptionsActive());
-            actionExecution.setConditionOptions(testCaseStepAction.getConditionOptionsActive());
+                    stepExecution.getId(), tcAction.getTest(), tcAction.getTestcase(),
+                    tcAction.getStepId(), stepExecution.getIndex(), tcAction.getActionId(), tcAction.getSort(), null, null,
+                    tcAction.getConditionOperator(), condval1, condval2, condval3, condval1, condval2, condval3,
+                    tcAction.getAction(), tcAction.getValue1(), tcAction.getValue2(), tcAction.getValue3(), tcAction.getValue1(),
+                    tcAction.getValue2(), tcAction.getValue3(),
+                    (tcAction.isFatal() ? "Y" : "N"), startAction, startAction, startLongAction, startLongAction, new MessageEvent(MessageEventEnum.ACTION_PENDING),
+                    tcAction.getDescription(), tcAction, stepExecution);
+            actionExecution.setOptions(tcAction.getOptionsActive());
+            actionExecution.setConditionOptions(tcAction.getConditionOptionsActive());
+            actionExecution.setWaitBefore(tcAction.getWaitBefore());
+            actionExecution.setWaitAfter(tcAction.getWaitAfter());
+            actionExecution.setDoScreenshotBefore(tcAction.isDoScreenshotBefore());
+            actionExecution.setDoScreenshotAfter(tcAction.isDoScreenshotAfter());
 
             this.testCaseStepActionExecutionService.insertTestCaseStepActionExecution(actionExecution, execution.getSecrets());
 
@@ -1072,6 +1110,18 @@ public class ExecutionRunService implements IExecutionRunService {
 
             if (!(conditionDecodeError)) {
 
+                // Record picture= files at Condition action level.
+                Identifier identifier = identifierService.convertStringToIdentifier(actionExecution.getConditionVal1());
+                if (identifier.getIdentifier().equals(SikuliService.SIKULI_IDENTIFIER_PICTURE) && !StringUtil.isEmptyOrNull(identifier.getLocator())) {
+                    LOG.debug("Saving Image 2 on Action : " + identifier.getLocator());
+                    actionExecution.addFileList(recorderService.recordPicture(actionExecution, -1, identifier.getLocator(), "Condition1"));
+                }
+                identifier = identifierService.convertStringToIdentifier(actionExecution.getConditionVal2());
+                if (identifier.getIdentifier().equals(SikuliService.SIKULI_IDENTIFIER_PICTURE) && !StringUtil.isEmptyOrNull(identifier.getLocator())) {
+                    LOG.debug("Saving Image 2 on Action : " + identifier.getLocator());
+                    actionExecution.addFileList(recorderService.recordPicture(actionExecution, -1, identifier.getLocator(), "Condition2"));
+                }
+
                 ConditionOperatorEnum actionConditionOperatorEnum = ConditionOperatorEnum.getConditionOperatorEnumFromString(actionExecution.getConditionOperator());
 
                 conditionAnswer = this.conditionService.evaluateCondition(actionExecution.getConditionOperator(),
@@ -1094,6 +1144,8 @@ public class ExecutionRunService implements IExecutionRunService {
                                 actionExecution.getValue1(),
                                 actionExecution.getValue2(),
                                 actionExecution.getValue3());
+
+                        execution.addExecutionLog(ExecutionLog.STATUS_INFO, "Executing action : " + actionExecution.getSequence() + " - " + actionExecution.getDescription() + " Action '" + actionExecution.getAction() + "' with '" + actionExecution.getValue1() + "' | '" + actionExecution.getValue2() + "' | '" + actionExecution.getValue3() + "'");
 
                         // We execute the Action
                         actionExecution = this.executeAction(actionExecution, execution);
@@ -1202,13 +1254,21 @@ public class ExecutionRunService implements IExecutionRunService {
 
         // If execution is not manual, do action and record files
         if (!execution.getManualExecution().equals("Y")) {
+
+            // Record Screenshot
+            try {
+                actionExecution.addFileList(recorderService.recordExecutionInformationBeforeStepActionAndControl(actionExecution, null));
+            } catch (Exception ex) {
+                LOG.warn("Unable to record Screenshot Before Action : {}", ex.toString(), ex);
+            }
+
             actionExecution = this.actionService.doAction(actionExecution);
 
             // Record Screenshot, PageSource
             try {
                 actionExecution.addFileList(recorderService.recordExecutionInformationAfterStepActionAndControl(actionExecution, null));
             } catch (Exception ex) {
-                LOG.warn("Unable to record Screenshot/PageSource : {}", ex.toString(), ex);
+                LOG.warn("Unable to record Screenshot/PageSource After Action : {}", ex.toString(), ex);
             }
 
         } else {
@@ -1249,22 +1309,32 @@ public class ExecutionRunService implements IExecutionRunService {
             DateFormat df = new SimpleDateFormat(DateUtil.DATE_FORMAT_TIMESTAMP);
             long startLongControl = Long.parseLong(df.format(startControl));
 
+            // Clean condition depending on the operatot.
+            String condval1 = conditionService.cleanValue1(control.getConditionOperator(), control.getConditionValue1());
+            String condval2 = conditionService.cleanValue2(control.getConditionOperator(), control.getConditionValue2());
+            String condval3 = conditionService.cleanValue3(control.getConditionOperator(), control.getConditionValue3());
+
             // Create and Register TestCaseStepActionControlExecution
             LOG.debug("Creating TestCaseStepActionControlExecution");
             TestCaseStepActionControlExecution controlExecution
                     = factoryTestCaseStepActionControlExecution.create(actionExecution.getId(), control.getTest(), control.getTestcase(),
                             control.getStepId(), actionExecution.getIndex(), control.getActionId(), control.getControlId(), control.getSort(),
-                            null, null,
-                            control.getConditionOperator(), control.getConditionValue1(), control.getConditionValue2(), control.getConditionValue3(), control.getConditionValue1(), control.getConditionValue2(), control.getConditionValue3(),
+                            null, null, control.getConditionOperator(), condval1, condval2, condval3, condval1, condval2, condval3,
                             control.getControl(), control.getValue1(), control.getValue2(), control.getValue3(), control.getValue1(), control.getValue2(),
                             control.getValue3(), (control.isFatal() ? "Y" : "N"), startControl, startControl, startLongControl, startLongControl,
                             control.getDescription(), actionExecution, new MessageEvent(MessageEventEnum.CONTROL_PENDING));
             controlExecution.setConditionOptions(control.getConditionOptionsActive());
             controlExecution.setOptions(control.getOptionsActive());
+            controlExecution.setDoScreenshotBefore(control.isDoScreenshotBefore());
+            controlExecution.setDoScreenshotAfter(control.isDoScreenshotAfter());
+            controlExecution.setWaitBefore(control.getWaitBefore());
+            controlExecution.setWaitAfter(control.getWaitAfter());
+            controlExecution.setTestCaseStepActionControl(control);
 
             this.testCaseStepActionControlExecutionService.insertTestCaseStepActionControlExecution(controlExecution, execution.getSecrets());
 
             LOG.debug("Executing control : {} type : {}", controlExecution.getControlId(), controlExecution.getControl());
+            execution.addExecutionLog(ExecutionLog.STATUS_INFO, "Executing control : " + controlExecution.getControlId() + " - " + controlExecution.getDescription() + " Control '" + controlExecution.getControl() + "' with '" + controlExecution.getValue1() + "' | '" + controlExecution.getValue2() + "' | '" + controlExecution.getValue3() + "'");
 
             // We populate the TestCase Control List
             actionExecution.addTestCaseStepActionExecutionList(controlExecution);
@@ -1325,6 +1395,18 @@ public class ExecutionRunService implements IExecutionRunService {
             }
 
             if (!(conditionDecodeError)) {
+
+                // Record picture= files at Condition control level.
+                Identifier identifier = identifierService.convertStringToIdentifier(controlExecution.getConditionVal1());
+                if (identifier.getIdentifier().equals(SikuliService.SIKULI_IDENTIFIER_PICTURE) && !StringUtil.isEmptyOrNull(identifier.getLocator())) {
+                    LOG.debug("Saving Image 2 on Action : " + identifier.getLocator());
+                    controlExecution.addFileList(recorderService.recordPicture(actionExecution, controlExecution.getControlId(), identifier.getLocator(), "Condition1"));
+                }
+                identifier = identifierService.convertStringToIdentifier(controlExecution.getConditionVal2());
+                if (identifier.getIdentifier().equals(SikuliService.SIKULI_IDENTIFIER_PICTURE) && !StringUtil.isEmptyOrNull(identifier.getLocator())) {
+                    LOG.debug("Saving Image 2 on Action : " + identifier.getLocator());
+                    controlExecution.addFileList(recorderService.recordPicture(actionExecution, controlExecution.getControlId(), identifier.getLocator(), "Condition2"));
+                }
 
                 ConditionOperatorEnum controlConditionOperatorEnum = ConditionOperatorEnum.getConditionOperatorEnumFromString(controlExecution.getConditionOperator());
 
@@ -1453,6 +1535,11 @@ public class ExecutionRunService implements IExecutionRunService {
             execution.getLastServiceCalled().setRecordTraceFile(true);
         }
 
+        /*
+         * Reset the current application back to null so that the main application will be used.
+         */
+        execution.setCurrentApplication(null);
+
         // Websocket --> we refresh the corresponding Detail Execution pages attached to this execution.
         updateExecutionWebSocketOnly(execution, false);
 
@@ -1465,10 +1552,19 @@ public class ExecutionRunService implements IExecutionRunService {
 
         // If execution is not manual, do control and record files
         if (!execution.getManualExecution().equals("Y")) {
+
+            // Record Screenshot
+            try {
+                controlExecution.addFileList(recorderService.recordExecutionInformationBeforeStepActionAndControl(controlExecution.getTestCaseStepActionExecution(), controlExecution));
+            } catch (Exception ex) {
+                LOG.warn("Unable to record Screenshot Before Control : {}", ex.toString(), ex);
+            }
+
             controlExecution = this.controlService.doControl(controlExecution);
 
             // Record Screenshot, PageSource
             controlExecution.addFileList(recorderService.recordExecutionInformationAfterStepActionAndControl(controlExecution.getTestCaseStepActionExecution(), controlExecution));
+
         } else {
             // If execution manual, set Control result message as notExecuted
             controlExecution.setControlResultMessage(new MessageEvent(MessageEventEnum.CONTROL_WAITINGEXECUTION));
@@ -1501,9 +1597,9 @@ public class ExecutionRunService implements IExecutionRunService {
             }
             break;
             case Application.TYPE_FAT:
-                LOG.debug("Stop Sikuli server for execution {} closing application {}", execution.getId(), execution.getCountryEnvironmentParameters().getIp());
-                if (!StringUtil.isEmpty(execution.getCountryEnvironmentParameters().getIp())) {
-                    this.sikuliService.doSikuliActionCloseApp(execution.getSession(), execution.getCountryEnvironmentParameters().getIp());
+                LOG.debug("Stop Sikuli server for execution {} closing application {}", execution.getId(), execution.getCountryEnvApplicationParam().getIp());
+                if (!StringUtil.isEmptyOrNull(execution.getCountryEnvApplicationParam().getIp())) {
+                    this.sikuliService.doSikuliActionCloseApp(execution.getSession(), execution.getCountryEnvApplicationParam().getIp());
                 }
                 LOG.debug("Ask Sikuli to clean execution {}", execution.getId());
                 this.sikuliService.doSikuliEndExecution(execution.getSession());
