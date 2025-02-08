@@ -1,5 +1,5 @@
 /**
- * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * Cerberus Copyright (C) 2013 - 2025 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -63,6 +63,11 @@ public class TestCaseStepAction {
     private boolean isFatal;
     private String description;
     private String screenshotFilename;
+    private boolean doScreenshotBefore;
+    private boolean doScreenshotAfter;
+    private int waitBefore;
+    private int waitAfter;
+
     @EqualsAndHashCode.Exclude
     private String usrCreated;
     @EqualsAndHashCode.Exclude
@@ -99,6 +104,8 @@ public class TestCaseStepAction {
     public static final String ACTION_OPENURLLOGIN = "openUrlLogin";
     public static final String ACTION_OPENURL = "openUrl";
     public static final String ACTION_REFRESHCURRENTPAGE = "refreshCurrentPage";
+    public static final String ACTION_RETURNPREVIOUSPAGE = "returnPreviousPage";
+    public static final String ACTION_FORWARDNEXTPAGE = "forwardNextPage";
     public static final String ACTION_EXECUTEJS = "executeJS";
     public static final String ACTION_EXECUTECOMMAND = "executeCommand";
     public static final String ACTION_EXECUTECERBERUSCOMMAND = "executeCerberusCommand";
@@ -129,14 +136,14 @@ public class TestCaseStepAction {
     public static final String ACTION_SETCONSOLECONTENT = "setConsoleContent";
     public static final String ACTION_SETCONTENT = "setContent";
     public static final String ACTION_SETSERVICECALLCONTENT = "setServiceCallContent";
+    public static final String ACTION_SWITCHTOCONTEXT = "switchToContext";
+    public static final String ACTION_LOCKDEVICE = "lockDevice";
+    public static final String ACTION_UNLOCKDEVICE = "unlockDevice";
+    public static final String ACTION_ROTATEDEVICE = "rotateDevice";
     public static final String ACTION_DONOTHING = "doNothing";
 
     // ??? TODO. Clean this unused action.
     public static final String ACTION_PERFORMEDITORACTION = "performEditorAction";
-
-    // DEPRECATED
-    public static final String ACTION_REMOVEDIFFERENCE = "removeDifference";
-    public static final String ACTION_MOUSEOVERANDWAIT = "mouseOverAndWait";
 
     /**
      * Invariant FORCEEXESTATUS String.
@@ -233,7 +240,6 @@ public class TestCaseStepAction {
         return true;
     }
 
-
     public JSONObject toJson() {
         JSONObject result = new JSONObject();
         try {
@@ -253,6 +259,10 @@ public class TestCaseStepAction {
             result.put("conditionOptions", this.getConditionOptions());
             result.put("isFatal", this.isFatal());
             result.put("screenshotFilename", this.getScreenshotFilename());
+            result.put("waitBefore", this.getWaitBefore());
+            result.put("waitAfter", this.getWaitAfter());
+            result.put("doScreenshotBefore", this.isDoScreenshotBefore());
+            result.put("doScreenshotAfter", this.isDoScreenshotAfter());
             result.put("test", this.getTest());
             result.put("testcase", this.getTestcase());
 

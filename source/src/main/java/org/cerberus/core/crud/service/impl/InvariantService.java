@@ -1,5 +1,5 @@
 /**
- * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * Cerberus Copyright (C) 2013 - 2025 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -66,6 +66,11 @@ public class InvariantService implements IInvariantService {
     @Override
     public AnswerItem<Invariant> readByKey(String id, String value) {
         return AnswerUtil.convertToAnswerItem(() -> invariantDao.readByKey(id, value));
+    }
+
+    @Override
+    public AnswerItem<Invariant> readFirstByIdName(String id) {
+        return AnswerUtil.convertToAnswerItem(() -> invariantDao.readFirstByIdName(id));
     }
 
     /**

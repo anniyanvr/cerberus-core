@@ -1,5 +1,5 @@
 /**
- * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * Cerberus Copyright (C) 2013 - 2025 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -45,8 +45,10 @@ public class TestCaseExecutionData {
     private String database;
     private String value1Init;
     private String value2Init;
+    private String value3Init;
     private String value1;
     private String value2;
+    private String value3;
     private String lengthInit;
     private String length;
     private String system;
@@ -77,8 +79,17 @@ public class TestCaseExecutionData {
     private boolean stopExecution;
     private TestCaseCountryProperties testCaseCountryProperties;
     private List<HashMap<String, String>> dataLibRawData; // Have the raw data of all subdata when comming from testDataLibrary
+    private TestDataLib dataLibObj;
 
     private static final Logger LOG = LogManager.getLogger(TestCaseExecutionData.class);
+
+    public TestDataLib getDataLibObj() {
+        return dataLibObj;
+    }
+
+    public void setDataLibObj(TestDataLib dataLibObj) {
+        this.dataLibObj = dataLibObj;
+    }
 
     public String getFromCache() {
         return fromCache;
@@ -132,6 +143,14 @@ public class TestCaseExecutionData {
 
     public void setValue2Init(String value2Init) {
         this.value2Init = value2Init;
+    }
+
+    public String getValue3Init() {
+        return value3Init;
+    }
+
+    public void setValue3Init(String value3Init) {
+        this.value3Init = value3Init;
     }
 
     public String getLengthInit() {
@@ -340,6 +359,14 @@ public class TestCaseExecutionData {
         this.value2 = value2;
     }
 
+    public String getValue3() {
+        return value3;
+    }
+
+    public void setValue3(String value3) {
+        this.value3 = value3;
+    }
+
     public String getProperty() {
         return property;
     }
@@ -398,7 +425,7 @@ public class TestCaseExecutionData {
 
     @Override
     public String toString() {
-        return "TestCaseExecutionData{" + "id=" + id + ", property=" + property + ", value=" + value + ", type=" + type + ", value1=" + value1 + ", value2=" + value2 + ", RC=" + RC + ", rMessage=" + rMessage + ", start=" + start + ", end=" + end + ", startLong=" + startLong + ", endLong=" + endLong + ", propertyResultMessage=" + propertyResultMessage + ", executionResultMessage=" + executionResultMessage + ", stopExecution=" + stopExecution + '}';
+        return "TestCaseExecutionData{" + "id=" + id + ", property=" + property + ", value=" + value + ", type=" + type + ", value1=" + value1 + ", value2=" + value2 + ", value3=" + value3 + ", RC=" + RC + ", rMessage=" + rMessage + ", start=" + start + ", end=" + end + ", startLong=" + startLong + ", endLong=" + endLong + ", propertyResultMessage=" + propertyResultMessage + ", executionResultMessage=" + executionResultMessage + ", stopExecution=" + stopExecution + '}';
     }
 
     /**
@@ -428,8 +455,10 @@ public class TestCaseExecutionData {
             result.put("rank", this.getRank());
             result.put("value1Init", StringUtil.secureFromSecrets(this.getValue1Init(), secrets));
             result.put("value2Init", StringUtil.secureFromSecrets(this.getValue2Init(), secrets));
+            result.put("value3Init", StringUtil.secureFromSecrets(this.getValue3Init(), secrets));
             result.put("value1", StringUtil.secureFromSecrets(this.getValue1(), secrets));
             result.put("value2", StringUtil.secureFromSecrets(this.getValue2(), secrets));
+            result.put("value3", StringUtil.secureFromSecrets(this.getValue3(), secrets));
             result.put("length", StringUtil.secureFromSecrets(this.getLength(), secrets));
             result.put("rowLimit", this.getRowLimit());
             result.put("nature", this.getNature());

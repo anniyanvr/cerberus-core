@@ -1,5 +1,5 @@
 /**
- * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * Cerberus Copyright (C) 2013 - 2025 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -37,11 +37,15 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.sql.Timestamp;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
+import java.util.Locale;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import org.cerberus.core.crud.entity.CountryEnvironmentParameters;
 
 /**
  * Created by corentin on 20/10/16.
@@ -52,6 +56,9 @@ public class VariableService implements IVariableService {
     private static final Logger LOG = LogManager.getLogger(VariableService.class);
 
     private static final String VALUE_WHEN_NULL = "<null>";
+    // TIPS : Test online your java regex using : https://www.regexplanet.com/advanced/java/index.html
+    public static final Pattern SYSTEM_VARIABLE_DATE_PATTERN = Pattern.compile("%system.([a-zA-Z0-9-+]*)-([a-z A-Z0-9.,:;'\"$]*)%");
+    public static final Pattern SYSTEM_SUBVARIABLE_DATE_PATTERN = Pattern.compile("([a-zA-Z]*)([-+])([0-9]*)");
 
     @Autowired
     private PropertyService propertyService;
@@ -61,37 +68,37 @@ public class VariableService implements IVariableService {
     private IRecorderService recorderService;
 
     @Override
-    public AnswerItem<String> decodeStringCompletly(String stringToDecode, TestCaseExecution testCaseExecution,
-                                                    TestCaseStepActionExecution testCaseStepActionExecution, boolean forceCalculation) throws CerberusEventException {
+    public AnswerItem<String> decodeStringCompletly(String initStringToDecode, TestCaseExecution testCaseExecution,
+            TestCaseStepActionExecution testCaseStepActionExecution, boolean forceCalculation) throws CerberusEventException {
 
         MessageEvent msg = new MessageEvent(MessageEventEnum.DECODE_SUCCESS);
         AnswerItem<String> answer = new AnswerItem<>();
         answer.setResultMessage(msg);
-        answer.setItem(stringToDecode);
+        answer.setItem(initStringToDecode);
 
-        String result = stringToDecode;
+        String stringToDecode = initStringToDecode;
         if (LOG.isDebugEnabled()) {
-            LOG.debug("Start Decoding : " + result);
+            LOG.debug("Start Decoding : " + stringToDecode);
         }
 
         /**
          * Nothing to decode if null or empty string.
          */
-        if (StringUtil.isEmpty(result)) {
+        if (StringUtil.isEmptyOrNull(stringToDecode)) {
             if (LOG.isDebugEnabled()) {
-                LOG.debug("Stop Decoding : Nothing to decode on : " + result);
+                LOG.debug("Stop Decoding : Nothing to decode on : " + stringToDecode);
             }
             return answer;
         }
-        if (result.startsWith(Identifier.IDENTIFIER_ERRATUM + "=")) {
+        if (stringToDecode.startsWith(Identifier.IDENTIFIER_ERRATUM + "=")) {
             if (LOG.isDebugEnabled()) {
-                LOG.debug("Stop Decoding : String starts by erratum= : " + result);
+                LOG.debug("Stop Decoding : String starts by erratum= : " + stringToDecode);
             }
             return answer;
         }
 
         int count_decode = 1;
-        while (result.contains("%") && count_decode <= 2) {
+        while (stringToDecode.contains("%") && count_decode <= 2) {
             /**
              * We iterate the property decode because properties names could be
              * inside other properties.
@@ -99,53 +106,52 @@ public class VariableService implements IVariableService {
             /**
              * Decode System Variables.
              */
-            if (result.contains("%")) {
-                if (LOG.isDebugEnabled()) {
-                    LOG.debug("Starting to decode (system variable) string iteration#" + count_decode + ": " + result);
-                }
-                result = this.decodeStringWithSystemVariable(result, testCaseExecution);
-                if (LOG.isDebugEnabled()) {
-                    LOG.debug("Finished to decode (system variable) iteration#" + count_decode + ". Result : " + result);
-                }
+            if (stringToDecode.contains("%")) {
+                LOG.debug("Starting to decode (system variable) string iteration#" + count_decode + ": " + stringToDecode);
+                stringToDecode = this.decodeStringWithSystemVariable(stringToDecode, testCaseExecution);
+                LOG.debug("Finished to decode (system variable) iteration#" + count_decode + ". Result : " + stringToDecode);
             } else {
-                if (LOG.isDebugEnabled()) {
-                    LOG.debug("Stop Decoding : No more things to decode on (exit when trying to decode System variable) : " + result);
-                }
-                answer.setItem(result);
+                LOG.debug("Stop Decoding : No more things to decode on (exit when trying to decode System variable) : " + stringToDecode);
+                answer.setItem(stringToDecode);
                 return answer;
             }
 
             /**
              * Decode ApplicationObject.
              */
-            if (result.contains("%")) {
-                if (LOG.isDebugEnabled()) {
-                    LOG.debug("Starting to decode (Application Object) string iteration#" + count_decode + ": " + result);
-                }
-                result = applicationObjectVariableService.decodeStringWithApplicationObject(result, testCaseExecution, forceCalculation);
-                if (LOG.isDebugEnabled()) {
-                    LOG.debug("Finished to decode (Application Object) iteration#" + count_decode + ". Result : " + result);
+            if (stringToDecode.contains("%")) {
+                LOG.debug("Starting to decode (Application Object) string iteration#" + count_decode + ": " + stringToDecode);
+                stringToDecode = applicationObjectVariableService.decodeStringWithApplicationObject(stringToDecode, testCaseExecution, forceCalculation);
+                LOG.debug("Finished to decode (Application Object) iteration#" + count_decode + ". Result : " + stringToDecode);
+            } else {
+                LOG.debug("Stop Decoding : No more things to decode on (exit when trying to decode ApplicationObject variable) : " + stringToDecode);
+                answer.setItem(stringToDecode);
+                return answer;
+            }
+
+            /**
+             * Decode Datalib.
+             */
+            if (stringToDecode.contains("%")) {
+                if (stringToDecode.contains("%datalib.")) {
+                    LOG.debug("Starting to decode (Datalib) string iteration#" + count_decode + ": " + stringToDecode);
+                    stringToDecode = propertyService.decodeStringWithDatalib(stringToDecode, testCaseExecution, forceCalculation);
+                    LOG.debug("Finished to decode (Datalib) iteration#" + count_decode + ". Result : " + stringToDecode);
                 }
             } else {
-                if (LOG.isDebugEnabled()) {
-                    LOG.debug("Stop Decoding : No more things to decode on (exit when trying to decode ApplicationObject variable) : " + result);
-                }
-                answer.setItem(result);
+                LOG.debug("Stop Decoding : No more things to decode on (exit when trying to decode Datalib variable) : " + stringToDecode);
+                answer.setItem(stringToDecode);
                 return answer;
             }
 
             /**
              * Decode Properties.
              */
-            if (LOG.isDebugEnabled()) {
-                LOG.debug("Starting to decode (Properties) string  iteration#" + count_decode + " : " + result);
-            }
-            answer = propertyService.decodeStringWithExistingProperties(result, testCaseExecution, testCaseStepActionExecution, forceCalculation);
-            result = answer.getItem();
-            if (LOG.isDebugEnabled()) {
-                LOG.debug("Finished to decode (Properties) iteration#" + count_decode + ". Result : " + result);
-                LOG.debug("   Result Message : " + answer.getResultMessage().getCodeString() + " - " + answer.getResultMessage().getDescription());
-            }
+            LOG.debug("Starting to decode (Properties) string  iteration#" + count_decode + " : " + stringToDecode);
+            answer = propertyService.decodeStringWithExistingProperties(stringToDecode, testCaseExecution, testCaseStepActionExecution, forceCalculation);
+            stringToDecode = answer.getItem();
+            LOG.debug("Finished to decode (Properties) iteration#" + count_decode + ". Result : " + stringToDecode);
+            LOG.debug("   Result Message : " + answer.getResultMessage().getCodeString() + " - " + answer.getResultMessage().getDescription());
 
             /**
              *
@@ -160,7 +166,7 @@ public class VariableService implements IVariableService {
                 String prop_message = answer.getResultMessage().getDescription();
                 answer.setResultMessage(new MessageEvent(MessageEventEnum.DECODE_FAILED_GENERIC)
                         .resolveDescription("ERROR", prop_message));
-                answer.setItem(result);
+                answer.setItem(stringToDecode);
                 return answer;
             }
             count_decode++;
@@ -168,7 +174,7 @@ public class VariableService implements IVariableService {
 
         // Checking if after the decode we still have some variable not decoded.
         LOG.debug("Checking If after decode we still have uncoded variable.");
-        List<String> variableList = getVariableListFromString(result);
+        List<String> variableList = getVariableListFromString(stringToDecode);
         if (variableList.size() > 0) {
             String messageList = "";
             for (String var : variableList) {
@@ -178,22 +184,22 @@ public class VariableService implements IVariableService {
             answer.setResultMessage(new MessageEvent(MessageEventEnum.DECODE_FAILED_VARIABLENOTDECODED)
                     .resolveDescription("NB", String.valueOf(variableList.size()))
                     .resolveDescription("VAR", messageList));
-            answer.setItem(result);
+            answer.setItem(stringToDecode);
             LOG.debug("Stop Decoding with error : " + answer.getResultMessage().getCodeString() + " - " + answer.getResultMessage().getDescription());
             return answer;
         }
 
         if (LOG.isDebugEnabled()) {
-            LOG.debug("Stop Decoding : All iteration finished : " + result);
+            LOG.debug("Stop Decoding : All iteration finished : " + stringToDecode);
         }
-        answer.setItem(result);
+        answer.setItem(stringToDecode);
         return answer;
     }
 
     private List<String> getVariableListFromString(String str) {
         List<String> variable = new ArrayList<>();
 
-        final String regex = "%(property|system|object|service)\\..*?%";
+        final String regex = "%(property|system|object|service|datalib)\\..*?%";
 
         final Pattern pattern = Pattern.compile(regex);
         final Matcher matcher = pattern.matcher(str);
@@ -210,6 +216,12 @@ public class VariableService implements IVariableService {
     public String decodeStringWithSystemVariable(String stringToDecode, TestCaseExecution execution) {
 
         try {
+            CountryEnvironmentParameters envappli;
+            if (execution.getCurrentApplication() != null) {
+                envappli = execution.getCountryEnvApplicationParams().getOrDefault(execution.getCurrentApplication(), execution.getCountryEnvApplicationParam());
+            } else {
+                envappli = execution.getCountryEnvApplicationParam();
+            }
             /**
              * Trying to replace by system environment variables from Execution.
              */
@@ -219,13 +231,13 @@ public class VariableService implements IVariableService {
             stringToDecode = stringToDecode.replace("%SYS_ROBOT%", execution.getRobot());
             stringToDecode = stringToDecode.replace("%SYS_ROBOTDECLI%", execution.getRobotDecli());
             stringToDecode = stringToDecode.replace("%SYS_SCREENSIZE%", execution.getScreenSize());
-            stringToDecode = stringToDecode.replace("%SYS_APP_DOMAIN%", execution.getCountryEnvironmentParameters().getDomain().split(",")[0].trim());
-            stringToDecode = stringToDecode.replace("%SYS_APP_HOST%", execution.getCountryEnvironmentParameters().getIp());
-            stringToDecode = stringToDecode.replace("%SYS_APP_CONTEXTROOT%", execution.getCountryEnvironmentParameters().getUrl());
-            stringToDecode = stringToDecode.replace("%SYS_APP_VAR1%", execution.getCountryEnvironmentParameters().getVar1());
-            stringToDecode = stringToDecode.replace("%SYS_APP_VAR2%", execution.getCountryEnvironmentParameters().getVar2());
-            stringToDecode = stringToDecode.replace("%SYS_APP_VAR3%", execution.getCountryEnvironmentParameters().getVar3());
-            stringToDecode = stringToDecode.replace("%SYS_APP_VAR4%", execution.getCountryEnvironmentParameters().getVar4());
+            stringToDecode = stringToDecode.replace("%SYS_APP_DOMAIN%", envappli.getDomain().split(",")[0].trim());
+            stringToDecode = stringToDecode.replace("%SYS_APP_HOST%", envappli.getIp());
+            stringToDecode = stringToDecode.replace("%SYS_APP_CONTEXTROOT%", envappli.getUrl());
+            stringToDecode = stringToDecode.replace("%SYS_APP_VAR1%", envappli.getVar1());
+            stringToDecode = stringToDecode.replace("%SYS_APP_VAR2%", envappli.getVar2());
+            stringToDecode = stringToDecode.replace("%SYS_APP_VAR3%", envappli.getVar3());
+            stringToDecode = stringToDecode.replace("%SYS_APP_VAR4%", envappli.getVar4());
             stringToDecode = stringToDecode.replace("%SYS_EXEURL%", execution.getUrl());
             stringToDecode = stringToDecode.replace("%SYS_ENV%", execution.getEnvironmentData());
             stringToDecode = stringToDecode.replace("%SYS_ENVGP%", execution.getEnvironmentDataObj().getGp1());
@@ -256,18 +268,22 @@ public class VariableService implements IVariableService {
             stringToDecode = stringToDecode.replace("%system.BROWSER%", execution.getBrowser());
             stringToDecode = stringToDecode.replace("%system.ROBOT%", execution.getRobot());
             stringToDecode = stringToDecode.replace("%system.ROBOTDECLI%", execution.getRobotDecli());
+            stringToDecode = stringToDecode.replace("%system.ROBOTSESSIONID%", execution.getRobotSessionID());
+            stringToDecode = stringToDecode.replace("%system.ROBOTPROVIDERSESSIONID%", execution.getRobotProviderSessionID());
             if (execution.getRobotExecutorObj() != null) {
                 stringToDecode = stringToDecode.replace("%system.ROBOTHOST%", execution.getRobotExecutorObj().getHost());
             }
 
             stringToDecode = stringToDecode.replace("%system.SCREENSIZE%", execution.getScreenSize());
-            stringToDecode = stringToDecode.replace("%system.APP_DOMAIN%", execution.getCountryEnvironmentParameters().getDomain().split(",")[0].trim());
-            stringToDecode = stringToDecode.replace("%system.APP_HOST%", execution.getCountryEnvironmentParameters().getIp());
-            stringToDecode = stringToDecode.replace("%system.APP_CONTEXTROOT%", execution.getCountryEnvironmentParameters().getUrl());
-            stringToDecode = stringToDecode.replace("%system.APP_VAR1%", execution.getCountryEnvironmentParameters().getVar1());
-            stringToDecode = stringToDecode.replace("%system.APP_VAR2%", execution.getCountryEnvironmentParameters().getVar2());
-            stringToDecode = stringToDecode.replace("%system.APP_VAR3%", execution.getCountryEnvironmentParameters().getVar3());
-            stringToDecode = stringToDecode.replace("%system.APP_VAR4%", execution.getCountryEnvironmentParameters().getVar4());
+            stringToDecode = stringToDecode.replace("%system.APP_DOMAIN%", envappli.getDomain().split(",")[0].trim());
+            stringToDecode = stringToDecode.replace("%system.APP_HOST%", envappli.getIp());
+            stringToDecode = stringToDecode.replace("%system.APP_CONTEXTROOT%", envappli.getUrl());
+            stringToDecode = stringToDecode.replace("%system.APP_VAR1%", envappli.getVar1());
+            stringToDecode = stringToDecode.replace("%system.APP_VAR2%", envappli.getVar2());
+            stringToDecode = stringToDecode.replace("%system.APP_VAR3%", envappli.getVar3());
+            stringToDecode = stringToDecode.replace("%system.APP_VAR4%", envappli.getVar4());
+            stringToDecode = stringToDecode.replace("%system.APP_SECRET1%", envappli.getSecret1());
+            stringToDecode = stringToDecode.replace("%system.APP_SECRET2%", envappli.getSecret2());
             stringToDecode = stringToDecode.replace("%system.EXEURL%", execution.getUrl());
             stringToDecode = stringToDecode.replace("%system.ENV%", execution.getEnvironmentData());
             stringToDecode = stringToDecode.replace("%system.ENVGP%", execution.getEnvironmentDataObj().getGp1());
@@ -379,49 +395,97 @@ public class VariableService implements IVariableService {
             /**
              * Trying to replace date variables .
              */
-            stringToDecode = stringToDecode.replace("%SYS_TODAY-yyyy%", DateUtil.getTodayFormat("yyyy"));
-            stringToDecode = stringToDecode.replace("%SYS_TODAY-MM%", DateUtil.getTodayFormat("MM"));
-            stringToDecode = stringToDecode.replace("%SYS_TODAY-dd%", DateUtil.getTodayFormat("dd"));
-            stringToDecode = stringToDecode.replace("%SYS_TODAY-doy%", DateUtil.getTodayFormat("D"));
-            stringToDecode = stringToDecode.replace("%SYS_TODAY-HH%", DateUtil.getTodayFormat("HH"));
-            stringToDecode = stringToDecode.replace("%SYS_TODAY-mm%", DateUtil.getTodayFormat("mm"));
-            stringToDecode = stringToDecode.replace("%SYS_TODAY-ss%", DateUtil.getTodayFormat("ss"));
-            stringToDecode = stringToDecode.replace("%SYS_YESTERDAY-yyyy%", DateUtil.getYesterdayFormat("yyyy"));
-            stringToDecode = stringToDecode.replace("%SYS_YESTERDAY-MM%", DateUtil.getYesterdayFormat("MM"));
-            stringToDecode = stringToDecode.replace("%SYS_YESTERDAY-dd%", DateUtil.getYesterdayFormat("dd"));
-            stringToDecode = stringToDecode.replace("%SYS_YESTERDAY-doy%", DateUtil.getYesterdayFormat("D"));
-            stringToDecode = stringToDecode.replace("%SYS_YESTERDAY-HH%", DateUtil.getYesterdayFormat("HH"));
-            stringToDecode = stringToDecode.replace("%SYS_YESTERDAY-mm%", DateUtil.getYesterdayFormat("mm"));
-            stringToDecode = stringToDecode.replace("%SYS_YESTERDAY-ss%", DateUtil.getYesterdayFormat("ss"));
-            stringToDecode = stringToDecode.replace("%SYS_TOMORROW-yyyy%", DateUtil.getTomorrowFormat("yyyy"));
-            stringToDecode = stringToDecode.replace("%SYS_TOMORROW-MM%", DateUtil.getTomorrowFormat("MM"));
-            stringToDecode = stringToDecode.replace("%SYS_TOMORROW-dd%", DateUtil.getTomorrowFormat("dd"));
-            stringToDecode = stringToDecode.replace("%SYS_TOMORROW-doy%", DateUtil.getTomorrowFormat("D"));
-            //New syntax
-            stringToDecode = stringToDecode.replace("%system.TODAY-yyyy%", DateUtil.getTodayFormat("yyyy"));
-            stringToDecode = stringToDecode.replace("%system.TODAY-MM%", DateUtil.getTodayFormat("MM"));
-            stringToDecode = stringToDecode.replace("%system.TODAY-dd%", DateUtil.getTodayFormat("dd"));
-            stringToDecode = stringToDecode.replace("%system.TODAY-doy%", DateUtil.getTodayFormat("D"));
-            stringToDecode = stringToDecode.replace("%system.TODAY-HH%", DateUtil.getTodayFormat("HH"));
-            stringToDecode = stringToDecode.replace("%system.TODAY-mm%", DateUtil.getTodayFormat("mm"));
-            stringToDecode = stringToDecode.replace("%system.TODAY-ss%", DateUtil.getTodayFormat("ss"));
-            stringToDecode = stringToDecode.replace("%system.YESTERDAY-yyyy%", DateUtil.getYesterdayFormat("yyyy"));
-            stringToDecode = stringToDecode.replace("%system.YESTERDAY-MM%", DateUtil.getYesterdayFormat("MM"));
-            stringToDecode = stringToDecode.replace("%system.YESTERDAY-dd%", DateUtil.getYesterdayFormat("dd"));
-            stringToDecode = stringToDecode.replace("%system.YESTERDAY-doy%", DateUtil.getYesterdayFormat("D"));
-            stringToDecode = stringToDecode.replace("%system.YESTERDAY-HH%", DateUtil.getYesterdayFormat("HH"));
-            stringToDecode = stringToDecode.replace("%system.YESTERDAY-mm%", DateUtil.getYesterdayFormat("mm"));
-            stringToDecode = stringToDecode.replace("%system.YESTERDAY-ss%", DateUtil.getYesterdayFormat("ss"));
-            stringToDecode = stringToDecode.replace("%system.TOMORROW-yyyy%", DateUtil.getTomorrowFormat("yyyy"));
-            stringToDecode = stringToDecode.replace("%system.TOMORROW-MM%", DateUtil.getTomorrowFormat("MM"));
-            stringToDecode = stringToDecode.replace("%system.TOMORROW-dd%", DateUtil.getTomorrowFormat("dd"));
-            stringToDecode = stringToDecode.replace("%system.TOMORROW-doy%", DateUtil.getTomorrowFormat("D"));
+            stringToDecode = decodeStringWithDateVariable(stringToDecode, execution.getCountryObj().getGp2());
 
             return stringToDecode;
 
         } catch (Exception e) {
             LOG.error("Error when decoding system variable on exe : " + execution.getId(), e);
+            LOG.error(e, e);
         }
+        return stringToDecode;
+    }
+
+    public String decodeStringWithDateVariable(String stringToDecode, String locale) {
+
+        Matcher variableMatcher = SYSTEM_VARIABLE_DATE_PATTERN.matcher(stringToDecode);
+        Matcher subVariableMatcher = null;
+
+        if (variableMatcher.find()) {
+            SimpleDateFormat formater = null; // Define the MySQL Format.
+
+            do {
+
+                Date today = new Date(); // Getting now.
+                Calendar cal = Calendar.getInstance();
+                cal.setTime(today);
+
+                switch (variableMatcher.group(1)) {
+                    case "TODAY":
+                        break;
+                    case "TOMORROW":
+                        cal.add(Calendar.HOUR, +24);
+                        break;
+                    case "YESTERDAY":
+                        cal.add(Calendar.HOUR, -24);
+                        break;
+                    default:
+                        try {
+
+                        subVariableMatcher = SYSTEM_SUBVARIABLE_DATE_PATTERN.matcher(variableMatcher.group(1));
+                        if (subVariableMatcher.matches()) {
+                            LOG.debug("Time Unit " + subVariableMatcher.group(1) + " Offset " + subVariableMatcher.group(2) + subVariableMatcher.group(3));
+                            switch (subVariableMatcher.group(1)) {
+                                case "YEAR":
+                                    cal.add(Calendar.YEAR, Integer.parseInt(subVariableMatcher.group(2) + subVariableMatcher.group(3)));
+                                    break;
+                                case "MONTH":
+                                    cal.add(Calendar.MONTH, Integer.parseInt(subVariableMatcher.group(2) + subVariableMatcher.group(3)));
+                                    break;
+                                case "WEEK":
+                                    cal.add(Calendar.WEEK_OF_YEAR, Integer.parseInt(subVariableMatcher.group(2) + subVariableMatcher.group(3)));
+                                    break;
+                                case "DAY":
+                                    cal.add(Calendar.DAY_OF_YEAR, Integer.parseInt(subVariableMatcher.group(2) + subVariableMatcher.group(3)));
+                                    break;
+                                case "HOUR":
+                                    cal.add(Calendar.HOUR, Integer.parseInt(subVariableMatcher.group(2) + subVariableMatcher.group(3)));
+                                    break;
+                                case "MINUTE":
+                                    cal.add(Calendar.MINUTE, Integer.parseInt(subVariableMatcher.group(2) + subVariableMatcher.group(3)));
+                                    break;
+                                default:
+                                    return stringToDecode.replace(variableMatcher.group(0), "[!!System Date decode error - Unknown Time Unit in '" + subVariableMatcher.group(1) + "' adding '" + subVariableMatcher.group(2) + subVariableMatcher.group(3) + "'!!]");
+                            }
+                        }
+
+                    } catch (Exception e) {
+                        LOG.warn("Warning when trying to decode a date system variable.", e);
+                        return stringToDecode.replace(variableMatcher.group(0), "[!!System Date decode error - " + e.getMessage() + " in '" + subVariableMatcher.group(1) + "' adding '" + subVariableMatcher.group(2) + subVariableMatcher.group(3) + "'!!]");
+                    }
+                }
+
+                String errorMess = "";
+                try {
+                    if (StringUtil.isNotEmptyOrNull(locale)) {
+                        errorMess = " in '" + variableMatcher.group(2) + "' with locale " + locale.split("-")[0];
+                        LOG.debug("Decode Date Format : " + variableMatcher.group(2) + " with locale " + locale.split("-")[0]);
+                        formater = new SimpleDateFormat(variableMatcher.group(2), new Locale(locale.split("-")[0]));
+                    } else {
+                        errorMess = " in '" + variableMatcher.group(2) + "'";
+                        LOG.debug("Decode Date Format : " + variableMatcher.group(2));
+                        formater = new SimpleDateFormat(variableMatcher.group(2));
+                    }
+                    stringToDecode = stringToDecode.replace(variableMatcher.group(0), formater.format(cal.getTime()));
+                } catch (Exception e) {
+                    stringToDecode = stringToDecode.replace(variableMatcher.group(0), "[!!System Date decode error - " + e.getMessage() + errorMess + "!!]");
+                    LOG.warn("Warning when trying to decode a date system variable.", e);
+                }
+
+            } while (variableMatcher.find());
+
+        }
+
         return stringToDecode;
     }
 

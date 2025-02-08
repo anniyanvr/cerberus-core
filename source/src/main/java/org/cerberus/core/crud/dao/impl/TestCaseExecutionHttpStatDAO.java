@@ -1,5 +1,5 @@
 /**
- * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * Cerberus Copyright (C) 2013 - 2025 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -289,7 +289,7 @@ public class TestCaseExecutionHttpStatDAO implements ITestCaseExecutionHttpStatD
         for (TestCase testcase : testcases) {
             testcaseSQL.append(" (test = ? and testcase = ?) or ");
         }
-        if (!StringUtil.isEmpty(testcaseSQL.toString())) {
+        if (!StringUtil.isEmptyOrNull(testcaseSQL.toString())) {
             searchSQL.append("and (").append(testcaseSQL).append(" (0=1) ").append(")");
         }
         // controlStatus
@@ -469,7 +469,7 @@ public class TestCaseExecutionHttpStatDAO implements ITestCaseExecutionHttpStatD
         for (TestCase testcase : testcases) {
             testcaseSQL.append(" (test = ? and testcase = ?) or ");
         }
-        if (!StringUtil.isEmpty(testcaseSQL.toString())) {
+        if (!StringUtil.isEmptyOrNull(testcaseSQL.toString())) {
             searchSQL.append("and (").append(testcaseSQL).append(" (0=1) ").append(")");
         }
         // controlStatus

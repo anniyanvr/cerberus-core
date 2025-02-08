@@ -1,5 +1,5 @@
 /*
- * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * Cerberus Copyright (C) 2013 - 2025 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -57,12 +57,10 @@ function initPage() {
         searchArray.push(searchObject);
     }
 
-    $.when(loadTable()).then(function () {
-        applyFiltersOnMultipleColumns("testCaseExecutionTable", searchArray, false);
-    });
+    loadTable(searchArray);
 }
 
-function loadTable() {
+function loadTable(searchArray) {
     //clear the old report content before reloading it
     $("#testCaseExecution").empty();
     $("#testCaseExecution").html('<table id="testCaseExecutionTable" class="table table-bordered table-hover display" name="testCaseExecutionTable">\n\
@@ -71,15 +69,13 @@ function loadTable() {
     var contentUrl = "ReadTestCaseExecution";
 
     //configure and create the dataTable
-    var lengthMenu = [10, 25, 50, 100, 500, 1000];
-    var configurations = new TableConfigurationsServerSide("testCaseExecutionTable", contentUrl, "contentTable", aoColumnsFunc(), [3, 'desc'], lengthMenu);
-    configurations.aaSorting = [2, 'desc'];
+    var lengthMenu = [10, 15, 20, 30, 50, 100, 500, 1000];
+    var configurations = new TableConfigurationsServerSide("testCaseExecutionTable", contentUrl, "contentTable", aoColumnsFunc(), [2, 'desc'], lengthMenu);
+    var table = createDataTableWithPermissions(configurations, undefined, "#testCaseExecution", searchArray, true, undefined, undefined);
 
-    var filtrableColumns = new Array("test", "testcase", "application", "country", "environment");
-
-    $.when(createDataTableWithPermissions(configurations, undefined, "#testCaseExecution", filtrableColumns, undefined ,undefined, undefined, false)).then(function () {
-        return true;
-    });
+    if (searchArray.length > 0) {
+        applyFiltersOnMultipleColumns("testCaseExecutionTable", searchArray, false);
+    }
 
 }
 
@@ -129,11 +125,11 @@ function aoColumnsFunc() {
                                     <span class="glyphicon glyphicon-play"></span>\n\
                                     </a>';
                 var lastExec = '<a id="lastExec" class="btn btn-primary btn-xs marginRight5"\n\
-                                    data-toggle="tooltip" title="' + doc.getDocLabel("page_executiondetail", "lastexecution") + '" href="./TestCaseExecutionList.jsp?test=' + encodeURIComponent(obj["test"]) + '&testcase=' + encodeURIComponent(obj["testcase"]) + '&country=' + encodeURIComponent(obj["country"]) + '&environment=' + encodeURIComponent(obj["environment"]) + '">\n\
-                                    <span class="glyphicon glyphicon-backward"></span>\n\
+                                    data-toggle="tooltip" title="' + doc.getDocLabel("page_executiondetail", "lastexecution") + '" href="./TestCaseExecutionList.jsp?Test=' + encodeURIComponent(obj["test"]) + '&TestCase=' + encodeURIComponent(obj["testcase"]) + '&country=' + encodeURIComponent(obj["country"]) + '&environment=' + encodeURIComponent(obj["environment"]) + '">\n\
+                                    <span class="glyphicon glyphicon-filter"></span>\n\
                                     </a>';
                 var tag = '<a id="tagExec' + (obj["id"]) + '" class="btn btn-primary btn-xs marginRight5"\n\
-                                    data-toggle="tooltip" title="' + doc.getDocLabel("page_executiondetail", "see_execution_tag") + '" href="./ReportingExecutionByTag.jsp?Tag=' + obj["tag"] + '">\n\
+                                    data-toggle="tooltip" title="' + doc.getDocLabel("page_executiondetail", "see_execution_tag") + '" href="./ReportingExecutionByTag.jsp?Tag=' + encodeURIComponent(obj["tag"]) + '">\n\
                                     <span class="glyphicon glyphicon-tag"></span>\n\
                                     </a>';
 
@@ -160,7 +156,7 @@ function aoColumnsFunc() {
                     var executionLink = "./TestCaseExecution.jsp?executionId=" + obj.id;
                     var glyphClass = getRowClass(obj.controlStatus);
                     var tooltip = generateTooltip(obj);
-                    var cell = '<a href="' + executionLink + '"><div class="progress-bar status' + obj.controlStatus + '" \n\
+                    var cell = '<a href="' + executionLink + '" target="_blank"><div class="progress-bar status' + obj.controlStatus + '" \n\
                                 role="progressbar" aria-valuenow="100" aria-valuemin="0" aria-valuemax="100" style="width: 100%;cursor: pointer; height: 20px;" \n\
                                 data-toggle="tooltip" data-html="true" title="' + tooltip + '"\n\
                                 <span class="' + glyphClass.glyph + ' marginRight5" style="margin-top:0;"></span>\n\
@@ -180,6 +176,17 @@ function aoColumnsFunc() {
             "sDefaultContent": ""
         },
         {
+            "data": "start",
+            "sName": "exe.start",
+            "like": true,
+            "title": doc.getDocOnline("page_executiondetail", "start"),
+            "sWidth": "110px",
+            "sDefaultContent": "",
+            "mRender": function (data, type, obj) {
+                return new Date(obj.start).toLocaleString();
+            }
+        },
+        {
             "data": "test",
             "sName": "exe.test",
             "title": doc.getDocOnline("test", "Test"),
@@ -195,9 +202,9 @@ function aoColumnsFunc() {
             "sDefaultContent": ""
         },
         {
-            "data": "version",
+            "data": "testCaseVersion",
             "visible": false,
-            "sName": "exe.version",
+            "sName": "exe.TestCaseVersion",
             "title": doc.getDocOnline("testcase", "version"),
             "sWidth": "50px",
             "sDefaultContent": ""
@@ -266,6 +273,13 @@ function aoColumnsFunc() {
             "sDefaultContent": ""
         },
         {
+            "data": "robot",
+            "sName": "exe.robot",
+            "title": doc.getDocOnline("page_executiondetail", "robot"),
+            "sWidth": "70px",
+            "sDefaultContent": ""
+        },
+        {
             "data": "browser",
             "visible": false,
             "sName": "exe.browser",
@@ -290,19 +304,6 @@ function aoColumnsFunc() {
             "sDefaultContent": ""
         },
         {
-            "data": "start",
-            "visible": false,
-            "sName": "exe.start",
-            "like": true,
-            "title": doc.getDocOnline("page_executiondetail", "start"),
-            "sWidth": "70px",
-            "sDefaultContent": "",
-            "mRender": function (data, type, obj) {
-                return new Date(obj.start);
-//                    return new Date(obj);
-            }
-        },
-        {
             "data": "end",
             "visible": false,
             "sName": "exe.end",
@@ -311,8 +312,7 @@ function aoColumnsFunc() {
             "sWidth": "70px",
             "sDefaultContent": "",
             "mRender": function (data, type, obj) {
-                return new Date(obj.end);
-//                    return new Date(obj);
+                return new Date(obj.end).toLocaleString();
             }
         },
         {
@@ -452,7 +452,7 @@ function generateTooltip(data) {
     htmlRes += '<div><span class=\'bold\'>Country : </span>' + data.country + '</div>'
     htmlRes += '<div><span class=\'bold\'>Environment : </span>' + data.environment + '</div>'
     if (data.robotDecli !== "") {
-        htmlRes += '<div><span class=\'bold\'>Browser : </span>' + data.robotDecli + ' (' + data.browser + ')</div>'
+        htmlRes += '<div><span class=\'bold\'>Robot : </span>' + data.robotDecli + ' (' + data.browser + ')</div>'
     }
     htmlRes += '<div><span class=\'bold\'>Start : </span>' + getDateMedium(data.start) + '</div>';
     if (getDateShort(data.end) !== "") {

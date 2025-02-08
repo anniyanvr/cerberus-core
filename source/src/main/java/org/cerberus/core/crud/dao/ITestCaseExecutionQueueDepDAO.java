@@ -1,5 +1,5 @@
 /**
- * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * Cerberus Copyright (C) 2013 - 2025 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -25,6 +25,7 @@ import java.util.Map;
 import org.cerberus.core.crud.entity.TestCaseExecution;
 import org.cerberus.core.crud.entity.TestCaseExecutionQueueDep;
 import org.cerberus.core.exception.CerberusException;
+import org.cerberus.core.util.answer.Answer;
 import org.cerberus.core.util.answer.AnswerItem;
 import org.cerberus.core.util.answer.AnswerList;
 
@@ -65,6 +66,12 @@ public interface ITestCaseExecutionQueueDepDAO {
      * @return
      */
     AnswerItem<Integer> readNbReleasedWithNOKByExeQueueId(long exeQueueId);
+
+    /**
+     *
+     * @return
+     */
+    AnswerList<TestCaseExecutionQueueDep> getWaitingDepReadytoRelease();
 
     /**
      *
@@ -113,11 +120,30 @@ public interface ITestCaseExecutionQueueDepDAO {
 
     /**
      *
+     * @param object
+     * @return
+     */
+    AnswerItem<Long> create(TestCaseExecutionQueueDep object);
+
+    /**
+     *
      * @param queueId
      * @param fromQueueId
      * @return
      */
     AnswerItem<Integer> insertFromExeQueueIdDep(long queueId, long fromQueueId);
+
+    /**
+     *
+     * @param env
+     * @param Country
+     * @param tag
+     * @param test
+     * @param testCase
+     * @param exeID
+     * @return
+     */
+    public AnswerItem<Integer> insertNewTimingDep(String env, String Country, String tag, String test, String testCase, long exeID);
 
     /**
      *
@@ -132,7 +158,24 @@ public interface ITestCaseExecutionQueueDepDAO {
      * @param queueId
      * @return
      */
-    AnswerItem<Integer> updateStatusToRelease(String env, String Country, String tag, String type, String test, String testCase, String comment, long exeId, long queueId);
+    AnswerItem<Integer> updateStatusToRelease(String env, String Country, String tag, String test, String testCase, String comment, long exeId, long queueId);
+
+    /**
+     *
+     * @param id
+     * @param comment
+     * @param exeId
+     * @param queueId
+     * @return
+     */
+    AnswerItem<Integer> updateStatusToRelease(long id, String comment, long exeId, long queueId);
+
+    /**
+     *
+     * @param id
+     * @return
+     */
+    AnswerItem<Integer> updateStatusToRelease(long id);
 
     /**
      *

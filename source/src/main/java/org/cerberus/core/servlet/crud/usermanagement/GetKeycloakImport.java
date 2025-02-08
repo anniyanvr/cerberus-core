@@ -1,5 +1,5 @@
 /**
- * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * Cerberus Copyright (C) 2013 - 2025 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -150,7 +150,7 @@ public class GetKeycloakImport extends HttpServlet {
                 acc.put("account", account);
 
                 for (User myUser : userService.findallUser()) {
-                    if (!StringUtil.isEmpty(myUser.getEmail())) {
+                    if (!StringUtil.isEmptyOrNull(myUser.getEmail())) {
 
                     JSONArray roles = new JSONArray();
                     roles.put("uma_authorization");

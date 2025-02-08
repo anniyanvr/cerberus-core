@@ -1,5 +1,5 @@
 /**
- * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * Cerberus Copyright (C) 2013 - 2025 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -19,19 +19,18 @@
  */
 package org.cerberus.core.service.appium;
 
+import org.cerberus.core.crud.entity.TestCaseExecution;
 import org.cerberus.core.engine.entity.Identifier;
 import org.cerberus.core.engine.entity.MessageEvent;
 import org.cerberus.core.engine.entity.Session;
 import org.cerberus.core.service.appium.SwipeAction.Direction;
 
 /**
- *
  * @author bcivel
  */
 public interface IAppiumService {
 
     /**
-     *
      * @param session
      * @param identifier
      * @return
@@ -39,7 +38,13 @@ public interface IAppiumService {
     MessageEvent switchToContext(Session session, Identifier identifier);
 
     /**
-     *
+     * @param session Appium session
+     * @param context Name of the context to switch to
+     * @return Message to inform of the action result
+     */
+    MessageEvent switchToContext(Session session, String context);
+
+    /**
      * @param session
      * @param identifier
      * @return
@@ -47,7 +52,6 @@ public interface IAppiumService {
     MessageEvent wait(Session session, Identifier identifier);
 
     /**
-     *
      * @param session
      * @param identifier
      * @param valueToType
@@ -57,15 +61,13 @@ public interface IAppiumService {
     MessageEvent type(Session session, Identifier identifier, String valueToType, String propertyName);
 
     /**
-     *
      * @param session
      * @param identifier
      * @return
      */
-    MessageEvent click(Session session, Identifier identifier);
+    MessageEvent click(Session session, Identifier identifier, Integer hOffset, Integer vOffset);
 
     /**
-     *
      * @param session
      * @param keyName
      * @return
@@ -73,14 +75,12 @@ public interface IAppiumService {
     MessageEvent keyPress(Session session, String keyName);
 
     /**
-     *
      * @param session
      * @return
      */
     MessageEvent hideKeyboard(Session session);
 
     /**
-     *
      * @param session
      * @param swipeAction
      * @return
@@ -88,7 +88,6 @@ public interface IAppiumService {
     MessageEvent swipe(Session session, SwipeAction swipeAction);
 
     /**
-     *
      * @param session
      * @param action
      * @return
@@ -97,7 +96,6 @@ public interface IAppiumService {
     Direction getDirectionForSwipe(Session session, SwipeAction action) throws IllegalArgumentException;
 
     /**
-     *
      * @param session
      * @param cmd
      * @param args
@@ -111,11 +109,11 @@ public interface IAppiumService {
      *
      * @param session
      * @param element if not null or not empty, switch to this element
-     * @param text if not null or not empty, switch to this text
+     * @param numberScrollDownMax    if not null or not empty, switch to this text
      * @return
      * @throws IllegalArgumentException
      */
-    MessageEvent scrollTo(Session session, Identifier element, String text) throws IllegalArgumentException;
+    MessageEvent scrollTo(TestCaseExecution testCaseExecution, Identifier element, String numberScrollDownMax, Integer hOffset, Integer vOffset) throws IllegalArgumentException;
 
     /**
      * install an application on mobile devices
@@ -156,7 +154,6 @@ public interface IAppiumService {
     MessageEvent closeApp(Session session);
 
     /**
-     *
      * @param session
      * @param identifier
      * @param pressDuration
@@ -165,10 +162,27 @@ public interface IAppiumService {
     MessageEvent longPress(Session session, Identifier identifier, Integer pressDuration);
 
     /**
-     *
      * @param session
      * @param identifier
      * @return
      */
     MessageEvent clearField(Session session, Identifier identifier);
+
+    /**
+     * @param session
+     * @return
+     */
+    MessageEvent lockDevice(Session session);
+
+    /**
+     * @param session
+     * @return
+     */
+    MessageEvent unlockDevice(Session session);
+
+    /**
+     * @param session
+     * @return
+     */
+    MessageEvent rotateDevice(Session session);
 }

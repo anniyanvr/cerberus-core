@@ -1,5 +1,5 @@
 /*
- * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * Cerberus Copyright (C) 2013 - 2025 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -22,6 +22,9 @@ var statusOrder = ["OK", "KO", "FA", "NA", "NE", "WE", "PE", "QU", "QE", "CA"];
 var configTcBar = {};
 var nbTagLoaded = 0;
 var nbTagLoadedTarget = 0;
+var futureCampaignRunTime = [];
+var futureCampaignRunTimeDurationToTrigger = [];
+var idTimeout;
 
 $.when($.getScript("js/global/global.js")).then(function () {
     $(document).ready(function () {
@@ -29,9 +32,12 @@ $.when($.getScript("js/global/global.js")).then(function () {
 
         bindToggleCollapse();
 
-        initHPGraph();
-        loadTagHistoBar();
-        loadTcHistoBar();
+        initHPGraph_TestCaseAndExecution();
+
+        loadExecutionsHistoBar();
+        loadTestcaseHistoGraph();
+
+        loadExeCurrentlyRunning();
 
         $('body').tooltip({
             selector: '[data-toggle="tooltip"]'
@@ -77,7 +83,7 @@ $.when($.getScript("js/global/global.js")).then(function () {
 
             $("#tagSettingsModal").modal('hide');
             $('#tagExecStatus').empty();
-            loadTagExec();
+            loadLastTagResultList();
         });
 
         $("#tagSettings").on('click', function (event) {
@@ -124,23 +130,57 @@ $.when($.getScript("js/global/global.js")).then(function () {
 
         }).fail(handleErrorAjaxAfterTimeout);
 
-        loadTagExec();
+        loadLastTagResultList();
 
         loadBuildRevTable();
 
         // Display Changelog;
-        $("#documentationFrame").attr("src", "./documentation/D2/changelog_4.17_en.html");
+        $("#documentationFrame").attr("src", "./documentation/D2/changelog_4.20_en.html");
         var windowsHeight = $(window).height() + 'px';
         $('#documentationFrame').css('height', '400px');
-        $("#changelogLabel").html("Changelog 4.17");
+        $("#changelogLabel").html("Changelog 4.20");
 
         //close all sidebar menu
         closeEveryNavbarMenu();
     });
 
-    updateStats();
+    updateHeaderStats();
 
 });
+
+
+function loadQueueStatusWebSocket(sockets) {
+
+    var parser = document.createElement('a');
+    parser.href = window.location.href;
+
+    var protocol = "ws:";
+    if (parser.protocol === "https:") {
+        protocol = "wss:";
+    }
+    var path = parser.pathname.split("Homepage")[0];
+    var new_uri = protocol + parser.host + path + "queuestatus";
+    console.info("Open Socket to : " + new_uri);
+    var socket = new WebSocket(new_uri);
+
+    socket.onopen = function (e) {
+    } //on "écoute" pour savoir si la connexion vers le serveur websocket s'est bien faite
+    socket.onmessage = function (e) {
+        var data = JSON.parse(e.data);
+//        console.info("received data from socket");
+//        console.info(data);
+        updatePageQueueStatus(data);
+//        updatePage(data, steps);
+    } //on récupère les messages provenant du serveur websocket
+    socket.onclose = function (e) {
+    } //on est informé lors de la fermeture de la connexion vers le serveur
+    socket.onerror = function (e) {
+    } //on traite les cas d'erreur*/
+
+    // Remain in memory
+    sockets.push(socket);
+
+}
 
 function displayPageLabel() {
     var doc = new Doc();
@@ -201,8 +241,142 @@ function generateTagLink(tagName) {
     return link;
 }
 
+function updatePageQueueStatus(data) {
 
-function loadTagHistoBar() {
+//  UnComment bellow for test and debug purpose. \/ \/ \/
+//            let test = {
+//                id: 123456,
+//                application: "website",
+//                test: "Exampe",
+//                testcase: "0001A",
+//                environment: "PROD",
+//                country: "FR"
+//            }
+//            data.runningExecutionsList.push(test);
+//            data.runningExecutionsList.push(test);
+//            data.runningExecutionsList.push(test);
+//            data.runningExecutionsList.push(test);
+//            data.runningExecutionsList.push(test);
+//            data.runningExecutionsList.push(test);
+//            data.runningExecutionsList.push(test);
+//            let queueStats = {
+//                globalLimit: 10,
+//                running: data.simultaneous_execution_list.length,
+//                queueSize: 30
+//            }
+//            data.queueStats = queueStats;
+//  UnComment above for test and debug purpose. /\ /\ /\
+
+    if ((data.queueStats.running > 0) || (data.queueStats.queueSize > 0)) {
+        $("#exeRunningPanel").show();
+        $("#hp_TestExecutionNumberParent").removeAttr("class");
+        $("#hp_TestExecutionNumberParent").attr("class", "col-sm-6 col-xs-6");
+        $("#sc4").attr("class", "col-lg-4 col-md-6 col-sm-12");
+        $("#sc5").attr("class", "col-lg-2 col-md-6 col-sm-12 hidden-xs");
+
+        // Execution Queue progress bar
+        let totalQueue = data.queueStats.globalLimit + data.queueStats.queueSize
+        let perRunning = data.queueStats.running / totalQueue * 100;
+        let perIdle = (data.queueStats.globalLimit - data.queueStats.running) / totalQueue * 100;
+        let perQueue = data.queueStats.queueSize / totalQueue * 100;
+
+        $("#progress-barUsed").attr('data-original-title', data.queueStats.running + " running")
+        $("#progress-barIdle").attr('data-original-title', (data.queueStats.globalLimit - data.queueStats.running) + " available slot")
+        $("#progress-barQueue").attr('data-original-title', (data.queueStats.queueSize) + " still in queue")
+        $("#progress-barUsed").attr('aria-valuenow', perRunning)
+        $("#progress-barIdle").attr('aria-valuenow', perIdle)
+        $("#progress-barQueue").attr('aria-valuenow', perQueue)
+        $("#progress-barUsed").attr('style', "width: " + perRunning + "%;")
+        $("#progress-barIdle").attr('style', "width: " + perIdle + "%;")
+        $("#progress-barQueue").attr('style', "width: " + perQueue + "%;")
+
+        // Execution Counter
+        if (data.queueStats.queueSize > 0) {
+            $("#exeRunningPanelCnt").text(data.queueStats.running + " / " + data.queueStats.queueSize);
+        } else {
+            $("#exeRunningPanelCnt").text(data.queueStats.running);
+        }
+
+        // Execution List
+        $("#exeRunningList").empty();
+        let contentCel = "";
+        let contentCelNotDisplayed = "";
+        // Filter list with only selected systems.
+        let newList = [];
+        for (var i = 0; i < data.runningExecutionsList.length; i++) {
+            let exe = data.runningExecutionsList[i];
+            if (getUser().defaultSystems.includes(exe.system)) {
+                newList.push(exe);
+            }
+        }
+//        console.info(data.runningExecutionsList);
+        for (var i = 0; i < newList.length; i++) {
+            let exe = newList[i];
+            contentCel = "<div class='Exe-tooltip'><strong>Exe : </strong>" + exe.id + "</div>"
+            contentCel += "<div class='Exe-tooltip'><strong>Application : </strong>" + exe.application + "</div>"
+            contentCel += "<div class='Exe-tooltip'><strong>Testcase : </strong>" + exe.test + " - " + exe.testcase + "</div>"
+            contentCel += "<div class='Exe-tooltip'><strong>Environment / Country : </strong>" + exe.environment + " " + exe.country + "</div>"
+            contentCel += "<div class='Exe-tooltip'><strong>started </strong>" + getHumanReadableDuration((new Date().getTime() - new Date(exe.start).getTime()) / 1000) + " ago</div>"
+            if (i > 3) {
+                contentCelNotDisplayed += contentCel + "<div>-------------</div>";
+            } else {
+                $("#exeRunningList").append($('<a><span class=\'glyphicon glyphicon-expand\'></span></a>')
+                        .attr("href", "TestCaseExecution.jsp?executionId=" + exe.id)
+                        .attr('style', 'margin-left: 10px; font-size: 10px; background-color: lightgray; color :black')
+                        .attr('data-original-title', contentCel)
+                        .attr('data-toggle', 'tooltip')
+                        .attr('data-placement', 'bottom')
+                        .attr('data-html', 'true')
+                        );
+            }
+
+        }
+//                console.info(contentCelNotDisplayed);
+        if (contentCelNotDisplayed !== "") {
+            $("#exeRunningList").append($('<a><span class=\'glyphicon glyphicon-option-horizontal\'></span></a>')
+                    .attr("href", "TestCaseExecutionList.jsp")
+                    .attr('style', 'margin-left: 10px; font-size: 10px; background-color: lightgray; color :black')
+                    .attr('data-original-title', contentCelNotDisplayed)
+                    .attr('data-toggle', 'tooltip')
+                    .attr('data-placement', 'bottom')
+                    .attr('data-html', 'true')
+                    );
+        }
+
+    } else {
+        $("#exeRunningPanel").hide();
+        $("#hp_TestExecutionNumberParent").removeAttr("class");
+        $("#hp_TestExecutionNumberParent").attr("class", "col-sm-12 col-xs-12");
+        $("#sc4").attr("class", "col-lg-3 col-md-6 col-sm-12");
+        $("#sc5").attr("class", "col-lg-3 col-md-6 col-sm-12 hidden-xs");
+
+//        
+    }
+}
+
+
+function loadExeCurrentlyRunning() {
+
+    $.ajax({
+//        url: "ReadCerberusDetailInformation?" + getUser().defaultSystemsQuery,
+        url: "api/executions/running",
+        method: "GET",
+        async: true,
+        dataType: 'json',
+        success: function (data) {
+
+            updatePageQueueStatus(data);
+
+            sockets = [];
+            loadQueueStatusWebSocket(sockets);
+
+        }
+    });
+}
+
+
+
+function loadExecutionsHistoBar() {
     showLoader($("#panelHistory"));
 
     fromD = new Date();
@@ -273,7 +447,7 @@ function buildExeBar(data) {
     window.myLineExeHistoBar.update();
 }
 
-function loadTcHistoBar() {
+function loadTestcaseHistoGraph() {
     showLoader($("#panelTcHistory"));
 
     fromD = new Date();
@@ -343,7 +517,7 @@ function buildTcBar(data) {
 }
 
 
-function initHPGraph() {
+function initHPGraph_TestCaseAndExecution() {
 
     var exebaroption = getHPOptionsExeBar("Executions", "nb");
     var tcgraphoption = getHPOptionsTcGraph("Testcases", "nb");
@@ -480,14 +654,21 @@ function generateTooltip(data, tag) {
     return htmlRes;
 }
 
-function generateTagReport(data, tag, rowId) {
+function generateTagReport(data, tag, rowId, tagObj) {
     var divId = "#tagExecStatusRow" + rowId;
-    var reportArea = $(divId);
+    var reportArea = $(divId).attr("data-tag", tag);
     var buildBar;
     var tooltip = generateTooltip(data, tag);
     var len = statusOrder.length;
 
-    buildBar = '<div><table style="width: 100%"><tr><td><div>' + generateTagLink(tag) + '</div></td><td style="text-align:right;"><div class="hidden-xs" style="display: inline;align-text:right;">Total executions : ' + data.total + '</td></tr></table></div></div>\n\
+    let ciRes = '';
+    if (!isEmpty(tagObj.ciResult)) {
+        ciRes = '<div class="' + tagObj.ciResult + '" style="display: inline;align-text:right;">';
+        ciRes += tagObj.ciResult;
+        ciRes += '</div>';
+    }
+
+    buildBar = '<div><table style="width: 100%"><tr><td><div>' + generateTagLink(tag) + '</div></td><td style="text-align:right;">' + ciRes + '<div class="hidden-xs" style="display: inline;align-text:right;"> Total executions : ' + data.total + '</div></td></tr></table></div></div>\n\
                                                         <div class="progress" style="height:8px" data-toggle="tooltip" data-html="true" title="' + tooltip + '">';
     for (var index = 0; index < len; index++) {
         var status = statusOrder[index];
@@ -505,7 +686,12 @@ function generateTagReport(data, tag, rowId) {
     reportArea.append(buildBar);
 }
 
-function loadTagExec() {
+function loadLastTagResultList() {
+
+    // Empty previous saved scheduled campaign timings and stop timer in case it was created.
+    futureCampaignRunTime = [];
+    futureCampaignRunTimeDurationToTrigger = [];
+    clearTimeout(idTimeout);
 
     showLoader($("#LastTagExecPanel"));
 
@@ -516,11 +702,24 @@ function loadTagExec() {
     //Get the last tag to display
     var tagList = JSON.parse(localStorage.getItem("tagList"));
     var searchTag = localStorage.getItem("tagSearchString");
+    if (searchTag || (tagList && tagList.length > 0)) {
+        $("#tagSettings").addClass("btn-primary");
+    } else {
+        $("#tagSettings").removeClass("btn-primary");
+    }
 
     if (tagList === null || tagList.length === 0) {
         tagList = readLastTagExec(searchTag);
     } else {
         nbTagLoadedTarget = tagList.length;
+    }
+
+    var tagScheduled = readNextTagScheduled();
+    if (tagScheduled.length > 0) {
+        for (var index = 0; index < tagScheduled.length; index++) {
+            var idDiv = '<div id="tagScheduledStatusRow' + index + '"<div class="progress" style="">' + tagScheduled[index] + '</div></div>';
+            reportArea.append(idDiv);
+        }
     }
 
     if (tagList.length > 0) {
@@ -531,11 +730,11 @@ function loadTagExec() {
         for (var index = 0; index < tagList.length; index++) {
             let tagName = tagList[index];
             //TODO find a way to remove the use for resendTag
-            var requestToServlet = "ReadTestCaseExecutionByTag?Tag=" + tagName + "&" + "outputReport=totalStatsCharts" + "&" + "outputReport=resendTag" + "&" + "sEcho=" + index;
+            var requestToServlet = "ReadTestCaseExecutionByTag?Tag=" + encodeURIComponent(tagName) + "&" + "outputReport=totalStatsCharts" + "&" + "outputReport=resendTag" + "&" + "sEcho=" + index;
             var jqxhr = $.get(requestToServlet, null, "json");
 
             $.when(jqxhr).then(function (data) {
-                generateTagReport(data.statsChart.contentTable.total, data.tag, data.sEcho);
+                generateTagReport(data.statsChart.contentTable.total, data.tag, data.sEcho, data.tagObject);
                 nbTagLoaded++;
                 hideLoaderTag();
             });
@@ -543,7 +742,7 @@ function loadTagExec() {
     } else {
         hideLoader($("#LastTagExecPanel"));
     }
-
+    updateNextFireTime();
 }
 
 function hideLoaderTag() {
@@ -585,6 +784,57 @@ function readLastTagExec(searchString) {
     return tagList;
 }
 
+function readNextTagScheduled() {
+    let tagList = [];
+
+    var nbExe = getParameter("cerberus_homepage_nbdisplayedscheduledtag", getUser().defaultSystem, true);
+    var paramExe = nbExe.value;
+
+    if (!((paramExe >= 0) && (paramExe <= 20))) {
+        paramExe = 5;
+    }
+    nbTagLoadedTargetScheduled = paramExe;
+
+    var myUrl = "api/campaigns/scheduled";
+
+    $.ajax({
+        type: "GET",
+        url: myUrl,
+        async: false,
+        dataType: 'json',
+        success: function (data) {
+            if (data.schedulerTriggers.length < nbTagLoadedTargetScheduled) {
+                nbTagLoadedTargetScheduled = data.schedulerTriggers.length;
+            }
+            for (var s = 0; s < nbTagLoadedTargetScheduled; s++) {
+                let item = data.schedulerTriggers[s];
+                tagList.splice(0, 0, "<b>" + item.triggerName + "</b><span class='hidden-xs'> - [" + item.triggerUserCreated + "] - " + new Date(item.triggerNextFiretimeTimestamp).toLocaleString() + "</span> <b id='futurTag" + s + "'>will trigger in " + getHumanReadableDuration(Math.round(item.triggerNextFiretimeDurationToTriggerInMs / 1000)) + "</b>");
+                futureCampaignRunTime.push(new Date());
+                futureCampaignRunTimeDurationToTrigger.push(item.triggerNextFiretimeDurationToTriggerInMs);
+            }
+        }
+    });
+    return tagList;
+}
+
+function updateNextFireTime() {
+    let nbAlreadyTriggered = 0;
+    for (var s = 0; s < futureCampaignRunTime.length; s++) {
+        if ((futureCampaignRunTimeDurationToTrigger[s] - (new Date() - new Date(futureCampaignRunTime[s]))) > 0) {
+            $("#futurTag" + s).text("will trigger in " + getHumanReadableDuration(Math.round((futureCampaignRunTimeDurationToTrigger[s] - (new Date() - new Date(futureCampaignRunTime[s]))) / 1000)));
+        } else {
+            $("#futurTag" + s).text("already triggered");
+            nbAlreadyTriggered++;
+        }
+    }
+    if ((futureCampaignRunTime.length > 0) && (nbAlreadyTriggered < futureCampaignRunTime.length)) {
+        // Refresh the scheduled tag execution every second.
+        idTimeout = setTimeout(() => {
+            updateNextFireTime();
+        }, 1000);
+    }
+}
+
 function getCountryFilter() {
     return $.ajax({
         url: "FindInvariantByID",
@@ -615,11 +865,11 @@ function aoColumnsFunc() {
             }
         },
         {
-            "data": "Total", 
+            "data": "Total",
             "bSortable": true,
             "sWidth": "10px",
-            "sClass": "datatable-alignright", 
-            "sName": "Total", 
+            "sClass": "datatable-alignright",
+            "sName": "Total",
             "title": "Total"
         }
     ];
@@ -636,10 +886,11 @@ function aoColumnsFunc() {
                 "mRender": function (data, type, oObj) {
                     if ((data) === 0) {
                         return "";
-                    };
-                    return data;
                     }
-                };
+                    ;
+                    return data;
+                }
+            };
             aoColumns.push(obj);
         }
     }
@@ -696,21 +947,31 @@ function appendBuildRevRow(dtb) {
     table.append(row);
 }
 
-function updateStats() {
+function updateHeaderStats() {
 
-    var jqxhr = $.getJSON("ReadTestCase", "iDisplayLength=1");
+    $("#hp_TestcaseNumber").text("Calculating existing test cases...");
+    $("#hp_TestExecutionNumber").text("Calculating launched test cases...");
+    $("#hp_ApplicationNumber").text("Calculating configured applications...");
+
+
+    var jqxhr = $.getJSON("api/testcases/count", getUser().defaultSystemsQuery);
     $.when(jqxhr).then(function (result) {
         $("#hp_TestcaseNumber").text(result["iTotalRecords"] + " existing test cases");
     }).fail(handleErrorAjaxAfterTimeout);
 
-    var jqxhr = $.getJSON("ReadTestCaseExecution", "iDisplayLength=1");
+    var jqxhr = $.getJSON("api/executions/count", getUser().defaultSystemsQuery);
     $.when(jqxhr).then(function (result) {
-        $("#hp_TestExecutionNumber").text(result["iTotalRecords"] + " launched test cases");
+        $("#hp_TestExecutionNumber").text(formatnumberKM(result["iTotalRecords"]) + " launched test cases");
     }).fail(handleErrorAjaxAfterTimeout);
 
-    var jqxhr = $.getJSON("ReadApplication", "iDisplayLength=1");
+    var jqxhr = $.getJSON("api/applications/count", getUser().defaultSystemsQuery);
     $.when(jqxhr).then(function (result) {
         $("#hp_ApplicationNumber").text(result["iTotalRecords"] + " configured applications");
+    }).fail(handleErrorAjaxAfterTimeout);
+
+    var jqxhr = $.getJSON("api/services/count", getUser().defaultSystemsQuery);
+    $.when(jqxhr).then(function (result) {
+        $("#hp_ServiceNumber").text(result["iTotalRecords"] + " configured services");
     }).fail(handleErrorAjaxAfterTimeout);
 
 }

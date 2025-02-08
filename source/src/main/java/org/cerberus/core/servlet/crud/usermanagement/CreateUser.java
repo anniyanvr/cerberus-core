@@ -1,5 +1,5 @@
 /**
- * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * Cerberus Copyright (C) 2013 - 2025 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -50,6 +50,7 @@ import java.io.IOException;
 import java.util.LinkedList;
 import javax.servlet.annotation.WebServlet;
 import org.cerberus.core.config.Property;
+import org.cerberus.core.crud.entity.LogEvent;
 import org.cerberus.core.util.answer.AnswerUtil;
 import org.cerberus.core.service.notification.INotificationService;
 import org.cerberus.core.crud.factory.IFactoryUserRole;
@@ -94,7 +95,7 @@ public class CreateUser extends HttpServlet {
         String password = parameterService.findParameterByKey("cerberus_accountcreation_defaultpassword", system).getValue();
         String newPassword = ParameterParserUtil.parseStringParam(request.getParameter("newPassword"), "Y");
 
-        String login = ParameterParserUtil.parseStringParamAndDecodeAndSanitize(request.getParameter("login"), "", charset);
+        String login = ParameterParserUtil.parseStringParam(request.getParameter("login"), "");
         String email = ParameterParserUtil.parseStringParamAndDecode(request.getParameter("email"), "", charset);
         String defaultSystem = ParameterParserUtil.parseStringParamAndDecodeAndSanitize(request.getParameter("defaultSystem"), "", charset);
         String name = ParameterParserUtil.parseStringParamAndDecodeAndSanitize(request.getParameter("name"), "", charset);
@@ -115,7 +116,7 @@ public class CreateUser extends HttpServlet {
         /**
          * Checking all constrains before calling the services.
          */
-        if (StringUtil.isEmpty(login)) {
+        if (StringUtil.isEmptyOrNull(login)) {
             msg = new MessageEvent(MessageEventEnum.DATA_OPERATION_ERROR_EXPECTED);
             msg.setDescription(msg.getDescription().replace("%ITEM%", "User")
                     .replace("%OPERATION%", "Create")
@@ -167,7 +168,7 @@ public class CreateUser extends HttpServlet {
                  * Object updated. Adding Log entry.
                  */
                 ILogEventService logEventService = appContext.getBean(LogEventService.class);
-                logEventService.createForPrivateCalls("/CreateUser", "CREATE", "Create User : ['" + login + "']", request);
+                logEventService.createForPrivateCalls("/CreateUser", "CREATE", LogEvent.STATUS_INFO, "Create User : ['" + login + "']", request);
 
                 ans = AnswerUtil.agregateAnswer(ans, userRoleService.updateRolesByUser(userData, newRoles));
                 ans = AnswerUtil.agregateAnswer(ans, userSystemService.updateSystemsByUser(userData, newSystems));

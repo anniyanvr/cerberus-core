@@ -1,5 +1,5 @@
 /**
- * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * Cerberus Copyright (C) 2013 - 2025 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -294,7 +294,7 @@ public class CountryEnvParamDAO implements ICountryEnvParamDAO {
 
         searchSQL.append(" where 1=1 ");
 
-        if (!StringUtil.isEmpty(searchTerm)) {
+        if (!StringUtil.isEmptyOrNull(searchTerm)) {
             searchSQL.append(" and (cev.`system` like '%").append(searchTerm).append("%'");
             searchSQL.append(" or cev.`country` like '%").append(searchTerm).append("%'");
             searchSQL.append(" or cev.`environment` like '%").append(searchTerm).append("%'");
@@ -312,12 +312,12 @@ public class CountryEnvParamDAO implements ICountryEnvParamDAO {
             searchSQL.append(" or cev.`maintenancestr` like '%").append(searchTerm).append("%'");
             searchSQL.append(" or cev.`maintenanceend` like '%").append(searchTerm).append("%')");
         }
-        if (!StringUtil.isEmpty(individualSearch)) {
+        if (!StringUtil.isEmptyOrNull(individualSearch)) {
             searchSQL.append(" and (`").append(individualSearch).append("`)");
         }
         query.append(searchSQL);
 
-        if (!StringUtil.isEmpty(colName)) {
+        if (!StringUtil.isEmptyOrNull(colName)) {
             query.append("order by `").append(colName).append("` ").append(dir);
         }
         if ((amount <= 0) || (amount >= MAX_ROW_SELECTED)) {
@@ -416,7 +416,7 @@ public class CountryEnvParamDAO implements ICountryEnvParamDAO {
 
         searchSQL.append(" where 1=1 ");
 
-        if (!StringUtil.isEmpty(searchTerm)) {
+        if (!StringUtil.isEmptyOrNull(searchTerm)) {
             searchSQL.append(" and (cev.`system` like ?");
             searchSQL.append(" or cev.`country` like ?");
             searchSQL.append(" or cev.`environment` like ?");
@@ -450,27 +450,27 @@ public class CountryEnvParamDAO implements ICountryEnvParamDAO {
 
         searchSQL.append(" AND ").append(UserSecurity.getSystemAllowForSQL("cev.`System`")).append(" ");
 
-        if (!StringUtil.isEmpty(active)) {
+        if (!StringUtil.isEmptyOrNull(active)) {
             searchSQL.append(" and (cev.`active` = ? )");
         }
-        if (!StringUtil.isEmpty(country)) {
+        if (!StringUtil.isEmptyOrNull(country)) {
             searchSQL.append(" and (cev.`country` = ? )");
         }
-        if (!StringUtil.isEmpty(environment)) {
+        if (!StringUtil.isEmptyOrNull(environment)) {
             searchSQL.append(" and (cev.`environment` = ? )");
         }
-        if (!StringUtil.isEmpty(build)) {
+        if (!StringUtil.isEmptyOrNull(build)) {
             searchSQL.append(" and (cev.`build` = ? )");
         }
-        if (!StringUtil.isEmpty(revision)) {
+        if (!StringUtil.isEmptyOrNull(revision)) {
             searchSQL.append(" and (cev.`revision` = ? )");
         }
-        if (!StringUtil.isEmpty(envGp)) {
+        if (!StringUtil.isEmptyOrNull(envGp)) {
             searchSQL.append(" and (inv.`gp1` = ? )");
         }
         query.append(searchSQL);
 
-        if (!StringUtil.isEmpty(colName)) {
+        if (!StringUtil.isEmptyOrNull(colName)) {
             query.append(" order by `").append(colName).append("` ").append(dir);
         }
 
@@ -489,7 +489,7 @@ public class CountryEnvParamDAO implements ICountryEnvParamDAO {
             PreparedStatement preStat = connection.prepareStatement(query.toString());
             try {
                 int i = 1;
-                if (!StringUtil.isEmpty(searchTerm)) {
+                if (!StringUtil.isEmptyOrNull(searchTerm)) {
                     preStat.setString(i++, "%" + searchTerm + "%");
                     preStat.setString(i++, "%" + searchTerm + "%");
                     preStat.setString(i++, "%" + searchTerm + "%");
@@ -515,22 +515,22 @@ public class CountryEnvParamDAO implements ICountryEnvParamDAO {
                         preStat.setString(i++, mysystem);
                     }
                 }
-                if (!StringUtil.isEmpty(active)) {
+                if (!StringUtil.isEmptyOrNull(active)) {
                     preStat.setString(i++, active);
                 }
-                if (!StringUtil.isEmpty(country)) {
+                if (!StringUtil.isEmptyOrNull(country)) {
                     preStat.setString(i++, country);
                 }
-                if (!StringUtil.isEmpty(environment)) {
+                if (!StringUtil.isEmptyOrNull(environment)) {
                     preStat.setString(i++, environment);
                 }
-                if (!StringUtil.isEmpty(build)) {
+                if (!StringUtil.isEmptyOrNull(build)) {
                     preStat.setString(i++, build);
                 }
-                if (!StringUtil.isEmpty(revision)) {
+                if (!StringUtil.isEmptyOrNull(revision)) {
                     preStat.setString(i++, revision);
                 }
-                if (!StringUtil.isEmpty(envGp)) {
+                if (!StringUtil.isEmptyOrNull(envGp)) {
                     preStat.setString(i++, envGp);
                 }
                 ResultSet resultSet = preStat.executeQuery();
@@ -634,22 +634,22 @@ public class CountryEnvParamDAO implements ICountryEnvParamDAO {
 //        if (!StringUtil.isNullOrEmpty(system)) {
 //            searchSQL.append(" and (`System` = ? )");
 //        }
-        if (!StringUtil.isEmpty(active)) {
+        if (!StringUtil.isEmptyOrNull(active)) {
             searchSQL.append(" and (`active` = ? )");
         }
-        if (!StringUtil.isEmpty(country)) {
+        if (!StringUtil.isEmptyOrNull(country)) {
             searchSQL.append(" and (`country` = ? )");
         }
-        if (!StringUtil.isEmpty(environment)) {
+        if (!StringUtil.isEmptyOrNull(environment)) {
             searchSQL.append(" and (`environment` = ? )");
         }
-        if (!StringUtil.isEmpty(build)) {
+        if (!StringUtil.isEmptyOrNull(build)) {
             searchSQL.append(" and (`build` = ? )");
         }
-        if (!StringUtil.isEmpty(revision)) {
+        if (!StringUtil.isEmptyOrNull(revision)) {
             searchSQL.append(" and (`revision` = ? )");
         }
-        if (!StringUtil.isEmpty(envGp)) {
+        if (!StringUtil.isEmptyOrNull(envGp)) {
             searchSQL.append(" and (inv.`gp1` = ? )");
         }
         query.append(searchSQL);
@@ -682,22 +682,22 @@ public class CountryEnvParamDAO implements ICountryEnvParamDAO {
 //                if (!StringUtil.isNullOrEmpty(system)) {
 //                    preStat.setString(i++, system);
 //                }
-                if (!StringUtil.isEmpty(active)) {
+                if (!StringUtil.isEmptyOrNull(active)) {
                     preStat.setString(i++, active);
                 }
-                if (!StringUtil.isEmpty(country)) {
+                if (!StringUtil.isEmptyOrNull(country)) {
                     preStat.setString(i++, country);
                 }
-                if (!StringUtil.isEmpty(environment)) {
+                if (!StringUtil.isEmptyOrNull(environment)) {
                     preStat.setString(i++, environment);
                 }
-                if (!StringUtil.isEmpty(build)) {
+                if (!StringUtil.isEmptyOrNull(build)) {
                     preStat.setString(i++, build);
                 }
-                if (!StringUtil.isEmpty(revision)) {
+                if (!StringUtil.isEmptyOrNull(revision)) {
                     preStat.setString(i++, revision);
                 }
-                if (!StringUtil.isEmpty(envGp)) {
+                if (!StringUtil.isEmptyOrNull(envGp)) {
                     preStat.setString(i++, envGp);
                 }
                 ResultSet resultSet = preStat.executeQuery();
@@ -821,22 +821,22 @@ public class CountryEnvParamDAO implements ICountryEnvParamDAO {
 //        if (!StringUtil.isNullOrEmpty(system)) {
 //            searchSQL.append(" and (`System` = ? )");
 //        }
-        if (!StringUtil.isEmpty(active)) {
+        if (!StringUtil.isEmptyOrNull(active)) {
             searchSQL.append(" and (`active` = ? )");
         }
-        if (!StringUtil.isEmpty(country)) {
+        if (!StringUtil.isEmptyOrNull(country)) {
             searchSQL.append(" and (`country` = ? )");
         }
-        if (!StringUtil.isEmpty(environment)) {
+        if (!StringUtil.isEmptyOrNull(environment)) {
             searchSQL.append(" and (`environment` = ? )");
         }
-        if (!StringUtil.isEmpty(build)) {
+        if (!StringUtil.isEmptyOrNull(build)) {
             searchSQL.append(" and (`build` = ? )");
         }
-        if (!StringUtil.isEmpty(revision)) {
+        if (!StringUtil.isEmptyOrNull(revision)) {
             searchSQL.append(" and (`revision` = ? )");
         }
-        if (!StringUtil.isEmpty(envGp)) {
+        if (!StringUtil.isEmptyOrNull(envGp)) {
             searchSQL.append(" and (inv.`gp1` = ? )");
         }
         query.append(searchSQL);
@@ -869,22 +869,22 @@ public class CountryEnvParamDAO implements ICountryEnvParamDAO {
 //                if (!StringUtil.isNullOrEmpty(system)) {
 //                    preStat.setString(i++, system);
 //                }
-                if (!StringUtil.isEmpty(active)) {
+                if (!StringUtil.isEmptyOrNull(active)) {
                     preStat.setString(i++, active);
                 }
-                if (!StringUtil.isEmpty(country)) {
+                if (!StringUtil.isEmptyOrNull(country)) {
                     preStat.setString(i++, country);
                 }
-                if (!StringUtil.isEmpty(environment)) {
+                if (!StringUtil.isEmptyOrNull(environment)) {
                     preStat.setString(i++, environment);
                 }
-                if (!StringUtil.isEmpty(build)) {
+                if (!StringUtil.isEmptyOrNull(build)) {
                     preStat.setString(i++, build);
                 }
-                if (!StringUtil.isEmpty(revision)) {
+                if (!StringUtil.isEmptyOrNull(revision)) {
                     preStat.setString(i++, revision);
                 }
-                if (!StringUtil.isEmpty(envGp)) {
+                if (!StringUtil.isEmptyOrNull(envGp)) {
                     preStat.setString(i++, envGp);
                 }
                 ResultSet resultSet = preStat.executeQuery();
@@ -1178,9 +1178,9 @@ public class CountryEnvParamDAO implements ICountryEnvParamDAO {
         if (columnName.equals("envGp")) {
             columnName = "inv.gp1";
         }
-        query.append("SELECT distinct ");
+        query.append("SELECT distinct `");
         query.append(columnName);
-        query.append(" as distinctValues FROM countryenvparam cev ");
+        query.append("` as distinctValues FROM countryenvparam cev ");
         query.append(" LEFT OUTER JOIN invariant inv on inv.idname='ENVIRONMENT' and inv.value=cev.environment ");
 
         searchSQL.append(" where 1=1 ");
@@ -1190,7 +1190,7 @@ public class CountryEnvParamDAO implements ICountryEnvParamDAO {
             searchSQL.append(SqlUtil.generateInClause("`System`", system));
         }
 
-        if (!StringUtil.isEmpty(searchTerm)) {
+        if (!StringUtil.isEmptyOrNull(searchTerm)) {
             searchSQL.append(" and (`system` like ?");
             searchSQL.append(" or `country` like ?");
             searchSQL.append(" or `environment` like ?");
@@ -1219,7 +1219,7 @@ public class CountryEnvParamDAO implements ICountryEnvParamDAO {
             searchSQL.append(" )");
         }
         query.append(searchSQL);
-        query.append(" order by ").append(columnName).append(" asc");
+        query.append(" order by `").append(columnName).append("` asc");
 
         // Debug message on SQL.
         if (LOG.isDebugEnabled()) {
@@ -1235,7 +1235,7 @@ public class CountryEnvParamDAO implements ICountryEnvParamDAO {
                     preStat.setString(i++, sys);
                 }
             }
-            if (!StringUtil.isEmpty(searchTerm)) {
+            if (!StringUtil.isEmptyOrNull(searchTerm)) {
                 preStat.setString(i++, "%" + searchTerm + "%");
                 preStat.setString(i++, "%" + searchTerm + "%");
                 preStat.setString(i++, "%" + searchTerm + "%");

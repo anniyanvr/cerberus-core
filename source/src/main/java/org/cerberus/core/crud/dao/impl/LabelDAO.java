@@ -1,5 +1,5 @@
 /**
- * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * Cerberus Copyright (C) 2013 - 2025 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -125,7 +125,7 @@ public class LabelDAO implements ILabelDAO {
 
         searchSQL.append(" where 1=1 ");
 
-        if (!StringUtil.isEmpty(searchTerm)) {
+        if (!StringUtil.isEmptyOrNull(searchTerm)) {
             searchSQL.append(" and (lab.`id` like ?");
             searchSQL.append(" or lab.`system` like ?");
             searchSQL.append(" or lab.`label` like ?");
@@ -168,7 +168,7 @@ public class LabelDAO implements ILabelDAO {
 
         query.append(" group by lab.id ");
 
-        if (!StringUtil.isEmpty(column)) {
+        if (!StringUtil.isEmptyOrNull(column)) {
             query.append(" order by `").append(column).append("` ").append(dir);
         }
 
@@ -189,7 +189,7 @@ public class LabelDAO implements ILabelDAO {
              Statement stm = connection.createStatement();) {
 
             int i = 1;
-            if (!StringUtil.isEmpty(searchTerm)) {
+            if (!StringUtil.isEmptyOrNull(searchTerm)) {
                 preStat.setString(i++, "%" + searchTerm + "%");
                 preStat.setString(i++, "%" + searchTerm + "%");
                 preStat.setString(i++, "%" + searchTerm + "%");
@@ -484,7 +484,7 @@ public class LabelDAO implements ILabelDAO {
     }
 
     @Override
-    public AnswerList<String> readDistinctValuesByCriteria(String system, String searchTerm, Map<String, List<String>> individualSearch, String columnName) {
+    public AnswerList<String> readDistinctValuesByCriteria(List<String> systems, String searchTerm, Map<String, List<String>> individualSearch, String columnName) {
         AnswerList<String> answer = new AnswerList<>();
         MessageEvent msg = new MessageEvent(MessageEventEnum.DATA_OPERATION_ERROR_UNEXPECTED);
         msg.setDescription(msg.getDescription().replace("%DESCRIPTION%", ""));
@@ -495,15 +495,16 @@ public class LabelDAO implements ILabelDAO {
         StringBuilder query = new StringBuilder();
 
         query.append("SELECT distinct ");
-        query.append(columnName);
+        query.append("`").append(columnName).append("`");
         query.append(" as distinctValues FROM label ");
 
         searchSQL.append("WHERE 1=1");
-        if (!StringUtil.isEmpty(system)) {
-            searchSQL.append(" and (`System` = ? or `System` = '' )");
+        if (systems != null && !systems.isEmpty()) {
+            searchSQL.append(" and ");
+            searchSQL.append(SqlUtil.generateInClause("`System`", systems));
         }
 
-        if (!StringUtil.isEmpty(searchTerm)) {
+        if (!StringUtil.isEmptyOrNull(searchTerm)) {
             searchSQL.append(" and (`id` like ?");
             searchSQL.append(" or `system` like ?");
             searchSQL.append(" or `label` like ?");
@@ -531,7 +532,7 @@ public class LabelDAO implements ILabelDAO {
         }
 
         query.append(searchSQL);
-        query.append(" order by ").append(columnName).append(" asc");
+        query.append(" order by `").append(columnName).append("` asc");
 
         // Debug message on SQL.
         if (LOG.isDebugEnabled()) {
@@ -542,11 +543,13 @@ public class LabelDAO implements ILabelDAO {
              Statement stm = connection.createStatement();) {
 
             int i = 1;
-            if (!StringUtil.isEmpty(system)) {
-                preStat.setString(i++, system);
+            if (systems != null && !systems.isEmpty()) {
+                for (String sys : systems) {
+                    preStat.setString(i++, sys);
+                }
             }
 
-            if (!StringUtil.isEmpty(searchTerm)) {
+            if (!StringUtil.isEmptyOrNull(searchTerm)) {
                 preStat.setString(i++, "%" + searchTerm + "%");
                 preStat.setString(i++, "%" + searchTerm + "%");
                 preStat.setString(i++, "%" + searchTerm + "%");

@@ -1,5 +1,5 @@
 /**
- * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * Cerberus Copyright (C) 2013 - 2025 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -36,12 +36,13 @@ public interface IFactoryRobot {
      * @param platform
      * @param browser
      * @param version
-     * @param active
+     * @param isActive
      * @param lbexemethod
      * @param description
      * @param userAgent
      * @param type
      * @param profileFolder
+     * @param acceptNotifications
      * @param extraParam
      * @param screenSize
      * @param isAcceptInsecureCerts
@@ -49,7 +50,7 @@ public interface IFactoryRobot {
      * @return
      */
     Robot create(Integer robotID, String robot, String platform,
-            String browser, String version, String active, String lbexemethod, String description, String userAgent, String screenSize, String profileFolder, String extraParam, boolean isAcceptInsecureCerts, String robotDecli, String type);
+            String browser, String version, boolean isActive, String lbexemethod, String description, String userAgent, String screenSize, String profileFolder, Integer acceptNotifications, String extraParam, boolean isAcceptInsecureCerts, String robotDecli, String type);
 
     /**
      *
@@ -58,12 +59,13 @@ public interface IFactoryRobot {
      * @param platform platform of the Robot
      * @param browser browser of the Robot
      * @param version version of the Robot
-     * @param active Robot active
+     * @param isActive Robot active
      * @param lbexemethod
      * @param description description of the Robot
      * @param userAgent userAgent to Use
      * @param screenSize
      * @param profileFolder
+     * @param acceptNotifications
      * @param extraParam
      * @param isAcceptInsecureCerts
      * @param capabilities
@@ -73,7 +75,7 @@ public interface IFactoryRobot {
      * @return
      */
     Robot create(Integer robotID, String robot, String platform,
-            String browser, String version, String active, String lbexemethod, String description, String userAgent, String screenSize, String profileFolder, String extraParam, boolean isAcceptInsecureCerts,
+            String browser, String version, boolean isActive, String lbexemethod, String description, String userAgent, String screenSize, String profileFolder, Integer acceptNotifications, String extraParam, boolean isAcceptInsecureCerts,
             List<RobotCapability> capabilities, List<RobotExecutor> executors, String robotDecli, String type);
 
 }

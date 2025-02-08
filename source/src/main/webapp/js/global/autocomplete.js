@@ -1,5 +1,5 @@
 /*
- * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * Cerberus Copyright (C) 2013 - 2025 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -263,35 +263,71 @@ function loadApplicationObject(dataInit) {
     });
 }
 
+function loadDatalib() {
+    return new Promise(function (resolve, reject) {
+        var array = [];
+        $.ajax({
+            url: "ReadTestDataLib?columnName=tdl.Name",
+            dataType: "json",
+            success: function (data) {
+                for (var i = 0; i < data.distinctValues.length; i++) {
+                    array.push(data.distinctValues[i]);
+                }
+                resolve(array);
+            }
+        });
+    });
+}
+
 function initTags(configs, context) {
-    var inheritedProperties = [], testCaseProperties = [], objectsPromise = [];
+
+    var inheritedProperties = [], testCaseProperties = [], objectsPromise = [], datalibPromise = [];
+
+//    console.info(configs);
+
     if (configs.property && context instanceof Object) {
         inheritedProperties = context.contentTable[0].properties.inheritedProperties.map(prop => prop.property);
         testCaseProperties = context.contentTable[0].properties.testCaseProperties.map(prop => prop.property);
-        objectsPromise = loadApplicationObject(context.contentTable[0].application)
+        objectsPromise = loadApplicationObject(context.contentTable[0].application);
+        datalibPromise = loadDatalib();
     }
-    if (configs.object && !configs.property && context instanceof String)
+
+    if (configs.object && !configs.property && context instanceof String) {
         objectsPromise = loadApplicationObject(context);
-    return Promise.all([objectsPromise]).then(function (data) {
+        datalibPromise = loadDatalib();
+    }
+
+    return Promise.all([objectsPromise, datalibPromise]).then(function (data) {
         var availableObjects = data[0];
+        var datalibObjects = data[1];
+//        console.info(availableObjects);
+//        console.info(datalibObjects);
         var availableProperties = testCaseProperties.concat(inheritedProperties.filter(function (item) {
             return testCaseProperties.indexOf(item) < 0;
         }));
         var availableTags = [
             "property",
             "system",
-            "object"
+            "object",
+            "datalib"
         ];
         var availableObjectProperties = [
             "value",
 //            "picturepath",
-            "pictureurl"
+            "pictureurl",
+            "base64"
+        ];
+        var availableDatalibProperties = [
+            "value",
+//            "picturepath",
+//            "pictureurl",
+            "base64"
         ];
         var availableSystemValues = [
             "SYSTEM",
             "APPLI",
             "BROWSER", "ROBOT", "ROBOTDECLI", "SCREENSIZE",
-            "APP_DOMAIN", "APP_HOST", "APP_CONTEXTROOT", "EXEURL", "APP_VAR1", "APP_VAR2", "APP_VAR3", "APP_VAR4",
+            "APP_DOMAIN", "APP_HOST", "APP_CONTEXTROOT", "EXEURL", "APP_VAR1", "APP_VAR2", "APP_VAR3", "APP_VAR4", "APP_SECRET1", "APP_SECRET2",
             "ENV", "ENVGP",
             "COUNTRY", "COUNTRYGP1", "COUNTRYGP2", "COUNTRYGP3", "COUNTRYGP4", "COUNTRYGP5", "COUNTRYGP6", "COUNTRYGP7", "COUNTRYGP8", "COUNTRYGP9",
             "TEST",
@@ -303,22 +339,165 @@ function initTags(configs, context) {
             "EXESTORAGEURL",
             "STEP.n.n.RETURNCODE", "CURRENTSTEP_INDEX", "CURRENTSTEP_STARTISO", "CURRENTSTEP_ELAPSEDMS", "CURRENTSTEP_SORT",
             "LASTSERVICE_HTTPCODE", "LASTSERVICE_CALL", "LASTSERVICE_RESPONSE",
-            "TODAY-yyyy", "TODAY-MM", "TODAY-dd", "TODAY-doy", "TODAY-HH", "TODAY-mm", "TODAY-ss",
-            "YESTERDAY-yyyy", "YESTERDAY-MM", "YESTERDAY-dd", "YESTERDAY-doy", "YESTERDAY-HH", "YESTERDAY-mm", "YESTERDAY-ss",
-            "TOMORROW-yyyy", "TOMORROW-MM", "TOMORROW-dd", "TOMORROW-doy"
+            "TODAY-yyyy", "TODAY-MM", "TODAY-dd", "TODAY-D", "TODAY-HH", "TODAY-mm", "TODAY-ss",
+            "YESTERDAY-yyyy", "YESTERDAY-MM", "YESTERDAY-dd", "YESTERDAY-D", "YESTERDAY-HH", "YESTERDAY-mm", "YESTERDAY-ss",
+            "TOMORROW-yyyy", "TOMORROW-MM", "TOMORROW-dd", "TOMORROW-D"
         ];
         var availableIdentifiers = [
-            "data-cerberus",
-            "querySelector",
             "id",
+            "xpath",
             "name",
             "class",
             "css",
-            "xpath",
             "link",
+            "data-cerberus",
+            "querySelector",
             "erratum",
             "picture",
-            "text"
+            "text",
+            "coord",
+            "offset"
+        ];
+        var availableIdentifiersSwitch = [
+            "title",
+            "regexTitle",
+            "url",
+            "regexUrl"
+        ];
+        var availableIdentifiersSelect = [
+            "label",
+            "regexLabel",
+            "value",
+            "regexValue",
+            "index",
+            "regexIndex"
+        ];
+        var availableIdentifiersBoolean = [
+            "true",
+            "false"
+        ];
+        var availableIdentifiersFileSortFlag = [
+            "LASTMODIFIED",
+            "IGNORECASEDESC",
+            "IGNORECASEASC",
+            "DESC",
+            "ASC"
+        ];
+        var availableIdentifiersFileUploadFlag = [
+            "EMPTYFOLDER"
+        ];
+        var availableIdentifiersHeaderValues = [
+            "application/java-archive",
+            "application/EDI-X12",
+            "application/EDIFACT",
+            "application/javascript",
+            "application/octet-stream",
+            "application/ogg",
+            "application/pdf",
+            "application/xhtml+xml",
+            "application/x-shockwave-flash",
+            "application/json",
+            "application/ld+json",
+            "application/xml",
+            "application/zip",
+            "application/x-www-form-urlencoded",
+            "application/vnd.android.package-archive",
+            "application/vnd.oasis.opendocument.text",
+            "application/vnd.oasis.opendocument.spreadsheet",
+            "application/vnd.oasis.opendocument.presentation",
+            "application/vnd.oasis.opendocument.graphics",
+            "application/vnd.ms-excel",
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            "application/vnd.ms-powerpoint",
+            "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+            "application/msword",
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            "application/vnd.mozilla.xul+xml",
+            "audio/mpeg",
+            "audio/x-ms-wma",
+            "audio/vnd.rn-realaudio",
+            "audio/x-wav",
+            "image/gif",
+            "image/jpeg",
+            "image/png",
+            "image/tiff",
+            "image/vnd.microsoft.icon",
+            "image/x-icon",
+            "image/vnd.djvu",
+            "image/svg+xml",
+            "multipart/mixed",
+            "multipart/alternative",
+            "multipart/related",
+            "multipart/form-data",
+            "text/css",
+            "text/csv",
+            "text/html",
+            "text/html; charset=UTF-8",
+            "text/javascript",
+            "text/plain",
+            "text/xml",
+            "video/mpeg",
+            "video/mp4",
+            "video/quicktime",
+            "video/x-ms-wmv",
+            "video/x-msvideo",
+            "video/x-flv",
+            "video/webm",
+            "en",
+            "fr"
+        ];
+        var availableIdentifiersHeader = [
+// Standard Heasders
+            "A-IM",
+            "Accept",
+            "Accept-Charset",
+            "Accept-Datetime",
+            "Accept-Encoding",
+            "Accept-Language",
+            "Access-Control-Request-Method",
+            "Access-Control-Request-Headers",
+            "Authorization",
+            "Cache-Control",
+            "Connection",
+            "Content-Encoding",
+            "Content-Length",
+            "Content-MD5",
+            "Content-Type",
+            "Cookie",
+            "Date",
+            "Expect",
+            "Forwarded",
+            "From",
+            "Host",
+            "HTTP2-Settings",
+            "If-Match",
+            "If-Modified-Since",
+            "If-None-Match",
+            "If-Range",
+            "If-Unmodified-Since",
+            "Max-Forwards",
+            "Origin",
+            "Pragma",
+            "Prefer",
+            "Proxy-Authorization",
+            "Range",
+            "Referer",
+            "TE",
+            "Trailer",
+            "Transfer-Encoding",
+            "User-Agent",
+            "Upgrade",
+            "Via",
+            "Warning",
+// Non Standard Heasders
+            "X-Api-Key",
+            "DNT",
+            "X-Forwarded-For",
+            "X-Forwarded-Host",
+            "X-Forwarded-Proto",
+            "X-Http-Method-Override",
+            "Proxy-Connection",
+            "X-Requested-With"
         ];
         let tags = [
             {
@@ -333,6 +512,22 @@ function initTags(configs, context) {
                 name: 'object',
                 array: availableObjects,
                 regex: "%object\\.",
+                addBefore: "",
+                addAfter: ".",
+                isCreatable: true
+            },
+            {
+                name: 'datalibProperty',
+                array: availableDatalibProperties,
+                regex: "%datalib\\.[^\\.]*\\.",
+                addBefore: "",
+                addAfter: "%",
+                isCreatable: false
+            },
+            {
+                name: 'datalib',
+                array: datalibObjects,
+                regex: "%datalib\\.",
                 addBefore: "",
                 addAfter: ".",
                 isCreatable: true
@@ -362,17 +557,47 @@ function initTags(configs, context) {
                 isCreatable: false
             }
         ];
+        var finalArray = [];
+        let finalAddAfter = "=";
+        if (configs.identifier === "element") {
+            finalArray.push(...availableIdentifiers);
+        } else if (configs.identifier === "switch") {
+            finalArray.push(...availableIdentifiersSwitch);
+        } else if (configs.identifier === "select") {
+            finalArray.push(...availableIdentifiersSelect);
+        } else if (configs.identifier === "boolean") {
+            finalArray.push(...availableIdentifiersBoolean);
+            finalAddAfter = "";
+        } else if (configs.identifier === "fileuploadflag") {
+            finalArray.push(...availableIdentifiersFileUploadFlag);
+            finalAddAfter = "";
+        } else if (configs.identifier === "filesortflag") {
+            finalArray.push(...availableIdentifiersFileSortFlag);
+            finalAddAfter = "";
+        } else if (configs.identifier === "header") {
+            finalArray.push(...availableIdentifiersHeader);
+            finalAddAfter = "";
+        } else if (configs.identifier === "headervalue") {
+            finalArray.push(...availableIdentifiersHeaderValues);
+            finalAddAfter = "";
+        }
 
-        if (configs.identifier) {
+        if (configs.identifier !== "none") {
             tags.push({
-                name: 'indentifier',
-                array: availableIdentifiers,
+                name: 'identifier',
+                array: finalArray,
                 regex: "((^[a-zA-Z])|(^$))",
                 addBefore: "",
-                addAfter: "=",
+                addAfter: finalAddAfter,
                 isCreatable: false
             });
         }
+
+//        console.info("return tags");
+//        console.info(tags);
+//        console.info(configs);
+//        console.info(context);
+
         return tags;
     });
 }
@@ -403,7 +628,7 @@ function initAutocompleteWithTagsNoElement(el, configs, context) {
     initTags(configs, context).then(function (tags) {
         $(el).each(data => {
             // remove array of elements (xpath=, data-cerberus=, etc...) from tags in order not to propose them.
-            tags.splice(5, 1);
+//            tags.splice(5, 1);
             autocompleteWithTags(el[data], tags);
         });
     });
@@ -413,5 +638,5 @@ function initAutocompleteforSpecificFields(el) {
     $(el).each(data => {
         autocompleteSpecificFields(el[data]);
     });
-    
+
 }

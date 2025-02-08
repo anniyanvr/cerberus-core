@@ -1,5 +1,5 @@
 /**
- * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * Cerberus Copyright (C) 2013 - 2025 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -35,7 +35,7 @@ public class FactoryTestDataLib implements IFactoryTestDataLib {
     public TestDataLib create(Integer testDataLibID, String name, String system, String environment,
             String country, String privateData, String group, String type, String database,
             String script, String databaseUrl, String service, String servicePath, String method,
-            String envelope, String databaseCsv, String csvUrl, String separator, String description, String creator, Timestamp created,
+            String envelope, String databaseCsv, String csvUrl, String separator, boolean ignoreFirstLine, String description, String creator, Timestamp created,
             String LastModifier, Timestamp lastModified, String subDataValue, String subDataColumn, String subDataParsingAnswer, String subDataColumnPosition) {
 
         TestDataLib newData = new TestDataLib();
@@ -59,6 +59,7 @@ public class FactoryTestDataLib implements IFactoryTestDataLib {
         newData.setDatabaseCsv(databaseCsv);
         newData.setCsvUrl(csvUrl);
         newData.setSeparator(separator);
+        newData.setIgnoreFirstLine(ignoreFirstLine);
         newData.setDescription(description);
         newData.setCreator(creator);
         newData.setCreated(created);

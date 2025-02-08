@@ -1,5 +1,5 @@
 /**
- * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * Cerberus Copyright (C) 2013 - 2025 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -28,6 +28,7 @@ import javax.servlet.http.HttpServletResponse;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.cerberus.core.crud.entity.CountryEnvParam;
+import org.cerberus.core.crud.entity.LogEvent;
 import org.cerberus.core.engine.entity.MessageEvent;
 import org.cerberus.core.enums.MessageEventEnum;
 import org.cerberus.core.exception.CerberusException;
@@ -77,7 +78,7 @@ public class DeleteCountryEnvParam extends HttpServlet {
 
         // Calling Servlet Transversal Util.
         ServletUtil.servletStart(request);
-        
+
         /**
          * Parsing and securing all required parameters.
          */
@@ -88,19 +89,19 @@ public class DeleteCountryEnvParam extends HttpServlet {
         /**
          * Checking all constrains before calling the services.
          */
-        if (StringUtil.isEmpty(system)) {
+        if (system == null) {
             msg = new MessageEvent(MessageEventEnum.DATA_OPERATION_ERROR_EXPECTED);
             msg.setDescription(msg.getDescription().replace("%ITEM%", OBJECT_NAME)
                     .replace("%OPERATION%", "Delete")
                     .replace("%REASON%", "System is missing!"));
             ans.setResultMessage(msg);
-        } else if (StringUtil.isEmpty(country)) {
+        } else if (country == null) {
             msg = new MessageEvent(MessageEventEnum.DATA_OPERATION_ERROR_EXPECTED);
             msg.setDescription(msg.getDescription().replace("%ITEM%", OBJECT_NAME)
                     .replace("%OPERATION%", "Delete")
                     .replace("%REASON%", "Country is missing!"));
             ans.setResultMessage(msg);
-        } else if (StringUtil.isEmpty(environment)) {
+        } else if (environment == null) {
             msg = new MessageEvent(MessageEventEnum.DATA_OPERATION_ERROR_EXPECTED);
             msg.setDescription(msg.getDescription().replace("%ITEM%", OBJECT_NAME)
                     .replace("%OPERATION%", "Delete")
@@ -114,7 +115,7 @@ public class DeleteCountryEnvParam extends HttpServlet {
             ICountryEnvParamService countryEnvParamService = appContext.getBean(ICountryEnvParamService.class);
 
             AnswerItem resp = countryEnvParamService.readByKey(system, country, environment);
-            if (!(resp.isCodeEquals(MessageEventEnum.DATA_OPERATION_OK.getCode()) && resp.getItem()!=null)) {
+            if (!(resp.isCodeEquals(MessageEventEnum.DATA_OPERATION_OK.getCode()) && resp.getItem() != null)) {
                 /**
                  * Object could not be found. We stop here and report the error.
                  */
@@ -137,7 +138,7 @@ public class DeleteCountryEnvParam extends HttpServlet {
                      * Delete was successful. Adding Log entry.
                      */
                     ILogEventService logEventService = appContext.getBean(LogEventService.class);
-                    logEventService.createForPrivateCalls("/DeleteCountryEnvParam", "DELETE", "Delete CountryEnvParam : ['" + system + "'|'" + country + "'|'" + environment + "']", request);
+                    logEventService.createForPrivateCalls("/DeleteCountryEnvParam", "DELETE", LogEvent.STATUS_INFO, "Delete CountryEnvParam : ['" + system + "'|'" + country + "'|'" + environment + "']", request);
                 }
             }
         }

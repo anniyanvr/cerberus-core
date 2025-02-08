@@ -1,5 +1,5 @@
 /**
- * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * Cerberus Copyright (C) 2013 - 2025 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -397,6 +397,33 @@ public class TestCaseStepExecution {
                 this.testCaseStepActionExecutionList.add(actionExecution);
             }
         }
+    }
+
+    public TestCaseStepActionExecution getTestCaseStepActionExecutionBySortId(int sortID){
+        for(TestCaseStepActionExecution tcsae : this.testCaseStepActionExecutionList){
+            if (sortID == tcsae.getTestCaseStepAction().getSort()){
+                return tcsae;
+            }
+        }
+        return null;
+    }
+
+    public TestCaseStepActionExecution getTestCaseStepActionExecutionByActionId(int sortID){
+        for(TestCaseStepActionExecution tcsae : this.testCaseStepActionExecutionList){
+            if (sortID == tcsae.getTestCaseStepAction().getActionId()){
+                return tcsae;
+            }
+        }
+        return null;
+    }
+
+    public TestCaseStepActionExecution getTestCaseStepActionExecutionExecuting(){
+        for(TestCaseStepActionExecution tcsae : this.testCaseStepActionExecutionList){
+            if ("PE".equals(tcsae.getReturnCode())){
+                return tcsae;
+            }
+        }
+        return null;
     }
 
     public String getDescription() {

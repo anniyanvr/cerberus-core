@@ -1,5 +1,5 @@
 /*
- * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * Cerberus Copyright (C) 2013 - 2025 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -151,9 +151,12 @@ function confirmApplicationObjectModalHandler(page, mode) {
             // data = JSON.parse(data);
             if (getAlertType(data.messageType) === "success") {
                 if (page == "applicationObject") {
+                    
                     var oTable = $("#applicationObjectsTable").dataTable();
                     oTable.fnDraw(false);
+                    
                 } else if (page == "testCaseScript") {
+                    
                     //TestCaseScript.js must be loaded so getTags exist
                     var Tags = getTags();
                     for (var i = 0; i < Tags.length; i++) {
@@ -162,6 +165,7 @@ function confirmApplicationObjectModalHandler(page, mode) {
                         }
                     }
                     $("div.step-action .content div.fieldRow div:nth-child(n+2) input").trigger("input");
+                    
                 }
                 $('#editApplicationObjectModal').data("Saved", true);
                 $('#editApplicationObjectModal').modal('hide');

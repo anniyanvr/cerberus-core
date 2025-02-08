@@ -1,5 +1,5 @@
 /*
- * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * Cerberus Copyright (C) 2013 - 2025 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -25,10 +25,13 @@ var configTime = {};
 var configParty = {};
 var configTcTime = {};
 var configTcBar = {};
+var configAvailability1 = {};
+var configAvailability2 = {};
 // Counters of different countries, env and robotdecli (used to shorten the labels)
 var nbCountries = 0;
 var nbEnv = 0;
 var nbRobot = 0;
+var nbcontrolStatus = 0;
 
 $.when($.getScript("js/global/global.js")).then(function () {
     $(document).ready(function () {
@@ -44,19 +47,17 @@ $.when($.getScript("js/global/global.js")).then(function () {
             'container': 'body'}
         );
 
-        moment.locale("fr");
-
         $('#frompicker').datetimepicker();
         $('#topicker').datetimepicker({
             useCurrent: false //Important! See issue #1075
         });
 
-        $("#frompicker").on("dp.change", function (e) {
-            $('#topicker').data("DateTimePicker").minDate(e.date);
-        });
-        $("#topicker").on("dp.change", function (e) {
-            $('#frompicker').data("DateTimePicker").maxDate(e.date);
-        });
+//        $("#frompicker").on("dp.change", function (e) {
+//            $('#topicker').data("DateTimePicker").minDate(e.date);
+//        });
+//        $("#topicker").on("dp.change", function (e) {
+//            $('#frompicker').data("DateTimePicker").maxDate(e.date);
+//        });
 
 
         var tests = GetURLParameters("tests");
@@ -69,6 +70,7 @@ $.when($.getScript("js/global/global.js")).then(function () {
         var environments = GetURLParameters("environments");
         var countries = GetURLParameters("countries");
         var robotDeclis = GetURLParameters("robotDeclis");
+        var controlStatuss = GetURLParameters("controlStatuss");
 
         let fromD;
         let toD;
@@ -109,7 +111,7 @@ $.when($.getScript("js/global/global.js")).then(function () {
 
             $("#testSelect").select2({width: "100%"});
 
-            feedPerfTestCase(tests[0], "#testCaseSelect", testcases, parties, types, units, countries, environments, robotDeclis);
+            feedPerfTestCase(tests[0], "#testCaseSelect", testcases, parties, types, units, countries, environments, robotDeclis, controlStatuss);
 
         }).fail(handleErrorAjaxAfterTimeout);
 
@@ -152,7 +154,7 @@ function multiSelectConfPerf(name) {
  * @param {String} parties 
  * @returns {null}
  */
-function feedPerfTestCase(test, selectElement, defaultTestCases, parties, types, units, countries, environments, robotDeclis) {
+function feedPerfTestCase(test, selectElement, defaultTestCases, parties, types, units, countries, environments, robotDeclis, controlStatuss) {
     showLoader($("#otFilterPanel"));
 
     var testCList = $(selectElement);
@@ -166,7 +168,7 @@ function feedPerfTestCase(test, selectElement, defaultTestCases, parties, types,
         }
         $('#testCaseSelect').val(defaultTestCases);
         $('#testCaseSelect').trigger('change');
-        loadPerfGraph(false, parties, types, units, countries, environments, robotDeclis);
+        loadPerfGraph(false, parties, types, units, countries, environments, robotDeclis, controlStatuss);
     }).fail(handleErrorAjaxAfterTimeout);
 }
 
@@ -195,7 +197,7 @@ function displayPageLabel(doc) {
     $("#lblTestStatBar").html(doc.getDocLabel("page_reportovertime", "lblTestStatBar"));
 }
 
-function loadPerfGraph(saveURLtoHistory, parties, types, units, countries, environments, robotDeclis) {
+function loadPerfGraph(saveURLtoHistory, parties, types, units, countries, environments, robotDeclis, controlStatuss) {
     showLoader($("#otFilterPanel"));
 
     if (parties === null || parties === undefined) {
@@ -215,6 +217,9 @@ function loadPerfGraph(saveURLtoHistory, parties, types, units, countries, envir
     }
     if (robotDeclis === null || robotDeclis === undefined) {
         robotDeclis = [];
+    }
+    if (controlStatuss === null || controlStatuss === undefined) {
+        controlStatuss = [];
     }
 
     let from = new Date($('#frompicker').data("DateTimePicker").date());
@@ -260,6 +265,15 @@ function loadPerfGraph(saveURLtoHistory, parties, types, units, countries, envir
         robotDeclisQ += "&robotDeclis=" + encodeURI(robotDeclis[i]);
     }
 
+    if ($("#controlStatusSelect").val() !== null) {
+        controlStatuss = $("#controlStatusSelect").val();
+    }
+    len = controlStatuss.length;
+    var controlStatussQ = "";
+    for (var i = 0; i < len; i++) {
+        controlStatussQ += "&controlStatuss=" + encodeURI(controlStatuss[i]);
+    }
+
     len = parties.length;
     var partiQ = "";
     for (var i = 0; i < len; i++) {
@@ -287,7 +301,7 @@ function loadPerfGraph(saveURLtoHistory, parties, types, units, countries, envir
         }
     }
 
-    let qS = "from=" + from.toISOString() + "&to=" + to.toISOString() + countriesQ + environmentsQ + robotDeclisQ + partiQ + typeQ + unitQ + tcString;
+    let qS = "from=" + from.toISOString() + "&to=" + to.toISOString() + countriesQ + environmentsQ + robotDeclisQ + controlStatussQ + partiQ + typeQ + unitQ + tcString;
     if (saveURLtoHistory) {
         InsertURLInHistory("./ReportingExecutionOverTime.jsp?" + qS);
     }
@@ -305,6 +319,7 @@ function loadPerfGraph(saveURLtoHistory, parties, types, units, countries, envir
                 buildGraphs(data);
                 buildExeGraphs(data);
                 buildExeBarGraphs(data);
+                buildAvailabilityGraphs(data);
                 loadCombos(data);
             } else {
                 showMessageMainPage(messageType, data.message, false);
@@ -335,30 +350,12 @@ function updateNbDistinct(data) {
             nbRobot++;
         }
     }
-}
-function setTimeRange(id) {
-    let fromD;
-    let toD = new Date();
-    toD.setHours(23);
-    toD.setMinutes(59);
-    fromD = new Date();
-    fromD.setHours(23);
-    fromD.setMinutes(59);
-    if (id === 1) { // 1 month
-        fromD.setMonth(fromD.getMonth() - 1);
-    } else if (id === 2) { // 3 months
-        fromD.setMonth(fromD.getMonth() - 3);
-    } else if (id === 3) { // 6 months
-        fromD.setMonth(fromD.getMonth() - 6);
-    } else if (id === 4) { //
-        fromD.setMonth(fromD.getMonth() - 12);
-    } else if (id === 5) {
-        fromD.setHours(fromD.getHours() - 168);
-    } else if (id === 6) {
-        fromD.setHours(fromD.getHours() - 24);
+    nbcontrolStatus = 0;
+    for (var i = 0; i < data.controlStatuss.length; i++) {
+        if (data.controlStatuss[i].isRequested) {
+            nbcontrolStatus++;
+        }
     }
-    $('#frompicker').data("DateTimePicker").date(moment(fromD));
-    $('#topicker').data("DateTimePicker").date(moment(toD));
 }
 
 function loadCombos(data) {
@@ -457,6 +454,24 @@ function loadCombos(data) {
         }
     }
     select.multiselect(new multiSelectConfPerf("robotSelect"));
+
+    var select = $("#controlStatusSelect");
+    select.multiselect('destroy');
+    var array = data.distinct.controlStatuss;
+    $("#controlStatusSelect option").remove();
+    for (var i = 0; i < array.length; i++) {
+        let n = array[i].name;
+        if (isEmpty(n)) {
+            n = "[Empty]";
+        }
+        $("#controlStatusSelect").append($('<option></option>').text(n).val(array[i].name));
+    }
+    for (var i = 0; i < array.length; i++) {
+        if (array[i].isRequested) {
+            $("#controlStatusSelect option[value='" + array[i].name + "']").attr("selected", "selected");
+        }
+    }
+    select.multiselect(new multiSelectConfPerf("controlStatusSelect"));
 
 }
 
@@ -581,13 +596,27 @@ function buildGraphs(data) {
         let d = [];
         lend = c.points.length;
         for (var j = 0; j < lend; j++) {
-            let p = {x: c.points[j].x, y: c.points[j].y, id: c.points[j].exe, controlStatus: c.points[j].exeControlStatus};
+            let p = {x: c.points[j].x, y: c.points[j].y, id: c.points[j].exe, controlStatus: c.points[j].exeControlStatus, falseNegative: c.points[j].falseNegative};
             d.push(p);
         }
         let lab = getLabel(c.key.testcase.description, c.key.country, c.key.environment, c.key.robotdecli, c.key.unit, c.key.party, c.key.type, c.key.testcase.testcase);
         var dataset = {
             label: lab,
             backgroundColor: get_Color_fromindex(i),
+            pointBorderWidth: function (d) {
+                var index = d.dataIndex;
+                var value = d.dataset.data[index];
+//                console.info(value);
+                return value.falseNegative === true ? 3
+                        : 1;
+            },
+            pointBorderColor: function (d) {
+                var index = d.dataIndex;
+                var value = d.dataset.data[index];
+//                console.info(value);
+                return value.falseNegative === true ? '#00d27a'
+                        : get_Color_fromindex(i);
+            },
             pointBackgroundColor: function (d) {
                 var index = d.dataIndex;
                 var value = d.dataset.data[index];
@@ -663,13 +692,27 @@ function buildExeGraphs(data) {
         let d = [];
         lend = c.points.length;
         for (var j = 0; j < lend; j++) {
-            let p = {x: c.points[j].x, y: c.points[j].y, id: c.points[j].exe, controlStatus: c.points[j].exeControlStatus};
+            let p = {x: c.points[j].x, y: c.points[j].y, id: c.points[j].exe, controlStatus: c.points[j].exeControlStatus, falseNegative: c.points[j].falseNegative};
             d.push(p);
         }
         let lab = getLabel(c.key.testcase.description, c.key.country, c.key.environment, c.key.robotdecli, undefined, undefined, undefined, c.key.testcase.testcase);
         var dataset = {
             label: lab,
             backgroundColor: "white",
+            pointBorderWidth: function (d) {
+                var index = d.dataIndex;
+                var value = d.dataset.data[index];
+//                console.info(value);
+                return value.falseNegative === true ? 3
+                        : 1;
+            },
+            pointBorderColor: function (d) {
+                var index = d.dataIndex;
+                var value = d.dataset.data[index];
+//                console.info(value);
+                return value.falseNegative === true ? '#00d27a'
+                        : get_Color_fromindex(i);
+            },
             borderColor: get_Color_fromindex(i),
             pointBackgroundColor: function (d) {
                 var index = d.dataIndex;
@@ -717,7 +760,7 @@ function buildExeBarGraphs(data) {
         let d = [];
         lend = c.points.length;
         for (var j = 0; j < lend; j++) {
-            let p = {x: c.points[j].x, y: c.points[j].y, id: c.points[j].exe, controlStatus: c.points[j].exeControlStatus};
+            let p = {x: c.points[j].x, y: c.points[j].y, id: c.points[j].exe, controlStatus: c.points[j].exeControlStatus, falseNegative: c.points[j].falseNegative};
             d.push(p);
         }
         let lab = c.key.key;
@@ -744,6 +787,70 @@ function buildExeBarGraphs(data) {
     window.myLineTcBar.update();
 }
 
+function buildAvailabilityGraphs(data) {
+    let curves = data.datasetExeTime;
+
+    var len = curves.length;
+
+    let nbOK = 0;
+    let nbKO = 0;
+
+    let durOK = 0;
+    let durKO = 0;
+
+    for (var i = 0; i < len; i++) {
+        let newCurve = curves[i];
+//        console.info(newCurve);
+        let lend = newCurve.points.length;
+        for (var j = 0; j < lend; j++) {
+            let dur = 0;
+//            console.info(j + " / " + lend)
+            if (j === (lend - 1)) {
+                dur = 0;
+            } else {
+//                console.info(newCurve.points[j].x)
+//                console.info(newCurve.points[j + 1].x)
+                dur = (new Date(newCurve.points[j + 1].x) - new Date(newCurve.points[j].x)) / 1000;
+//                console.info((new Date(newCurve.points[j + 1].x) - new Date(newCurve.points[j].x)) / 1000)
+            }
+
+            if ((newCurve.points[j].exeControlStatus === "OK") || (newCurve.points[j].falseNegative)) {
+                nbOK++;
+                durOK = durOK + dur;
+            } else {
+                nbKO++;
+                durKO = durKO + dur;
+            }
+        }
+    }
+
+
+    configAvailability1.data.datasets = [];
+    configAvailability1.data.datasets.push({
+        data: [nbOK, nbKO],
+        backgroundColor: [getExeStatusRowColor("OK"), getExeStatusRowColor("OTHERS")],
+    });
+    configAvailability1.data.labels = ["nb OK", "nb Others"];
+
+    configAvailability2.data.datasets = [];
+    configAvailability2.data.datasets.push({
+        data: [durOK, durKO],
+        backgroundColor: [getExeStatusRowColor("OK"), getExeStatusRowColor("OTHERS")],
+    });
+    configAvailability2.data.labels = ["OK duration (s)", "Others duration (s)"];
+    configAvailability2.data.labels.display = false;
+
+    document.getElementById('ChartAvailabilty1Counter').innerHTML = Math.round(nbOK / (nbOK + nbKO) * 100) + " %";
+    document.getElementById('ChartAvailabilty1CounterDet').innerHTML = "<b style='color:lightgrey'>" + nbKO + "</b> / " + (nbOK + nbKO);
+
+    document.getElementById('ChartAvailabilty2Counter').innerHTML = Math.round(durOK / (durOK + durKO) * 100) + " %";
+    document.getElementById('ChartAvailabilty2CounterDet').innerHTML = "<b style='color:lightgrey'>" + getHumanReadableDuration(durKO) + "</b> / " + getHumanReadableDuration((durOK + durKO));
+
+
+//    console.info(configTagBar);
+    window.myAvailability1.update();
+    window.myAvailability2.update();
+}
 
 function getLabel(tcDesc, country, env, robot, unit, party, type, testcaseid) {
     let lab = tcDesc;
@@ -794,6 +901,8 @@ function initGraph() {
     let partydatasets = [];
     let tctimedatasets = [];
     let tcbardatasets = [];
+    let availability1datasets = [];
+    let availability2datasets = [];
 
     configRequests = {
         type: 'line',
@@ -838,6 +947,43 @@ function initGraph() {
         options: tcbaroption
     };
 
+    configAvailability1 = {
+        type: 'pie',
+        data: {
+            datasets: availability1datasets
+        },
+        options: {
+            circumference: Math.PI,
+            rotation: Math.PI,
+            responsive: true,
+            legend: {
+                display: false
+            },
+            title: {
+                display: true,
+                text: "Execution Availability (Nb)"
+            }
+        }
+    };
+    configAvailability2 = {
+        type: 'pie',
+        data: {
+            datasets: availability2datasets
+        },
+        options: {
+            circumference: Math.PI,
+            rotation: Math.PI,
+            responsive: true,
+            legend: {
+                display: false
+            },
+            title: {
+                display: true,
+                text: "Execution Availability (Time)"
+            }
+        }
+    };
+
     var ctx = document.getElementById('canvasRequests').getContext('2d');
     window.myLineReq = new Chart(ctx, configRequests);
 
@@ -855,6 +1001,12 @@ function initGraph() {
 
     var ctx = document.getElementById('canvasTestStatBar').getContext('2d');
     window.myLineTcBar = new Chart(ctx, configTcBar);
+
+    var ctx = document.getElementById('canvasAvailability1').getContext('2d');
+    window.myAvailability1 = new Chart(ctx, configAvailability1);
+
+    var ctx = document.getElementById('canvasAvailability2').getContext('2d');
+    window.myAvailability2 = new Chart(ctx, configAvailability2);
 
 
     document.getElementById('canvasRequests').onclick = function (evt) {

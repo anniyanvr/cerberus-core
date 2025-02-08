@@ -1,5 +1,5 @@
 /**
- * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * Cerberus Copyright (C) 2013 - 2025 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -140,7 +140,7 @@ public class BuildRevisionInvariantDAO implements IBuildRevisionInvariantDAO {
         query.append("SELECT SQL_CALC_FOUND_ROWS * FROM buildrevisioninvariant ");
         searchSQL.append(" where 1=1 ");
 
-        if (StringUtil.isNotEmpty(searchTerm)) {
+        if (StringUtil.isNotEmptyOrNull(searchTerm)) {
             searchSQL.append(" and (`seq` like ?");
             searchSQL.append(" or `level` like ?");
             searchSQL.append(" or `versionname` like ? )");
@@ -166,7 +166,7 @@ public class BuildRevisionInvariantDAO implements IBuildRevisionInvariantDAO {
         }
         query.append(searchSQL);
 
-        if (StringUtil.isNotEmpty(column)) {
+        if (StringUtil.isNotEmptyOrNull(column)) {
             query.append(" order by `").append(column).append("` ").append(dir);
         }
 
@@ -180,7 +180,7 @@ public class BuildRevisionInvariantDAO implements IBuildRevisionInvariantDAO {
              PreparedStatement preStat = connection.prepareStatement(query.toString());
              Statement stm = connection.createStatement()) {
             int i = 1;
-            if (StringUtil.isNotEmpty(searchTerm)) {
+            if (StringUtil.isNotEmptyOrNull(searchTerm)) {
                 preStat.setString(i++, "%" + searchTerm + "%");
                 preStat.setString(i++, "%" + searchTerm + "%");
                 preStat.setString(i++, "%" + searchTerm + "%");
@@ -233,7 +233,7 @@ public class BuildRevisionInvariantDAO implements IBuildRevisionInvariantDAO {
     public Answer create(BuildRevisionInvariant buildRevisionInvariant) {
         MessageEvent msg;
         StringBuilder query = new StringBuilder();
-        query.append("INSERT INTO buildrevisioninvariant (system, level, seq, versionname) ");
+        query.append("INSERT INTO buildrevisioninvariant (`system`, level, seq, versionname) ");
         query.append("VALUES (?, ?, ?, ?)");
 
         LOG.debug("SQL : {}", query);
@@ -289,7 +289,7 @@ public class BuildRevisionInvariantDAO implements IBuildRevisionInvariantDAO {
     @Override
     public Answer update(String system, Integer level, Integer seq, BuildRevisionInvariant buildRevisionInvariant) {
         MessageEvent msg;
-        final String query = "UPDATE buildrevisioninvariant SET  system = ?, level = ?, seq = ?, versionname = ?  WHERE `system` = ? and level = ? and seq = ? ";
+        final String query = "UPDATE buildrevisioninvariant SET  `system` = ?, level = ?, seq = ?, versionname = ?  WHERE `system` = ? and level = ? and seq = ? ";
 
         LOG.debug("SQL : {}", query);
         try (Connection connection = this.databaseSpring.connect();
@@ -337,7 +337,7 @@ public class BuildRevisionInvariantDAO implements IBuildRevisionInvariantDAO {
         query.append(" AND ");
         query.append(UserSecurity.getSystemAllowForSQL("`System`"));
 
-        if (StringUtil.isNotEmpty(searchTerm)) {
+        if (StringUtil.isNotEmptyOrNull(searchTerm)) {
             searchSQL.append(" and (`seq` like ?");
             searchSQL.append(" or `level` like ?");
             searchSQL.append(" or `versionname` like ? )");
@@ -366,7 +366,7 @@ public class BuildRevisionInvariantDAO implements IBuildRevisionInvariantDAO {
                     preStat.setString(i++, system);
                 }
             }
-            if (StringUtil.isNotEmpty(searchTerm)) {
+            if (StringUtil.isNotEmptyOrNull(searchTerm)) {
                 preStat.setString(i++, "%" + searchTerm + "%");
                 preStat.setString(i++, "%" + searchTerm + "%");
                 preStat.setString(i++, "%" + searchTerm + "%");

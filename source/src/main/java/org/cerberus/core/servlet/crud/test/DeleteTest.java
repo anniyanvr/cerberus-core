@@ -1,5 +1,5 @@
 /**
- * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * Cerberus Copyright (C) 2013 - 2025 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -53,6 +53,7 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.List;
+import org.cerberus.core.crud.entity.LogEvent;
 
 /**
  * @author cerberus
@@ -86,7 +87,7 @@ public class DeleteTest extends HttpServlet {
         String key = policy.sanitize(request.getParameter("test"));
 
         // Checking all constrains before calling the services.
-        if (StringUtil.isEmptyOrNullValue(key)) {
+        if (StringUtil.isEmptyOrNULLString(key)) {
             ans.setResultMessage(
                     new MessageEvent(MessageEventEnum.DATA_OPERATION_ERROR_EXPECTED)
                             .resolveDescription("ITEM", "Test")
@@ -118,7 +119,7 @@ public class DeleteTest extends HttpServlet {
                     final Collection<TestCaseStep> externallyUsedTestCaseSteps = externallyUsedTestCaseSteps(testData);
                     if (!externallyUsedTestCaseSteps.isEmpty()) {
                         String cerberusUrlTemp = parameterService.getParameterStringByKey("cerberus_gui_url", "", "");
-                        if (StringUtil.isEmpty(cerberusUrlTemp)) {
+                        if (StringUtil.isEmptyOrNull(cerberusUrlTemp)) {
                             cerberusUrlTemp = parameterService.getParameterStringByKey("cerberus_url", "", "");
                         }
                         final String cerberusUrl = cerberusUrlTemp;
@@ -149,7 +150,7 @@ public class DeleteTest extends HttpServlet {
                         if (ans.isCodeEquals(MessageEventEnum.DATA_OPERATION_OK.getCode())) {
                             // Delete was successful. Adding Log entry.
                             ILogEventService logEventService = appContext.getBean(LogEventService.class);
-                            logEventService.createForPrivateCalls("/DeleteTest", "DELETE", "Delete Test : ['" + key + "']", request);
+                            logEventService.createForPrivateCalls("/DeleteTest", "DELETE", LogEvent.STATUS_INFO, "Delete Test : ['" + key + "']", request);
                         }
                     }
                 } catch (final CerberusException e) {

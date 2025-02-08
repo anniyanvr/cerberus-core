@@ -1,5 +1,5 @@
 /**
- * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * Cerberus Copyright (C) 2013 - 2025 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -46,6 +46,7 @@ public class TestDataLib {
     private String databaseCsv;
     private String csvUrl;
     private String separator;
+    private boolean ignoreFirstLine;
     private String description;
     private String creator;
     private Timestamp created;
@@ -61,9 +62,14 @@ public class TestDataLib {
     private List<TestDataLibData> subDataLib;
 
     public static final String TYPE_INTERNAL = "INTERNAL";
+    public static final String TYPE_FILE = "FILE";
     public static final String TYPE_SQL = "SQL";
     public static final String TYPE_SERVICE = "SERVICE";
-    public static final String TYPE_CSV = "CSV";
+    
+    public static final String TYPE_DATAFORMAT_XMLJSON = "XMLJSON";
+    public static final String TYPE_DATAFORMAT_CSV = "CSV";
+    public static final String TYPE_DATAFORMAT_SQLCOLUMNNAME = "SQL";
+    
 
     public String getService() {
         return service;
@@ -71,6 +77,14 @@ public class TestDataLib {
 
     public void setService(String service) {
         this.service = service;
+    }
+
+    public boolean isIgnoreFirstLine() {
+        return ignoreFirstLine;
+    }
+
+    public void setIgnoreFirstLine(boolean ignoreFirstLine) {
+        this.ignoreFirstLine = ignoreFirstLine;
     }
 
     public List<TestDataLibData> getSubDataLib() {

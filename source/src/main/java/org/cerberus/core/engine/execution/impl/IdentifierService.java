@@ -1,5 +1,5 @@
 /**
- * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * Cerberus Copyright (C) 2013 - 2025 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -36,12 +36,17 @@ public class IdentifierService implements IIdentifierService {
 
     @Override
     public Identifier convertStringToIdentifier(String input) {
-        return getIdentifier(input, "id");
+        return getIdentifier(input, Identifier.IDENTIFIER_ID);
+    }
+
+    @Override
+    public Identifier convertStringToIdentifierStrict(String input) {
+        return getIdentifier(input, "");
     }
 
     @Override
     public Identifier convertStringToSelectIdentifier(String input) {
-        return getIdentifier(input, "value");
+        return getIdentifier(input, Identifier.IDENTIFIER_VALUE);
     }
 
     private Identifier getIdentifier(String input, String defaultIdentifier) {
@@ -49,7 +54,7 @@ public class IdentifierService implements IIdentifierService {
         String identifier;
         String locator;
 
-        if (input.startsWith("//")) {
+        if ((input.startsWith("//")) || (input.startsWith("(//"))) {
             identifier = Identifier.IDENTIFIER_XPATH;
             locator = input;
         } else {
@@ -60,6 +65,23 @@ public class IdentifierService implements IIdentifierService {
             } else {
                 identifier = strings[0];
                 locator = strings[1];
+
+                String[] selectOptionAttributes = {
+                    Identifier.IDENTIFIER_ID, Identifier.IDENTIFIER_XPATH, Identifier.IDENTIFIER_NAME,
+                    Identifier.IDENTIFIER_CLASS, Identifier.IDENTIFIER_CSS, Identifier.IDENTIFIER_LINK,Identifier.IDENTIFIER_DATACERBERUS, 
+                    Identifier.IDENTIFIER_QUERYSELECTOR, Identifier.IDENTIFIER_ERRATUM,
+                    Identifier.IDENTIFIER_PICTURE, Identifier.IDENTIFIER_TEXT,
+                    Identifier.IDENTIFIER_COORD, Identifier.IDENTIFIER_OFFSET,
+                    Identifier.IDENTIFIER_TITLE, Identifier.IDENTIFIER_REGEXTITLE, Identifier.IDENTIFIER_URL, Identifier.IDENTIFIER_REGEXURL,
+                    Identifier.IDENTIFIER_VALUE, Identifier.IDENTIFIER_REGEXVALUE,
+                    Identifier.IDENTIFIER_INDEX, Identifier.IDENTIFIER_REGEXINDEX,
+                    Identifier.IDENTIFIER_LABEL, Identifier.IDENTIFIER_REGEXLABEL
+                };
+
+                if (!Arrays.asList(selectOptionAttributes).contains(identifier)) {
+                    identifier = defaultIdentifier;
+                    locator = input;
+                }
             }
         }
 
@@ -70,7 +92,8 @@ public class IdentifierService implements IIdentifierService {
 
     @Override
     public void checkSelectOptionsIdentifier(String identifier) throws CerberusEventException {
-        String[] selectOptionAttributes = {"label", "value", "index", "regexLabel", "regexValue", "regexIndex"};
+        String[] selectOptionAttributes = {Identifier.IDENTIFIER_LABEL, Identifier.IDENTIFIER_VALUE, Identifier.IDENTIFIER_INDEX, Identifier.IDENTIFIER_REGEXLABEL,
+            Identifier.IDENTIFIER_REGEXVALUE, Identifier.IDENTIFIER_REGEXINDEX};
 
         if (!Arrays.asList(selectOptionAttributes).contains(identifier)) {
             MessageEvent message = new MessageEvent(MessageEventEnum.ACTION_FAILED_UNKOWN_IDENTIFIER_SELENIUM_SELECT);
@@ -82,7 +105,9 @@ public class IdentifierService implements IIdentifierService {
 
     @Override
     public void checkWebElementIdentifier(String identifier) throws CerberusEventException {
-        String[] selectOptionAttributes = {"id", "name", "class", "css", "xpath", "link", "data-cerberus", "coord", "picture", "querySelector", "erratum"};
+        String[] selectOptionAttributes = {Identifier.IDENTIFIER_ID, Identifier.IDENTIFIER_NAME, Identifier.IDENTIFIER_CLASS, Identifier.IDENTIFIER_CSS,
+            Identifier.IDENTIFIER_XPATH, Identifier.IDENTIFIER_LINK, Identifier.IDENTIFIER_DATACERBERUS, Identifier.IDENTIFIER_COORD, Identifier.IDENTIFIER_PICTURE,
+            Identifier.IDENTIFIER_QUERYSELECTOR, Identifier.IDENTIFIER_ERRATUM, Identifier.IDENTIFIER_OFFSET,};
 
         if (!Arrays.asList(selectOptionAttributes).contains(identifier)) {
             MessageEvent message = new MessageEvent(MessageEventEnum.ACTION_FAILED_UNKOWN_IDENTIFIER_SELENIUM);
@@ -104,7 +129,7 @@ public class IdentifierService implements IIdentifierService {
 
     @Override
     public void checkSikuliIdentifier(String identifier) throws CerberusEventException {
-        String[] selectOptionAttributes = {"picture", "text"};
+        String[] selectOptionAttributes = {Identifier.IDENTIFIER_PICTURE, Identifier.IDENTIFIER_TEXT};
 
         if (!Arrays.asList(selectOptionAttributes).contains(identifier)) {
             MessageEvent message = new MessageEvent(MessageEventEnum.ACTION_FAILED_UNKOWN_IDENTIFIER_SIKULI);

@@ -1,5 +1,5 @@
 /**
- * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * Cerberus Copyright (C) 2013 - 2025 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -22,6 +22,7 @@ package org.cerberus.core.service.notifications.email.impl;
 import java.nio.charset.Charset;
 import org.cerberus.core.service.notifications.email.entity.Email;
 import org.apache.commons.mail.HtmlEmail;
+import org.cerberus.core.crud.entity.LogEvent;
 import org.cerberus.core.crud.service.ILogEventService;
 import org.cerberus.core.service.notifications.email.IEmailService;
 import org.cerberus.core.util.StringUtil;
@@ -42,7 +43,7 @@ public class EmailService implements IEmailService {
 
     @Override
     public void sendHtmlMail(Email cerberusEmail) throws Exception {
-        if (!StringUtil.isEmpty(cerberusEmail.getHost())
+        if (!StringUtil.isEmptyOrNull(cerberusEmail.getHost())
                 && !"mail.com".equals(cerberusEmail.getHost())) {
             // Smtp host is defined and not equal to default value.
 
@@ -59,7 +60,7 @@ public class EmailService implements IEmailService {
 //        email.setTLS(cerberusEmail.isSetTls());
             email.setDebug(true);
 
-            if (!StringUtil.isEmpty(cerberusEmail.getUserName()) || !StringUtil.isEmpty(cerberusEmail.getPassword())) {
+            if (!StringUtil.isEmptyOrNull(cerberusEmail.getUserName()) || !StringUtil.isEmptyOrNull(cerberusEmail.getPassword())) {
                 email.setAuthentication(cerberusEmail.getUserName(), cerberusEmail.getPassword());
             }
 
@@ -78,7 +79,7 @@ public class EmailService implements IEmailService {
                 email.addTo(emailaddress, name);
             }
 
-            if (!StringUtil.isEmpty(cerberusEmail.getCc())) {
+            if (!StringUtil.isEmptyOrNull(cerberusEmail.getCc())) {
                 String[] copy = cerberusEmail.getCc().split(";");
 
                 for (int i = 0; i < copy.length; i++) {
@@ -96,19 +97,19 @@ public class EmailService implements IEmailService {
                 }
             }
 
-            logEventService.createForPrivateCalls("", "EMAIL", "Start Sending email '" + cerberusEmail.getSubject() + "'.");
+            logEventService.createForPrivateCalls("", "EMAIL", LogEvent.STATUS_INFO, "Start Sending email '" + cerberusEmail.getSubject() + "'.");
             LOG.info("Start Sending email '" + cerberusEmail.getSubject() + "'.");
 
             try {
                 //Sending the email
                 email.send();
             } catch (Exception e) {
-                logEventService.createForPrivateCalls("", "EMAIL", "Error Sending email '" + cerberusEmail.getSubject() + "'");
+                logEventService.createForPrivateCalls("", "EMAIL", LogEvent.STATUS_ERROR, "Error Sending email '" + cerberusEmail.getSubject() + "'");
                 LOG.error("Exception catched when trying to send the mail '" + cerberusEmail.getSubject() + "' : ", e);
                 throw e;
             }
 
-            logEventService.createForPrivateCalls("", "EMAIL", "Email Sent '" + cerberusEmail.getSubject() + "'.");
+            logEventService.createForPrivateCalls("", "EMAIL", LogEvent.STATUS_INFO, "Email Sent '" + cerberusEmail.getSubject() + "'.");
             LOG.info("End Sending email '" + cerberusEmail.getSubject() + "'.");
 
         } else {

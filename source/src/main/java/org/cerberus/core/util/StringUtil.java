@@ -1,5 +1,5 @@
 /**
- * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * Cerberus Copyright (C) 2013 - 2025 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -22,16 +22,6 @@ package org.cerberus.core.util;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.owasp.html.PolicyFactory;
-import org.owasp.html.Sanitizers;
-
-import javax.script.ScriptEngine;
-import javax.script.ScriptEngineManager;
-import javax.script.ScriptException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.net.MalformedURLException;
@@ -41,6 +31,16 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.stream.Collectors;
+import javax.script.ScriptEngine;
+import javax.script.ScriptEngineManager;
+import javax.script.ScriptException;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.owasp.html.PolicyFactory;
+import org.owasp.html.Sanitizers;
+import org.springframework.web.util.HtmlUtils;
 
 /**
  * Utility class centralizing string utility methods
@@ -58,9 +58,10 @@ public final class StringUtil {
     public static final String FILE_PREFIX = "file:/";
     public static final String FTP_PREFIX = "ftp://";
     public static final String FTPS_PREFIX = "ftps://";
+    public static final String SFTP_PREFIX = "sftp://";
     private static final Logger LOG = LogManager.getLogger(StringUtil.class);
     private static final int MAX_STRING_SIZE_IN_MESSAGE = 300;
-    private static final String SECRET_STRING = "XXXXXX";
+    public static final String SECRET_STRING = "XXXXXXXXXX";
 
     // To avoid instantiation of utility class
     private StringUtil() {
@@ -127,58 +128,79 @@ public final class StringUtil {
     }
 
     /**
-     * This method just reformat a string in order to increase the change it can
+     * This method just reformat a string in order to increase the chance it can
      * get converted to float. For ex, it replace , with .
      */
     public static String prepareToNumeric(String str) {
-        if (str.contains(",")) {
-            return str.replace(",", ".");
+        String result = str.replaceAll("[^0-9.,-]", "");
+        if (result.contains(",")) {
+            result = result.replace(",", ".");
         }
-        return str;
+        if (result.startsWith("-")) {
+            result = "-" + result.replace("-", "");
+        } else {
+            result = result.replace("-", "");
+        }
+        int i = 0;
+        while (nbChars(result, ".") > 1 && i++ < 100) {
+            result = result.replaceFirst("\\.", "");
+            LOG.debug("replaced " + result);
+        }
+        LOG.debug("Cleaned string from {} to {}", str, result);
+
+        return result;
+    }
+
+    public static int nbChars(String str, String substr) {
+        LOG.debug(str.length() - str.replace(substr, "").length());
+        return str.length() - str.replace(substr, "").length();
+
     }
 
     /**
      * Check for "null" string or empty string content
      *
-     * @return null safe method that returns
-     * true if the parameter is a "null" string or an empty string
+     * @return null safe method that returns true if the parameter is a "null"
+     * string or an empty string
      */
-    public static boolean isEmptyOrNullValue(String str) {
-        return (isEmpty(str) || NULL.equalsIgnoreCase(str.trim()));
+    public static boolean isEmptyOrNULLString(String str) {
+        return (isEmptyOrNull(str) || NULL.equalsIgnoreCase(str.trim()));
     }
 
     /**
      * Check for not "null" string or not empty string content
      *
-     * @return null safe method that returns
-     * true if the parameter is NOT a "null" string or empty string.
+     * @return null safe method that returns true if the parameter is NOT a
+     * "null" string or empty string.
      */
-    public static boolean isNotEmptyOrNullValue(String str) {
-        return isNotEmpty(str) && !NULL.equalsIgnoreCase(str.trim());
+    public static boolean isNotEmptyOrNULLString(String str) {
+        return isNotEmptyOrNull(str) && !NULL.equalsIgnoreCase(str.trim());
     }
 
     /**
      * Check for null or empty string content
      *
-     * @return Null safe method that returns true if the parameter is null or an empty string.
+     * @return Null safe method that returns true if the parameter is null or an
+     * empty string.
      */
-    public static boolean isEmpty(String str) {
+    public static boolean isEmptyOrNull(String str) {
         return (str == null) || (str.trim().isEmpty());
     }
 
     /**
      * Check for not null or empty string content
      *
-     * @return Null safe method that returns true if the parameter is NOT null or an empty string.
+     * @return Null safe method that returns true if the parameter is NOT null
+     * or an empty string.
      */
-    public static boolean isNotEmpty(String str) {
+    public static boolean isNotEmptyOrNull(String str) {
         return (str != null) && !str.trim().isEmpty();
     }
 
     /**
      * Generate a random string using current time and charset
      *
-     * @param length  of the random string to generate
+     * @param length of the random string to generate
      * @param charset use to generate random value
      * @return random string, empty if charset is null or length <= 0
      */
@@ -202,7 +224,7 @@ public final class StringUtil {
      * Return left part of the String.
      *
      * @param string1 String to treat.
-     * @param length  nb of characters to keep.
+     * @param length nb of characters to keep.
      * @return the {length} first character of the string1.
      */
     public static String getLeftString(String string1, int length) {
@@ -219,7 +241,7 @@ public final class StringUtil {
      * Return left part of the string adding ... at the end.
      *
      * @param string1 String to treat.
-     * @param length  nb of characters to keep.
+     * @param length nb of characters to keep.
      * @return the {length} first character of the string1.
      */
     public static String getLeftStringPretty(String string1, int length) {
@@ -255,7 +277,7 @@ public final class StringUtil {
         if (secrets == null) {
             return text;
         }
-        if (isEmpty(text)) {
+        if (isEmptyOrNull(text)) {
             return text;
         }
         for (Map.Entry<String, String> entry : secrets.entrySet()) {
@@ -346,7 +368,9 @@ public final class StringUtil {
                 || url.startsWith(HTTPS_PREFIX)
                 // File scheme can have no authority component, then only one slash is necessary
                 || url.startsWith(FILE_PREFIX)
-                || url.startsWith(FTP_PREFIX);
+                || url.startsWith(FTP_PREFIX)
+                || url.startsWith(FTPS_PREFIX)
+                || url.startsWith(SFTP_PREFIX);
     }
 
     /**
@@ -360,20 +384,24 @@ public final class StringUtil {
      * in stead of www.laredoute.frfrtoto.jsp<br>
      * Protocol will be added in case host did not already have the protocol.
      *
+     * @param host
+     * @param contextRoot
+     * @param uri
+     * @param protocol
      * @return URL correctly formatted.
      */
     public static String getURLFromString(String host, String contextRoot, String uri, String protocol) {
         String result = "";
-        if (!isEmpty(host)) {
+        if (!isEmptyOrNull(host)) {
             result += StringUtil.addSuffixIfNotAlready(host, "/");
         }
-        if (!isEmpty(contextRoot)) {
+        if (!isEmptyOrNull(contextRoot)) {
             if (contextRoot.startsWith("/")) {
                 contextRoot = contextRoot.substring(1);
             }
             result += StringUtil.addSuffixIfNotAlready(contextRoot, "/");
         }
-        if (!isEmpty(uri)) {
+        if (!isEmptyOrNull(uri)) {
             if (uri.startsWith("/")) {
                 uri = uri.substring(1);
             }
@@ -387,7 +415,7 @@ public final class StringUtil {
 
     public static String addQueryString(String url, String queryString) {
         String result;
-        if (isEmpty(queryString)) {
+        if (isEmptyOrNull(queryString)) {
             return url;
         }
         url = url.trim();
@@ -403,8 +431,8 @@ public final class StringUtil {
 
     public static String formatURLCredential(String user, String pass, String url) {
         String credential = "";
-        if (!StringUtil.isEmpty(user)) {
-            if (!StringUtil.isEmpty(pass)) {
+        if (!StringUtil.isEmptyOrNull(user)) {
+            if (!StringUtil.isEmptyOrNull(pass)) {
                 credential = user + ":" + pass + "@";
             } else {
                 credential = user + "@";
@@ -460,6 +488,10 @@ public final class StringUtil {
             LOG.error("JSONException in convertToString.", ex);
         }
         return result.toString();
+    }
+
+    public static String convertHtmlToString(String html) {
+        return HtmlUtils.htmlUnescape(html.replaceAll("\\<.*?\\>", "").replaceAll("\\n", "").replaceAll("\\r", "").replaceAll("\\t", " ").replaceAll("  ", ""));
     }
 
     public static String convertToString(List<String> listString, String separator) {
@@ -518,6 +550,17 @@ public final class StringUtil {
         return null;
     }
 
+    public static String getPasswordFromAnyUrl(String appURL) {
+        if (appURL.contains("://")) {
+            appURL = appURL.split("://")[1];
+            if (appURL.contains("@")) {
+                appURL = appURL.split("@")[0];
+                return appURL.substring(appURL.indexOf(':') + 1);
+            }
+        }
+        return null;
+    }
+
     /**
      * Convert a string structure in a list
      *
@@ -536,7 +579,8 @@ public final class StringUtil {
      * @param array Structure of the list in string format
      * @return String mapped to a list of doubles
      * @throws JsonProcessingException When the array structure is not correct
-     * @throws NumberFormatException   When an element of the list is a text and not a number
+     * @throws NumberFormatException When an element of the list is a text and
+     * not a number
      */
     public static List<Double> convertStringToDoubleArray(String array) throws NumberFormatException, JsonProcessingException {
         List<String> strings = convertStringToStringArray(array);

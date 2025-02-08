@@ -1,5 +1,5 @@
 /*
- * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * Cerberus Copyright (C) 2013 - 2025 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -29,8 +29,10 @@ function openModalFile(action, manualFile, mode, idex, file, auto) {
 
     if (mode === "EDIT") {
         editFileClick(file, auto);
-    } else if (mode == "ADD") {
+    } else if (mode === "ADD") {
         addFileClick(file, auto);
+    } else if (mode === "VIEW") {
+        viewFileClick(file, auto);
     }
 
     $("#editManualFileButton").off("click");
@@ -68,6 +70,32 @@ function editFileClick(manualFile, auto) {
     clearResponseMessage($('#editManualFileModal'));
 
     $("#editEntryModalLabel").text("Edit Execution File")
+
+    $('#editManualFileButton').attr('class', 'btn btn-primary');
+    $('#editManualFileButton').removeProp('hidden');
+
+    $('#deleteManualFileButton').attr('class', 'btn btn-danger');
+    $('#deleteManualFileButton').removeProp('hidden');
+
+    $('#seeManualFileButton').attr('class', 'btn btn-default');
+    $('#seeManualFileButton').removeProp('hidden');
+
+    $('#addManualFileButton').attr('class', '');
+    $('#addManualFileButton').attr('hidden', 'hidden');
+
+    $('#editManualFileModalForm select[name="idname"]').off("change");
+    $('#editManualFileModalForm input[name="value"]').off("change");
+
+    feedFileModal(manualFile, "editManualFileModal", "EDIT", auto);
+    listennerForInputTypeFile('#editManualFileModal')
+    pasteListennerForClipboardPicture('#editManualFileModal');
+}
+
+function viewFileClick(manualFile, auto) {
+
+    clearResponseMessage($('#editManualFileModal'));
+
+    $("#editEntryModalLabel").text("Execution File")
 
     $('#editManualFileButton').attr('class', 'btn btn-primary');
     $('#editManualFileButton').removeProp('hidden');
@@ -238,7 +266,7 @@ function feedFileModalData(manualFile, modalId, mode, hasPermissionsUpdate, auto
         })
 
         if ((manualFile.fileType == "JPG") || (manualFile.fileType == "PNG")) {
-            var image = $('<img>').addClass("selectedPicture").attr("src", urlImage + "&h=400&w=560");
+            var image = $('<img>').addClass("selectedPicture").attr("src", urlImage + "&r=true");
             $("#preview").append(image)
         } else if ((manualFile.fileType == "PDF") || (manualFile.fileType == "BIN")) {
             $("#preview").append("<p>impossible to get a preview of your file</p>");

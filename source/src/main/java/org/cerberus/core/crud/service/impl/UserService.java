@@ -1,5 +1,5 @@
 /**
- * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * Cerberus Copyright (C) 2013 - 2025 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -170,7 +170,7 @@ public class UserService implements IUserService {
     }
 
     @Override
-    public boolean verifyAPIKey(String apiKey) {
+    public String verifyAPIKey(String apiKey) {
         return userDAO.verifyAPIKey(apiKey);
     }
 

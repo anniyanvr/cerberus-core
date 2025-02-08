@@ -1,5 +1,5 @@
 /**
- * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * Cerberus Copyright (C) 2013 - 2025 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -19,16 +19,16 @@
  */
 package org.cerberus.core.crud.entity;
 
-import lombok.Builder;
-import lombok.Getter;
-import lombok.Setter;
-import lombok.AllArgsConstructor;
-import lombok.EqualsAndHashCode;
-import lombok.NoArgsConstructor;
-
+import java.sql.Timestamp;
+import java.util.List;
 import javax.persistence.Entity;
 import javax.persistence.Id;
-import java.sql.Timestamp;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 /**
  * @author vertigo
@@ -48,17 +48,27 @@ public class Application {
     private String type;
     private String system;
     private String subsystem;
-    private String svnurl;
+    private String repoUrl;
+    private String bugTrackerConnector;
+    private String bugTrackerParam1;
+    private String bugTrackerParam2;
+    private String bugTrackerParam3;
     private String bugTrackerUrl;
     private String bugTrackerNewUrl;
     private int poolSize;
     private String deploytype;
     private String mavengroupid;
     private String description;
-    private String UsrCreated;
-    private Timestamp DateCreated;
-    private String UsrModif;
-    private Timestamp DateModif;
+    private String usrCreated;
+    private Timestamp dateCreated;
+    private String usrModif;
+    private Timestamp dateModif;
+
+    /**
+     * From here are data outside database model.
+     */
+    @EqualsAndHashCode.Exclude
+    private List<CountryEnvironmentParameters> environmentList;
 
     public Application(String application) {
         this.application = application;
@@ -74,6 +84,10 @@ public class Application {
     public static final String TYPE_IPA = "IPA";
     public static final String TYPE_FAT = "FAT";
     public static final String TYPE_NONE = "NONE";
+
+    public static final String BUGTRACKER_NONE = "NONE";
+    public static final String BUGTRACKER_JIRA = "JIRA";
+    public static final String BUGTRACKER_GITHUB = "GITHUB";
 
     public boolean hasSameKey(Application obj) {
         if (obj == null) {

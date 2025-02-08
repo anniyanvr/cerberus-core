@@ -1,5 +1,5 @@
 /**
- * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * Cerberus Copyright (C) 2013 - 2025 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -112,9 +112,9 @@ public interface IUserDAO {
 
     /**
      * @param apiKey
-     * @return true if password match and false if password does not match.
+     * @return null string if apikey does not match and userlogin if it match.
      */
-    boolean verifyAPIKey(String apiKey);
+    String verifyAPIKey(String apiKey);
     
     /**
      *

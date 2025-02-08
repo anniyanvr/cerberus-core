@@ -1,5 +1,5 @@
 /**
- * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * Cerberus Copyright (C) 2013 - 2025 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -40,6 +40,8 @@ import org.apache.commons.fileupload.disk.DiskFileItemFactory;
 import org.apache.commons.fileupload.servlet.ServletFileUpload;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.cerberus.core.crud.entity.LogEvent;
+import org.cerberus.core.crud.entity.Parameter;
 import org.cerberus.core.crud.entity.TestDataLib;
 import org.cerberus.core.crud.entity.TestDataLibData;
 import org.cerberus.core.crud.factory.IFactoryTestDataLib;
@@ -123,7 +125,9 @@ public class CreateTestDataLib extends HttpServlet {
                 }
             }
         } catch (FileUploadException e) {
-            e.printStackTrace();
+            LOG.warn(e, e);
+        } catch (Exception e) {
+            LOG.warn(e, e);
         }
 
         try {
@@ -149,10 +153,12 @@ public class CreateTestDataLib extends HttpServlet {
             String script = fileData.get("script");
             String servicePath = fileData.get("servicepath");
             String method = fileData.get("method");
-            String envelope =fileData.get("envelope");
-            String csvUrl =fileData.get("csvUrl");
+            String envelope = fileData.get("envelope");
+            String csvUrl = fileData.get("csvUrl");
             String separator = fileData.get("separator");
             String activateAutoSubdata = fileData.get("subdataCheck");
+            boolean ignoreFirstLine = ParameterParserUtil.parseBooleanParamAndDecode(fileData.get("ignoreFirstLine"), false, "UTF8");
+
             /**
              * Checking all constrains before calling the services.
              */
@@ -160,12 +166,13 @@ public class CreateTestDataLib extends HttpServlet {
             MessageEvent msg1 = new MessageEvent(MessageEventEnum.GENERIC_OK);
             Answer finalAnswer = new Answer(msg1);
 
-            if (StringUtil.isEmpty(name)) {
+            if (StringUtil.isEmptyOrNull(name)) {
                 msg = new MessageEvent(MessageEventEnum.DATA_OPERATION_ERROR_EXPECTED);
                 msg.setDescription(msg.getDescription().replace("%ITEM%", "Test Data Library")
                         .replace("%OPERATION%", "Create")
                         .replace("%REASON%", "Test data library name is missing! "));
                 finalAnswer.setResultMessage(msg);
+
             } else {
                 /**
                  * All data seems cleans so we can call the services.
@@ -174,7 +181,7 @@ public class CreateTestDataLib extends HttpServlet {
                 IFactoryTestDataLib factoryLibService = appContext.getBean(IFactoryTestDataLib.class);
 
                 TestDataLib lib = factoryLibService.create(0, name, system, environment, country, privateData, group,
-                        type, database, script, databaseUrl, service, servicePath, method, envelope, databaseCsv, csvUrl, separator, description,
+                        type, database, script, databaseUrl, service, servicePath, method, envelope, databaseCsv, csvUrl, separator, ignoreFirstLine, description,
                         request.getRemoteUser(), null, "", null, null, null, null, null);
 
                 //Creates the entries and the subdata list
@@ -186,50 +193,56 @@ public class CreateTestDataLib extends HttpServlet {
                  */
                 if (ansItem.isCodeEquals(MessageEventEnum.DATA_OPERATION_OK.getCode())) {
                     ILogEventService logEventService = appContext.getBean(LogEventService.class);
-                    logEventService.createForPrivateCalls("/CreateTestDataLib", "CREATE", "Create TestDataLib  : ['" + name + "']", request);
+                    logEventService.createForPrivateCalls("/CreateTestDataLib", "CREATE", LogEvent.STATUS_INFO, "Create TestDataLib  : ['" + name + "']", request);
                 }
 
                 List<TestDataLibData> tdldList = new ArrayList<>();
                 TestDataLib dataLibWithUploadedFile = (TestDataLib) ansItem.getItem();
 
                 if (file != null) {
+                    String fileName;
                     ans = libService.uploadFile(dataLibWithUploadedFile.getTestDataLibID(), file);
                     if (ans.isCodeEquals(MessageEventEnum.DATA_OPERATION_OK.getCode())) {
-                        dataLibWithUploadedFile.setCsvUrl(File.separator + dataLibWithUploadedFile.getTestDataLibID() + File.separator + file.getName());
-                        libService.update(dataLibWithUploadedFile);
+                        fileName = file.getName();
+                        dataLibWithUploadedFile.setCsvUrl(File.separator + dataLibWithUploadedFile.getTestDataLibID() + File.separator + fileName);
+                        lib.setTestDataLibID(dataLibWithUploadedFile.getTestDataLibID());
+                        ans = libService.update(lib);
+                        finalAnswer = AnswerUtil.agregateAnswer(finalAnswer, ans);
                     }
                 }
 
                 // Getting list of SubData from JSON Call
                 if (fileData.get("subDataList") != null) {
                     JSONArray objSubDataArray = new JSONArray(fileData.get("subDataList"));
-                    tdldList = getSubDataFromParameter(request, appContext, dataLibWithUploadedFile.getTestDataLibID(), objSubDataArray);
+                    tdldList = getSubDataFromParameter(request, appContext, dataLibWithUploadedFile.getTestDataLibID(), objSubDataArray, (file != null && activateAutoSubdata != null && activateAutoSubdata.equals("1")));
                 }
 
-                    if (file != null && activateAutoSubdata != null && activateAutoSubdata.equals("1")) {
+                if (file != null && activateAutoSubdata != null && activateAutoSubdata.equals("1")) {
                     String firstLine = "";
                     String secondLine = "";
-                    try (BufferedReader reader = new BufferedReader(new FileReader(parameterService.getParameterStringByKey("cerberus_testdatalibcsv_path", "", null) + lib.getCsvUrl()));) {
+                    try (BufferedReader reader = new BufferedReader(new FileReader(parameterService.getParameterStringByKey(Parameter.VALUE_cerberus_testdatalibfile_path, "", null) + dataLibWithUploadedFile.getCsvUrl()));) {
                         firstLine = reader.readLine();
                         secondLine = reader.readLine();
+                        LOG.debug(firstLine);
+                        LOG.debug(secondLine);
                         String[] firstLineSubData = (!dataLibWithUploadedFile.getSeparator().isEmpty()) ? firstLine.split(dataLibWithUploadedFile.getSeparator()) : firstLine.split(",");
                         String[] secondLineSubData = (!dataLibWithUploadedFile.getSeparator().isEmpty()) ? secondLine.split(dataLibWithUploadedFile.getSeparator()) : secondLine.split(",");
                         int i = 0;
                         int y = 1;
                         TestDataLibData firstLineLibData = tdldList.get(0);
                         tdldList = new ArrayList<>();
-                        if (StringUtil.isEmpty(firstLineLibData.getColumnPosition())) {
+                        if (StringUtil.isEmptyOrNull(firstLineLibData.getColumnPosition())) {
                             firstLineLibData.setColumnPosition("1");
                         }
-                        if (StringUtil.isEmpty(firstLineLibData.getValue())) {
+                        if (StringUtil.isEmptyOrNull(firstLineLibData.getValue())) {
                             firstLineLibData.setValue(secondLineSubData[0]);
                         }
-                        if (StringUtil.isEmpty(firstLineLibData.getColumn())) {
+                        if (StringUtil.isEmptyOrNull(firstLineLibData.getColumn())) {
                             firstLineLibData.setColumn(firstLineSubData[0]);
                         }
                         tdldList.add(firstLineLibData);
                         for (String item : firstLineSubData) {
-                            TestDataLibData tdld = tdldFactory.create(null, dataLibWithUploadedFile.getTestDataLibID(), item + "_" + y,"N", secondLineSubData[i], item, null, Integer.toString(y), null);
+                            TestDataLibData tdld = tdldFactory.create(null, dataLibWithUploadedFile.getTestDataLibID(), item + "_" + y, "N", secondLineSubData[i], item, null, Integer.toString(y), null);
                             tdldList.add(tdld);
                             i++;
                             y++;
@@ -242,6 +255,7 @@ public class CreateTestDataLib extends HttpServlet {
                         } catch (Throwable ignore) {
                         }
                     }
+                } else {
                 }
 
                 ans = tdldService.compareListAndUpdateInsertDeleteElements(dataLibWithUploadedFile.getTestDataLibID(), tdldList);
@@ -257,20 +271,26 @@ public class CreateTestDataLib extends HttpServlet {
             response.getWriter().print(jsonResponse);
             response.getWriter().flush();
         } catch (JSONException ex) {
-            LOG.warn(ex);
+            LOG.warn(ex, ex);
             response.getWriter().print(AnswerUtil.createGenericErrorAnswer());
             response.getWriter().flush();
+        } catch (Exception e) {
+            LOG.warn(e, e);
         }
 
     }
 
-    private List<TestDataLibData> getSubDataFromParameter(HttpServletRequest request, ApplicationContext appContext, int testDataLibId, JSONArray json) throws JSONException {
+    private List<TestDataLibData> getSubDataFromParameter(HttpServletRequest request, ApplicationContext appContext, int testDataLibId, JSONArray json, boolean onlyFirstLine) throws JSONException {
         List<TestDataLibData> tdldList = new ArrayList<>();
         IFactoryTestDataLibData tdldFactory = appContext.getBean(IFactoryTestDataLibData.class);
         PolicyFactory policy = Sanitizers.FORMATTING.and(Sanitizers.LINKS);
         String charset = request.getCharacterEncoding() == null ? "UTF-8" : request.getCharacterEncoding();
 
-        for (int i = 0; i < json.length(); i++) {
+        int maxiteration = json.length();
+        if (onlyFirstLine) {
+            maxiteration = 1;
+        }
+        for (int i = 0; i < maxiteration; i++) {
             JSONObject objectJson = json.getJSONObject(i);
 
             // Parameter that are already controled by GUI (no need to decode) --> We SECURE them

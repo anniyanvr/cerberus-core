@@ -1,5 +1,5 @@
 /**
- * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * Cerberus Copyright (C) 2013 - 2025 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -25,6 +25,7 @@ import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import org.cerberus.core.crud.entity.LogEvent;
 import org.cerberus.core.crud.entity.User;
 import org.cerberus.core.exception.CerberusException;
 import org.cerberus.core.crud.service.ILogEventService;
@@ -74,7 +75,7 @@ public class UpdateMyUserRobotPreference extends HttpServlet {
             userService.updateUser(usr);
             
             ILogEventService logEventService = appContext.getBean(LogEventService.class);
-            logEventService.createForPrivateCalls("/UpdateMyUserRobotPreference", "UPDATE", "Update user robot preference for user: " + usr.getLogin(), request);
+            logEventService.createForPrivateCalls("/UpdateMyUserRobotPreference", "UPDATE", LogEvent.STATUS_INFO, "Update user robot preference for user: " + usr.getLogin(), request);
 
             response.getWriter().print(usr.getLogin());
         } catch (CerberusException myexception) {

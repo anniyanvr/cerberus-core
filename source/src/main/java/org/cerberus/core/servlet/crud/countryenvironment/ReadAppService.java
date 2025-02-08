@@ -1,5 +1,5 @@
 /**
- * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * Cerberus Copyright (C) 2013 - 2025 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -19,14 +19,16 @@
  */
 package org.cerberus.core.servlet.crud.countryenvironment;
 
-import com.google.common.base.Strings;
 import com.google.gson.Gson;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.cerberus.core.crud.entity.AppService;
+import org.cerberus.core.crud.entity.Application;
+import org.cerberus.core.crud.entity.CountryEnvironmentParameters;
 import org.cerberus.core.crud.service.IAppServiceService;
+import org.cerberus.core.crud.service.IApplicationService;
+import org.cerberus.core.crud.service.ICountryEnvironmentParametersService;
 import org.cerberus.core.crud.service.ITestCaseService;
-import org.cerberus.core.crud.service.impl.AppServiceService;
 import org.cerberus.core.dto.TestCaseListDTO;
 import org.cerberus.core.dto.TestListDTO;
 import org.cerberus.core.engine.entity.MessageEvent;
@@ -36,6 +38,7 @@ import org.cerberus.core.util.answer.AnswerItem;
 import org.cerberus.core.util.answer.AnswerList;
 import org.cerberus.core.util.answer.AnswerUtil;
 import org.cerberus.core.util.servlet.ServletUtil;
+import org.cerberus.core.exception.CerberusException;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -55,6 +58,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import org.cerberus.core.util.StringUtil;
 
 /**
  * @author bcivel
@@ -64,15 +68,17 @@ public class ReadAppService extends HttpServlet {
 
     private static final Logger LOG = LogManager.getLogger(ReadAppService.class);
     private IAppServiceService appServiceService;
+    private IApplicationService applicationService;
+    private ICountryEnvironmentParametersService cepService;
 
     /**
      * Processes requests for both HTTP <code>GET</code> and <code>POST</code>
      * methods.
      *
-     * @param request  servlet request
+     * @param request servlet request
      * @param response servlet response
      * @throws ServletException if a servlet-specific error occurs
-     * @throws IOException      if an I/O error occurs
+     * @throws IOException if an I/O error occurs
      */
     protected void processRequest(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
@@ -113,10 +119,10 @@ public class ReadAppService extends HttpServlet {
             String system;
             JSONObject jsonResponse = new JSONObject();
 
-            if (service == null && Strings.isNullOrEmpty(columnName)) {
+            if (service == null && StringUtil.isEmptyOrNull(columnName)) {
                 answer = findAppServiceList(appContext, userHasPermissions, request);
                 jsonResponse = answer.getItem();
-            } else if (!Strings.isNullOrEmpty(columnName)) {
+            } else if (!StringUtil.isEmptyOrNull(columnName)) {
                 answer = findDistinctValuesOfColumn(appContext, request, columnName);
                 jsonResponse = answer.getItem();
             } else if (service != null && request.getParameter("limit") != null) {
@@ -147,7 +153,7 @@ public class ReadAppService extends HttpServlet {
 
         AnswerItem<JSONObject> item = new AnswerItem<>();
         JSONObject object = new JSONObject();
-        appServiceService = appContext.getBean(AppServiceService.class);
+        appServiceService = appContext.getBean(IAppServiceService.class);
 
         int startPosition = Integer.valueOf(ParameterParserUtil.parseStringParam(request.getParameter("iDisplayStart"), "0"));
         int length = Integer.valueOf(ParameterParserUtil.parseStringParam(request.getParameter("iDisplayLength"), "0"));
@@ -160,7 +166,7 @@ public class ReadAppService extends HttpServlet {
         String columnName = columnToSort[columnToSortParameter];
         String sort = ParameterParserUtil.parseStringParam(request.getParameter("sSortDir_0"), "asc");
         List<String> individualLike = new ArrayList<>(Arrays.asList(ParameterParserUtil.parseStringParam(request.getParameter("sLike"), "").split(",")));
-        List<String> systems = ParameterParserUtil.parseListParamAndDecodeAndDeleteEmptyValue(request.getParameterValues("system"), Arrays.asList("DEFAULT"), "UTF-8");
+        List<String> systems = ParameterParserUtil.parseListParamAndDeleteEmptyValue(request.getParameterValues("system"), Arrays.asList("DEFAULT"), "UTF-8");
 
         Map<String, List<String>> individualSearch = new HashMap<>();
         for (int a = 0; a < columnToSort.length; a++) {
@@ -197,7 +203,9 @@ public class ReadAppService extends HttpServlet {
         AnswerItem<JSONObject> answerItem = new AnswerItem<>();
 
         JSONObject response = new JSONObject();
-        appServiceService = appContext.getBean(AppServiceService.class);
+        appServiceService = appContext.getBean(IAppServiceService.class);
+        applicationService = appContext.getBean(IApplicationService.class);
+        cepService = appContext.getBean(ICountryEnvironmentParametersService.class);
 
         AnswerItem<AppService> resp = appServiceService.readByKeyWithDependency(key);
         AppService p = null;
@@ -208,6 +216,43 @@ public class ReadAppService extends HttpServlet {
         response.put("contentTable", item);
         if (p != null) {
             item.put("hasPermissions", userHasPermissions);
+            if (StringUtil.isNotEmptyOrNull(p.getApplication())) {
+                try {
+                    String system = "";
+
+                    Application app = applicationService.convert(applicationService.readByKey(p.getApplication()));
+                    system = app.getSystem();
+                    List<CountryEnvironmentParameters> cepValue = cepService.convert(cepService.readByVarious(system, null, null, p.getApplication()));
+                    Map<String, String> distinctEnv = new HashMap<>();
+                    Map<String, String> distinctCountry = new HashMap<>();
+                    for (CountryEnvironmentParameters countryEnvironmentParameters : cepValue) {
+                        distinctCountry.put(countryEnvironmentParameters.getCountry(), "");
+                        distinctEnv.put(countryEnvironmentParameters.getEnvironment(), "");
+                    }
+                    JSONObject extraInfo = new JSONObject();
+                    extraInfo.put("system", system);
+                    JSONArray countries = new JSONArray();
+                    JSONArray environments = new JSONArray();
+
+                    for (Map.Entry<String, String> entry : distinctCountry.entrySet()) {
+                        String mycountry = entry.getKey();
+                        countries.put(mycountry);
+                    }
+                    for (Map.Entry<String, String> entry : distinctEnv.entrySet()) {
+                        String myenv = entry.getKey();
+                        environments.put(myenv);
+                    }
+                    extraInfo.put("countries", countries);
+                    extraInfo.put("environments", environments);
+                    response.put("extraInformation", extraInfo);
+
+                } catch (CerberusException e) {
+                    LOG.error("Detailed information could not be retrieved for application '" + p.getApplication() + "'", e);
+                } catch (Exception e) {
+                    LOG.error("Detailed information could not be retrieved for application '" + p.getApplication() + "'", e);
+                }
+
+            }
         }
         answerItem.setItem(response);
         answerItem.setResultMessage(resp.getResultMessage());
@@ -218,7 +263,7 @@ public class ReadAppService extends HttpServlet {
     private AnswerItem<JSONObject> findAppServiceByLikeName(String key, ApplicationContext appContext, int limit) throws JSONException {
         AnswerItem<JSONObject> answerItem = new AnswerItem<>();
         JSONObject response = new JSONObject();
-        appServiceService = appContext.getBean(AppServiceService.class);
+        appServiceService = appContext.getBean(IAppServiceService.class);
         AnswerList<AppService> resp = appServiceService.readByLikeName(key, limit);
         AppService p = null;
         JSONArray jsonArray = new JSONArray();
@@ -242,7 +287,7 @@ public class ReadAppService extends HttpServlet {
      * using one service.
      *
      * @param appContext - context object used to get the required beans
-     * @param service    - identifier of the service
+     * @param service - identifier of the service
      * @return an answer item containing the information about the test cases
      * that use the entry
      * @throws JSONException
@@ -328,19 +373,27 @@ public class ReadAppService extends HttpServlet {
         JSONObject result = new JSONObject();
         if (appservice != null) {
             result = new JSONObject(gson.toJson(appservice));
+            result.remove("map");
+            result.put("simulationParameters", appservice.getSimulationParameters());
+            String pass = StringUtil.getPasswordFromAnyUrl(result.getString("servicePath"));
+            if (pass != null) {
+                result.put("servicePath", result.getString("servicePath").replace(pass, StringUtil.SECRET_STRING));
+            }
+            if (StringUtil.isNotEmptyOrNull(appservice.getAuthPassword())) {
+                result.put("authPassword", StringUtil.SECRET_STRING);
+            }
         }
         return result;
     }
 
     // <editor-fold defaultstate="collapsed" desc="HttpServlet methods. Click on the + sign on the left to edit the code.">
-
     /**
      * Handles the HTTP <code>GET</code> method.
      *
-     * @param request  servlet request
+     * @param request servlet request
      * @param response servlet response
      * @throws ServletException if a servlet-specific error occurs
-     * @throws IOException      if an I/O error occurs
+     * @throws IOException if an I/O error occurs
      */
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
@@ -351,10 +404,10 @@ public class ReadAppService extends HttpServlet {
     /**
      * Handles the HTTP <code>POST</code> method.
      *
-     * @param request  servlet request
+     * @param request servlet request
      * @param response servlet response
      * @throws ServletException if a servlet-specific error occurs
-     * @throws IOException      if an I/O error occurs
+     * @throws IOException if an I/O error occurs
      */
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)

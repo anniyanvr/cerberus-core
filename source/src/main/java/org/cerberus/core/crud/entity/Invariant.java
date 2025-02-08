@@ -1,5 +1,5 @@
 /**
- * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * Cerberus Copyright (C) 2013 - 2025 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -53,6 +53,7 @@ public class Invariant {
     public static final String IDNAME_PRIORITY = "PRIORITY";
     public static final String IDNAME_ENVIRONMENT = "ENVIRONMENT";
     public static final String IDNAME_SYSTEM = "SYSTEM";
+    public static final String IDNAME_TCSTATUS = "TCSTATUS";
 
     public String getDescription() {
         return description;

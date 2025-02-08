@@ -1,5 +1,5 @@
 /**
- * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * Cerberus Copyright (C) 2013 - 2025 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -48,7 +48,7 @@ public class CsvFileService implements ICsvFileService {
     private static final Logger LOG = LogManager.getLogger(CsvFileService.class);
 
     @Override
-    public AnswerList<HashMap<String, String>> parseCSVFile(String urlToCSVFile, String separator, HashMap<String, String> columnsToGet, List<String> columnsToHide, TestCaseExecution execution) {
+    public AnswerList<HashMap<String, String>> parseCSVFile(String urlToFile, String separator, boolean ignoreFirstLine, HashMap<String, String> columnsToGet, List<String> columnsToHide, boolean ignoreNoMatchColumns, String defaultNoMatchColumnValue, TestCaseExecution execution) {
         LOG.debug("Columns to hide : " + columnsToHide);
         String str = "";
         AnswerList<HashMap<String, String>> result = new AnswerList<>();
@@ -56,52 +56,60 @@ public class CsvFileService implements ICsvFileService {
         /**
          * Init message with generic failed message
          */
-        result.setResultMessage(new MessageEvent(MessageEventEnum.PROPERTY_FAILED_GETFROMDATALIB_CSV_GENERIC)
-                .resolveDescription("URL", urlToCSVFile));
+        result.setResultMessage(new MessageEvent(MessageEventEnum.PROPERTY_FAILED_GETFROMDATALIB_FILE_GENERIC)
+                .resolveDescription("URL", urlToFile));
 
         BufferedReader br = null;
 
         try {
             /**
-             * Get CSV File and parse it line by line
+             * Get File and parse it line by line
              */
-            if (StringUtil.isURL(urlToCSVFile)) {
-                URL urlToCall = new URL(urlToCSVFile);
+            if (StringUtil.isURL(urlToFile)) {
+                URL urlToCall = new URL(urlToFile);
                 br = new BufferedReader(new InputStreamReader(urlToCall.openStream()));
             } else {
-                br = new BufferedReader(new FileReader(urlToCSVFile));
-                br.readLine();
+                br = new BufferedReader(new FileReader(urlToFile));
             }
 
             if ("".equals(separator)) {
                 separator = ",";
             }
             boolean noDataMapped = true;
+            int i = 0;
             while (null != (str = br.readLine())) {
-                HashMap<String, String> line = new HashMap<>();
-                Integer columnPosition = 1;
-                /**
-                 * For each line, split result by separator, and put it in
-                 * result object if it has been defined in subdata
-                 */
-                for (String element : str.split(separator)) {
-                    // Looping against all subdata to get any column that match the current element position.
-                    for (Map.Entry<String, String> entry : columnsToGet.entrySet()) {
-                        String columnPos = entry.getValue();
-                        String subDataName = entry.getKey();
-                        if (columnPos.equals(String.valueOf(columnPosition))) { // If columns defined from subdata match the column number, we add the value here.
-                            line.put(subDataName, element);
-                            // If column is on the columns to hide we add it to the secret list
-                            if (columnsToHide.contains(subDataName)) {
-                                execution.appendSecret(element);
-                            }
-                            noDataMapped = false;
-                        }
+                i++;
+                if (!((ignoreFirstLine) && (i == 1))) {
+                    HashMap<String, String> line = new HashMap<>();
+                    // In case of no match columns ignore, then first populate list with all column and default value
+                    if (ignoreNoMatchColumns) {
+                        LOG.debug("Unmatched columns parsing enabled: Prefill columns with default value");
+                        columnsToGet.keySet().forEach((column) -> line.put(column, defaultNoMatchColumnValue));
                     }
+                    Integer columnPosition = 1;
+                    /**
+                     * For each line, split result by separator, and put it in
+                     * result object if it has been defined in subdata
+                     */
+                    for (String element : str.split(separator)) {
+                        // Looping against all subdata to get any column that match the current element position.
+                        for (Map.Entry<String, String> entry : columnsToGet.entrySet()) {
+                            String columnPos = entry.getValue();
+                            String subDataName = entry.getKey();
+                            if (columnPos.equals(String.valueOf(columnPosition))) { // If columns defined from subdata match the column number, we add the value here.
+                                line.put(subDataName, element);
+                                // If column is on the columns to hide we add it to the secret list
+                                if (columnsToHide.contains(subDataName)) {
+                                    execution.addSecret(element);
+                                }
+                                noDataMapped = false;
+                            }
+                        }
 
-                    columnPosition++;
+                        columnPosition++;
+                    }
+                    csv.add(line);
                 }
-                csv.add(line);
             }
             if (noDataMapped) { // No columns at all could be mapped on the full file.
                 result.setDataList(null);
@@ -113,12 +121,12 @@ public class CsvFileService implements ICsvFileService {
              * Set result with datalist and resultMeassage.
              */
             result.setDataList(csv);
-            result.setResultMessage(new MessageEvent(MessageEventEnum.PROPERTY_SUCCESS_CSV).resolveDescription("URL", urlToCSVFile));
+            result.setResultMessage(new MessageEvent(MessageEventEnum.PROPERTY_SUCCESS_CSV).resolveDescription("URL", urlToFile));
             result.setTotalRows(csv.size());
         } catch (Exception exception) {
-            LOG.warn("Error Getting CSV File " + exception);
-            result.setResultMessage(new MessageEvent(MessageEventEnum.PROPERTY_FAILED_GETFROMDATALIB_CSV_FILENOTFOUND)
-                    .resolveDescription("URL", urlToCSVFile).resolveDescription("EX", exception.toString()));
+            LOG.warn("Error Getting File " + exception);
+            result.setResultMessage(new MessageEvent(MessageEventEnum.PROPERTY_FAILED_GETFROMDATALIB_FILE_FILENOTFOUND)
+                    .resolveDescription("URL", urlToFile).resolveDescription("EX", exception.toString()));
         } finally {
             if (br != null) {
                 try {

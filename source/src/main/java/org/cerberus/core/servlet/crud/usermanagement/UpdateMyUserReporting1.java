@@ -1,5 +1,5 @@
 /**
- * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * Cerberus Copyright (C) 2013 - 2025 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -29,6 +29,7 @@ import javax.servlet.http.HttpServletResponse;
 import org.apache.commons.text.StringEscapeUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.cerberus.core.crud.entity.LogEvent;
 import org.cerberus.core.engine.entity.MessageEvent;
 import org.cerberus.core.crud.entity.User;
 import org.cerberus.core.crud.service.ILogEventService;
@@ -119,19 +120,19 @@ public class UpdateMyUserReporting1 extends HttpServlet {
                     preferences.put("prj", projectList);
                 }
 
-                if (!StringUtil.isEmpty(ip)) {
+                if (!StringUtil.isEmptyOrNull(ip)) {
                     preferences.put("ip", ip);
                 }
-                if (!StringUtil.isEmpty(port)) {
+                if (!StringUtil.isEmptyOrNull(port)) {
                     preferences.put("p", port);
                 }
-                if (!StringUtil.isEmpty(tag)) {
+                if (!StringUtil.isEmptyOrNull(tag)) {
                     preferences.put("t", tag);
                 }
-                if (!StringUtil.isEmpty(browserversion)) {
+                if (!StringUtil.isEmptyOrNull(browserversion)) {
                     preferences.put("br", browserversion);
                 }
-                if (!StringUtil.isEmpty(comment)) {
+                if (!StringUtil.isEmptyOrNull(comment)) {
                     preferences.put("cm", comment);
                 }
 
@@ -145,7 +146,7 @@ public class UpdateMyUserReporting1 extends HttpServlet {
                 msg.setDescription(msg.getDescription().replace("%ITEM%", "Execution reporting filters ").replace("%OPERATION%", "Update"));
 
                 ILogEventService logEventService = appContext.getBean(LogEventService.class);
-                logEventService.createForPrivateCalls("/UpdateMyUserReporting1", "UPDATE", "Update user reporting preference for user: " + login, request);
+                logEventService.createForPrivateCalls("/UpdateMyUserReporting1", "UPDATE", LogEvent.STATUS_INFO, "Update user reporting preference for user: " + login, request);
             } else {
                 msg.setDescription(msg.getDescription().replace("%DESCRIPTION%", "Unable to update User was not found!"));
             }

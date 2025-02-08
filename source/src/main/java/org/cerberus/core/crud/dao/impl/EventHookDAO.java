@@ -1,5 +1,5 @@
 /**
- * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * Cerberus Copyright (C) 2013 - 2025 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -123,7 +123,7 @@ public class EventHookDAO implements IEventHookDAO {
 
         searchSQL.append(" where 1=1 ");
 
-        if (!StringUtil.isEmpty(searchTerm)) {
+        if (!StringUtil.isEmptyOrNull(searchTerm)) {
             searchSQL.append(" and (evh.`id` like ?");
             searchSQL.append(" or evh.`ObjectKey1` like ?");
             searchSQL.append(" or evh.`ObjectKey2` like ?");
@@ -159,7 +159,7 @@ public class EventHookDAO implements IEventHookDAO {
 
         query.append(searchSQL);
 
-        if (!StringUtil.isEmpty(column)) {
+        if (!StringUtil.isEmptyOrNull(column)) {
             query.append(" order by ").append(column).append(" ").append(dir);
         }
 
@@ -180,7 +180,7 @@ public class EventHookDAO implements IEventHookDAO {
              Statement stm = connection.createStatement();) {
 
             int i = 1;
-            if (!StringUtil.isEmpty(searchTerm)) {
+            if (!StringUtil.isEmptyOrNull(searchTerm)) {
                 preStat.setString(i++, "%" + searchTerm + "%");
                 preStat.setString(i++, "%" + searchTerm + "%");
                 preStat.setString(i++, "%" + searchTerm + "%");
@@ -401,7 +401,7 @@ public class EventHookDAO implements IEventHookDAO {
 
         searchSQL.append("WHERE 1=1");
 
-        if (!StringUtil.isEmpty(searchTerm)) {
+        if (!StringUtil.isEmptyOrNull(searchTerm)) {
             searchSQL.append(" and (evh.`id` like ?");
             searchSQL.append(" or evh.`ObjectKey1` like ?");
             searchSQL.append(" or evh.`ObjectKey2` like ?");
@@ -438,7 +438,7 @@ public class EventHookDAO implements IEventHookDAO {
 
             int i = 1;
 
-            if (!StringUtil.isEmpty(searchTerm)) {
+            if (!StringUtil.isEmptyOrNull(searchTerm)) {
                 preStat.setString(i++, "%" + searchTerm + "%");
                 preStat.setString(i++, "%" + searchTerm + "%");
                 preStat.setString(i++, "%" + searchTerm + "%");

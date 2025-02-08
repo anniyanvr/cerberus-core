@@ -1,5 +1,5 @@
 /**
- * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * Cerberus Copyright (C) 2013 - 2025 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -20,7 +20,6 @@
 package org.cerberus.core.servlet.crud.usermanagement;
 
 import java.io.IOException;
-import java.util.logging.Level;
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
@@ -28,6 +27,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.cerberus.core.crud.entity.LogEvent;
 import org.cerberus.core.crud.entity.User;
 import org.cerberus.core.crud.service.ILogEventService;
 import org.cerberus.core.crud.service.IUserService;
@@ -66,7 +66,7 @@ public class UpdateMyUserSystem extends HttpServlet {
             sysArray = new JSONArray(sys);
             LOG.debug(sysArray.toString());
         } catch (JSONException ex) {
-            java.util.logging.Logger.getLogger(UpdateMyUserSystem.class.getName()).log(Level.SEVERE, null, ex);
+            LOG.error(ex,ex);
         }
         
         ApplicationContext appContext = WebApplicationContextUtils.getWebApplicationContext(this.getServletContext());
@@ -84,7 +84,7 @@ public class UpdateMyUserSystem extends HttpServlet {
                  * Adding Log entry.
                  */
                 ILogEventService logEventService = appContext.getBean(LogEventService.class);
-                logEventService.createForPrivateCalls("/UpdateMyUserSystem", "UPDATE", "Updated user : " + login, request);
+                logEventService.createForPrivateCalls("/UpdateMyUserSystem", "UPDATE", LogEvent.STATUS_INFO, "Updated user : " + login, request);
                 response.getWriter().print(sysArray);
             } catch (CerberusException ex) {
                 response.getWriter().print(ex.getMessageError().getDescription());

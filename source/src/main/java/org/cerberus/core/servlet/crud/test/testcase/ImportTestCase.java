@@ -1,5 +1,5 @@
 /**
- * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * Cerberus Copyright (C) 2013 - 2025 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -27,7 +27,6 @@ import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.logging.Level;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
@@ -239,7 +238,8 @@ public class ImportTestCase extends HttpServlet {
                     if (formItems.size() > 0) {
                         int i = 1;
                         for (FileItem item : formItems) {
-                            LOG.debug("Param to import (" + i++ + ") : " + item.toString() + " FieldName : " + item.getFieldName() + " ContentType : " + item.getContentType());
+                            i++;
+                            LOG.debug("Param to import (" + i + ") : " + item.toString() + " | FieldName : " + item.getFieldName() + " | ContentType : " + item.getContentType());
                             if (item.isFormField()) {
                                 result.put(item.getFieldName(), item.getString());
                             } else {
@@ -251,7 +251,7 @@ public class ImportTestCase extends HttpServlet {
                 }
             }
         } catch (FileUploadException ex) {
-            java.util.logging.Logger.getLogger(ImportTestCaseFromSIDE.class.getName()).log(Level.SEVERE, null, ex);
+            LOG.error(ex, ex);
         }
         LOG.debug("result Param : " + result.size());
         return result;

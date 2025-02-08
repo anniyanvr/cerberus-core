@@ -1,5 +1,5 @@
 /*
- * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * Cerberus Copyright (C) 2013 - 2025 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -362,16 +362,20 @@ function loadUserSystemCombo() {
 
 
 function refreshHistoryMenu() {
-    let entryList = localStorage.getItem("historyTestcases");
-    entryList = JSON.parse(entryList);
-
     $(".histo").remove();
 
+    let entryList = localStorage.getItem("historyTestcases");
+    entryList = JSON.parse(entryList);
     if (entryList !== null && entryList.length > 0) {
         $("#userMenu").append("<li class='menuSeparator histo'><span>Last Seen Testcases</span></li>");
         for (var item in entryList) {
             let newitem = entryList.length - item - 1;
-            $("#userMenu").append("<li class='histo'><a name='menuitem' href='TestCaseScript.jsp?test=" + encodeURIComponent(entryList[newitem].test) + "&testcase=" + encodeURIComponent(entryList[newitem].testcase) + "'><i class='fa fa-bars'></i><span>  " + entryList[newitem].test + " " + entryList[newitem].testcase + "</span></a></li>");
+            let desc = "<div></div>";
+            if ((entryList[newitem].description !== undefined) && (entryList[newitem].description !== "")) {
+                desc = "<div style='font-size: 10px;min-width: 350px'> " + entryList[newitem].description + "</div>";
+            }
+            $("#userMenu").append("<li class='histo'><a name='menuitem' href='TestCaseScript.jsp?test=" + encodeURIComponent(entryList[newitem].test) + "&testcase=" + encodeURIComponent(entryList[newitem].testcase) + "'><i class='fa fa-bars'></i>" +
+                    "<span>  " + entryList[newitem].test + " " + entryList[newitem].testcase + "</span>" + desc + "</a></li>");
         }
     }
     entryList = localStorage.getItem("historyExecutions");
@@ -380,7 +384,12 @@ function refreshHistoryMenu() {
         $("#userMenu").append("<li class='menuSeparator histo'><span>Last Seen Executions</span></li>");
         for (var item in entryList) {
             let newitem = entryList.length - item - 1;
-            $("#userMenu").append("<li class='histo'><a name='menuitem' href='TestCaseExecution.jsp?executionId=" + entryList[newitem].id + "'><i class='fa fa-gear'></i><span>  " + entryList[newitem].id + "</span></a></li>");
+            let desc = "<div style='font-size: 10px;min-width: 350px'> " + entryList[newitem].test + " " + entryList[newitem].testcase + " | " + entryList[newitem].country + " " + entryList[newitem].environment + " " + entryList[newitem].robot + "</div>";
+            if ((entryList[newitem].description !== undefined) && (entryList[newitem].description !== "")) {
+                desc += "<div style='font-size: 10px;min-width: 350px'> " + entryList[newitem].description + "</div>";
+            }
+            $("#userMenu").append("<li class='histo'><a name='menuitem' href='TestCaseExecution.jsp?executionId=" + entryList[newitem].id + "'><i class='fa fa-gear status" + entryList[newitem].controlStatus + "'></i>" +
+                    "<span class='status" + entryList[newitem].controlStatus + "'>  " + entryList[newitem].id + "</span>" + desc + "</a></li>");
         }
     }
     entryList = localStorage.getItem("historyCampaigns");
@@ -438,6 +447,21 @@ function updateUserPreferences(objectWaitingLayer) {
     if (objectWaitingLayer !== undefined) {
         showLoader(objectWL);
     }
+    var tempLocalStorage = localStorage;
+    tempLocalStorage.removeItem("historyTestcases");
+    tempLocalStorage.removeItem("historyExecutions");
+    tempLocalStorage.removeItem("historyCampaigns");
+    tempLocalStorage.removeItem("properties");
+    tempLocalStorage.removeItem("secondaryProperties");
+    tempLocalStorage.removeItem("listReport");
+    for (var i = 0; i < tempLocalStorage.length; i++) {
+        if (tempLocalStorage.key(i).startsWith("DataTables_")) {
+            let temp = JSON.parse(tempLocalStorage.getItem(tempLocalStorage.key(i)));
+            temp.start = 0;
+            tempLocalStorage.setItem(tempLocalStorage.key(i), JSON.stringify(temp));
+        }
+    }
+//    console.info(tempLocalStorage);
     var uPref = JSON.stringify(localStorage);
     $.ajax({url: "UpdateMyUser",
         type: "POST",

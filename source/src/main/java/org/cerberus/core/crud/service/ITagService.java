@@ -1,5 +1,5 @@
 /**
- * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * Cerberus Copyright (C) 2013 - 2025 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -19,6 +19,7 @@
  */
 package org.cerberus.core.crud.service;
 
+import java.sql.Timestamp;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -202,6 +203,15 @@ public interface ITagService {
     Answer updateXRayTestExecution(String tag, Tag object);
 
     /**
+     * Set Tag to an Execution
+     *
+     * @param tag :
+     * @param falseNegative : value of falseNegative.
+     * @throws CerberusException when exception occur during the update.
+     */
+    void updateFalseNegative(String tag, boolean falseNegative, String usrModif) throws CerberusException;
+
+    /**
      * That method update the XRay reference to PENDING.
      *
      * @param tag
@@ -274,11 +284,23 @@ public interface ITagService {
      * and no more executions are in the queue, <br>
      * we trigger : <br>
      * 1/ The update of the EndExeQueue of the tag <br>
+     * 2/ The calculation of main KPI on the campaign <br>
      *
      * @param tag
      * @throws org.cerberus.core.exception.CerberusException
      */
     void manageCampaignEndOfExecution(String tag) throws CerberusException;
+
+    /**
+     * At the beginning of an execution, <br>
+     * if the execution has a tag <br>
+     * we trigger : <br>
+     * 1/ The update of the Execution Start of the tag <br>
+     *
+     * @param tag
+     * @throws org.cerberus.core.exception.CerberusException
+     */
+    void manageCampaignStartOfExecution(String tag, Timestamp startOfExecution) throws CerberusException;
 
     /**
      * Format in a nice way the various Control Status values. <br>

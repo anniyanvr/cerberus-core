@@ -1,6 +1,6 @@
 <%--
 
-    Cerberus Copyright (C) 2013 - 2017 cerberustesting
+    Cerberus Copyright (C) 2013 - 2025 cerberustesting
     DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 
     This file is part of Cerberus.
@@ -26,15 +26,15 @@
         <meta content="text/html; charset=UTF-8" http-equiv="content-type">
         <%@ include file="include/global/dependenciesInclusions.html" %>
         <title id="pageTitle">Test Case</title>
-        <script type="text/javascript" src="dependencies/Tinymce-4.2.6/tinymce.min.js"></script>
+        <script type="text/javascript" src="dependencies/Tinymce-6.7.0/tinymce.min.js"></script>
         <script type="text/javascript" src="dependencies/Bootstrap-treeview-1.2.0/js/bootstrap-treeview.js"></script>
         <script type="text/javascript" src="dependencies/Ace-1.2.6/ext-language_tools.js"></script>
-        <script type="text/javascript" src="js/transversalobject/ApplicationObject.js"></script>
-        <script type="text/javascript" src="js/transversalobject/TestCase.js"></script>
-        <script type="text/javascript" src="js/transversalobject/AppService.js"></script>
         <script type="text/javascript" src="js/pages/TestCaseScript.js"></script>
+        <script type="text/javascript" src="js/transversalobject/TestCase.js"></script>
+        <script type="text/javascript" src="js/transversalobject/ApplicationObject.js"></script>
         <script type="text/javascript" src="js/transversalobject/TestDataLib.js"></script>
         <script type="text/javascript" src="js/transversalobject/AppService.js"></script>
+        <script type="text/javascript" src="js/transversalobject/Application.js"></script>
         <script type="text/javascript" src="js/transversalobject/TestCaseExecutionQueue.js"></script>
         <script type="text/javascript" src="js/transversalobject/TestCaseSimpleExecution.js"></script>
         <link rel="stylesheet" type="text/css" href="css/pages/TestCaseScript.css">
@@ -52,6 +52,7 @@
             <%@ include file="include/transversalobject/ApplicationObject.html"%>
             <%@ include file="include/transversalobject/TestDataLib.html"%>
             <%@ include file="include/transversalobject/AppService.html"%>
+            <%@ include file="include/transversalobject/Application.html"%>
             <%@ include file="include/transversalobject/Property.html"%>
             <%@ include file="include/transversalobject/TestCaseExecutionQueue.html"%>
             <%@ include file="include/transversalobject/TestCaseSimpleExecution.html"%>
@@ -63,16 +64,23 @@
                     <div id="divPanelDefault" class="panel-default" style="z-index:100; top: 0;height:150px;background-color:#f5f6fa">
                         <div class="panel-heading" style="border-radius: 10px;margin-bottom: 0px;background-color: white;border: 1px solid #eee;" id="testCaseTitle">
                             <div class="" style="width:100%">
-                                <div class="col-lg-4" style="padding: 0px;">
-                                    <div class="testTestCase" style="margin-top:4px; margin-bottom: 4px;">
-                                        <select id="test"></select>
+                                <div class="col-lg-5" style="padding: 0px;">
+                                    <div class="row">
+                                        <div class="testTestCase col-lg-8 col-xs-6" style="margin-top:4px; margin-bottom: 4px;">
+                                            <select id="test"></select>
+                                        </div>
+                                        <div class="testTestCase col-lg-4 col-xs-6 pull-right" style="margin-top:4px; margin-bottom: 4px;">
+                                            <img id="AppLogo"  class="pull-right" style="height:20px; overflow:hidden; text-overflow:clip; border: 0px; padding:0; margin:0; margin-left: 10px"></img>
+                                            <span id="AppName" class="pull-right"> </span>
+                                        </div>
                                     </div>
+
                                     <select id="testCaseSelect" style="display:none;"></select>
                                 </div>
-                                <div class="col-lg-8" style="padding: 0px;">
+                                <div class="col-lg-7" style="padding: 0px;">
                                     <div id="TestCaseButton" style="display:none;">
 
-                                        <div class="btn-group pull-right" role="group" aria-label="Button group with nested dropdown" style="margin-top: 10px;">
+                                        <div class="btn-group pull-right" role="group" aria-label="Button group with nested dropdown" style="margin-left:10px; margin-top: 10px;">
 
                                             <div class="btn-group marginRight5">
                                                 <button id="btnGroupDrop1" style="border-radius:4px" type="button" class="btn btn-secondary dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
@@ -89,17 +97,17 @@
                                             <div class="btn-group ">
                                                 <a><button class="btn btn-default pull-right" id="editTcInfo">Edit Test Case Header</button></a>
                                             </div>
+                                            <div class="btn-group">
+                                                <a><button class="btn btn-default pull-left" id="seeLastExecUniq" style="margin-left: 5px; margin-right: 5px;"><span class="glyphicon glyphicon-saved"></span></button></a>
+                                            </div>
                                             <div class="btn-group" id="runTestCasePopover">
                                                 <a><button class="btn btn-default pull-right" id="runTestCase" style="margin-left: 5px; margin-left: 5px;" data-toggle="tooltip" ><span class="glyphicon glyphicon-play"></span></button></a>
                                             </div>
                                             <div class="btn-group">
-                                                <a><button class="btn btn-default pull-right" id="rerunFromQueueandSee" style="margin-left: 5px; margin-left: 5px;"><span class="glyphicon glyphicon-forward"></span></button></a>
+                                                <a><button class="btn btn-default pull-right" id="rerunFromQueueandSee" data-original-title="" data-html="true" style="margin-left: 5px; margin-left: 5px;"><span class="glyphicon glyphicon-forward"></span></button></a>
                                             </div>
                                             <div class="btn-group">
-                                                <a><button class="btn btn-default pull-left" id="seeLastExecUniq" style="margin-left: 5px; margin-right: 5px;"><span class="glyphicon glyphicon-saved"></span></button></a>
-                                            </div>
-                                            <div class="btn-group">
-                                                <a><button class="btn btn-default" id="saveScript" disabled style="margin-left: 1px;"><span class="glyphicon glyphicon-save"></span></button></a>
+                                                <a><button class="btn btn-default" id="saveScript" disabled style="margin-left: 5px;"><span class="glyphicon glyphicon-save"></span></button></a>
                                             </div>
                                         </div>
 
@@ -108,7 +116,7 @@
                                 <div class="clearfix"></div>
                             </div>
                         </div>
-                        <div style="height:40px; background-color: #f5f6fa; padding-top:20px">
+                        <div style="height:60px; background-color: #f5f6fa; padding-top:20px">
                             <ul id="tabsScriptEdit" class="nav nav-tabs" data-tabs="tabs">
                                 <li class="active"><a data-toggle="tab" href="#tabSteps" id="editTabStep" class="tabSteps" name="tabSteps">Steps</a></li>
                                 <li><a data-toggle="tab" href="#tabProperties" id="editTabProperties" class="tabSteps"  name="tabProperties">Properties</a></li>
@@ -130,7 +138,7 @@
                                     <div id="tcButton">
                                         <!--<h4>Actions</h4>-->
                                         <button class="btn btn-block addStep-btn marginTop25" id="addStep" disabled>Add Step</button>
-<!--                                        <button class="btn btn-info btn-block marginTop25" id="duplicateStep" disabled>Duplicate Step</button>-->
+                                        <!--                                        <button class="btn btn-info btn-block marginTop25" id="duplicateStep" disabled>Duplicate Step</button>-->
                                     </div>
                                 </div>
                             </nav>

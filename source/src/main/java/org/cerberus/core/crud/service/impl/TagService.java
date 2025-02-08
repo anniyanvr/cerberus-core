@@ -1,5 +1,5 @@
 /**
- * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * Cerberus Copyright (C) 2013 - 2025 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -25,17 +25,12 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
-import java.util.logging.Level;
-import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.cerberus.core.crud.dao.ITagDAO;
-import org.cerberus.core.crud.entity.EventHook;
-import org.cerberus.core.crud.entity.Tag;
-import org.cerberus.core.crud.entity.TestCaseExecution;
+import org.cerberus.core.crud.entity.*;
 import org.cerberus.core.crud.factory.IFactoryTag;
-import org.cerberus.core.crud.service.ITagService;
-import org.cerberus.core.crud.service.ITestCaseExecutionQueueService;
-import org.cerberus.core.crud.service.ITestCaseExecutionService;
+import org.cerberus.core.crud.service.*;
 import org.cerberus.core.engine.entity.MessageGeneral;
 import org.cerberus.core.enums.MessageEventEnum;
 import org.cerberus.core.enums.MessageGeneralEnum;
@@ -80,6 +75,12 @@ public class TagService implements ITagService {
     private ITestCaseExecutionQueueService executionQueueService;
     @Autowired
     private IEventService eventService;
+    @Autowired
+    private ICampaignService campaignService;
+    @Autowired
+    private IParameterService parameterService;
+    @Autowired
+    private ITagStatisticService tagStatisticService;
 
     private static final Logger LOG = LogManager.getLogger("TagService");
 
@@ -180,8 +181,11 @@ public class TagService implements ITagService {
             // Total execution.
             mytag.setNbExe(testCaseExecutionService.readNbByTag(tag));
 
+            List<TestCaseExecution> executions = testCaseExecutionService.readLastExecutionAndExecutionInQueueByTag(tag);
+            mytag.setExecutionsNew(executions);
+
             // All the rest of the data are coming from ResultCI Servlet.
-            JSONObject jsonResponse = ciService.getCIResult(tag, mytag.getCampaign());
+            JSONObject jsonResponse = ciService.getCIResult(tag, mytag.getCampaign(), executions);
             mytag.setCiScore(jsonResponse.getInt("CI_finalResult"));
             mytag.setCiScoreThreshold(jsonResponse.getInt("CI_finalResultThreshold"));
 
@@ -210,22 +214,33 @@ public class TagService implements ITagService {
             mytag.setNbCA(jsonResponse.getInt("status_CA_nbOfExecution"));
             mytag.setNbExeUsefull(jsonResponse.getInt("TOTAL_nbOfExecution"));
 
-            if (!StringUtil.isEmpty(mytag.getCampaign())) {
-                // We get the campaig here and potencially trigger the event.
+            if (!StringUtil.isEmptyOrNull(mytag.getCampaign())) {
+                // We get the campaign here and potencially trigger the event.
                 eventService.triggerEvent(EventHook.EVENTREFERENCE_CAMPAIGN_END, mytag, null, null, null);
                 if (mytag.getCiResult().equalsIgnoreCase("KO")) {
                     eventService.triggerEvent(EventHook.EVENTREFERENCE_CAMPAIGN_END_CIKO, mytag, null, null, null);
                 }
             }
 
+            //TagStatistics, only if it's a campaign and if parameter is activated
+            if (StringUtil.isNotEmptyOrNull(mytag.getCampaign()) && parameterService.getParameterBooleanByKey(Parameter.VALUE_cerberus_featureflipping_tagstatistics_enable, "", false)) {
+                LOG.info("TagStatistics creation for tag {} started.", tag);
+                tagStatisticService.populateTagStatisticsMap(
+                        tagStatisticService.initTagStatistics(mytag, executions),
+                        executions,
+                        mytag
+                );
+                LOG.info("TagStatistics creation for tag {} finished.", tag);
+            }
+
             return tagDAO.updateDateEndQueue(mytag);
 
         } catch (CerberusException ex) {
-            java.util.logging.Logger.getLogger(TagService.class.getName()).log(Level.SEVERE, null, ex);
+            LOG.error(ex, ex);
             return null;
 
         } catch (Exception ex) {
-            java.util.logging.Logger.getLogger(TagService.class.getName()).log(Level.SEVERE, null, ex);
+            LOG.error(ex, ex);
             return null;
         }
 
@@ -265,6 +280,11 @@ public class TagService implements ITagService {
     }
 
     @Override
+    public void updateFalseNegative(String tag, boolean falseNegative, String usrModif) throws CerberusException {
+        tagDAO.updateFalseNegative(tag, falseNegative, usrModif);
+    }
+
+    @Override
     public int lockXRayTestExecution(String tag, Tag object) {
         return tagDAO.lockXRayTestExecution(tag, object);
     }
@@ -275,16 +295,28 @@ public class TagService implements ITagService {
         answerTag = readByKey(tagS);
         Tag tag = (Tag) answerTag.getItem();
         if (tag == null) {
-            Tag newTag = factoryTag.create(0, tagS, "", "", campaign, null, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, "", "", "", "", "", "",
-                    reqEnvironmentList.toString(), reqCountryList.toString(), "", "", "", "", user, null, user, null);
+            Campaign cmp = null;
+            try {
+                cmp = campaignService.convert(campaignService.readByKey(campaign));
+            } catch (CerberusException ex) {
+                LOG.error(ex, ex);
+            }
+            Tag newTag;
+            if (cmp == null) {
+                newTag = factoryTag.create(0, tagS, "", "", campaign, null, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, "", "", "", "", "", "",
+                        reqEnvironmentList.toString(), reqCountryList.toString(), "", "", "", "", user, null, user, null);
+            } else {
+                newTag = factoryTag.create(0, tagS, cmp.getLongDescription(), "", campaign, null, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, "", "", "", "", "", "",
+                        reqEnvironmentList.toString(), reqCountryList.toString(), "", "", "", "", user, null, user, null);
+            }
             Answer ans = tagDAO.create(newTag);
             // If campaign is not empty, we can notify the Start of campaign execution.
-            if (!StringUtil.isEmpty(campaign)) {
+            if (!StringUtil.isEmptyOrNull(campaign)) {
                 eventService.triggerEvent(EventHook.EVENTREFERENCE_CAMPAIGN_START, newTag, null, null, null);
             }
             return ans;
         } else {
-            if ((StringUtil.isEmpty(tag.getCampaign())) && !StringUtil.isEmpty(campaign)) {
+            if ((StringUtil.isEmptyOrNull(tag.getCampaign())) && !StringUtil.isEmptyOrNull(campaign)) {
                 tag.setCampaign(campaign);
                 return tagDAO.update(tag.getTag(), tag);
             }
@@ -294,8 +326,8 @@ public class TagService implements ITagService {
 
     @Override
     public String enrichTagWithCloudProviderBuild(String provider, String system, String tagS, String user, String pass) {
-        LOG.debug("Trying to enrish tag '" + tagS + "' with Cloud service provider Build (" + provider + ").");
-        if (StringUtil.isEmpty(tagS)) {
+        LOG.debug("Trying to enrish tag '{}' with Cloud service provider Build ({}).", tagS, provider);
+        if (StringUtil.isEmptyOrNull(tagS)) {
             return null;
         }
         AnswerItem answerTag;
@@ -303,15 +335,19 @@ public class TagService implements ITagService {
         Tag tag = (Tag) answerTag.getItem();
         switch (provider) {
             case TestCaseExecution.ROBOTPROVIDER_BROWSERSTACK:
-                if ((tag != null) && (StringUtil.isEmpty(tag.getBrowserstackBuildHash()) || "BSHash".equalsIgnoreCase(tag.getBrowserstackBuildHash()))) {
-                    String newBuildHash = browserstackService.getBrowserStackBuildHash(system, tagS, user, pass);
+                if ((tag != null) && (StringUtil.isEmptyOrNull(tag.getBrowserstackBuildHash()) || "BSHash".equalsIgnoreCase(tag.getBrowserstackBuildHash()))) {
+                    String newBuildHash = browserstackService.getBrowserStackBuildHashFromEndpoint(system, tagS, user, pass, "api.browserstack.com/automate/builds.json");
+                    LOG.debug("Result : {}", newBuildHash);
                     tag.setBrowserstackBuildHash(newBuildHash);
+                    newBuildHash = browserstackService.getBrowserStackBuildHashFromEndpoint(system, tagS, user, pass, "api.browserstack.com/app-automate/builds.json");
+                    LOG.debug("Result : {}", newBuildHash);
+                    tag.setBrowserstackAppBuildHash(newBuildHash);
                     Answer ans = tagDAO.updateBrowserStackBuild(tagS, tag);
                     return newBuildHash;
                 }
                 break;
             case TestCaseExecution.ROBOTPROVIDER_LAMBDATEST:
-                if ((tag != null) && (StringUtil.isEmpty(tag.getLambdaTestBuild()))) {
+                if ((tag != null) && (StringUtil.isEmptyOrNull(tag.getLambdaTestBuild()))) {
                     String newBuildHash = lambdatestService.getBuildValue(tagS, user, pass, system);
                     tag.setLambdaTestBuild(newBuildHash);
                     Answer ans = tagDAO.updateLambdatestBuild(tagS, tag);
@@ -359,20 +395,42 @@ public class TagService implements ITagService {
     public void manageCampaignEndOfExecution(String tag) throws CerberusException {
 
         try {
-            if (!StringUtil.isEmpty(tag)) {
+            if (!StringUtil.isEmptyOrNull(tag)) {
                 Tag currentTag = this.convert(this.readByKey(tag));
                 if ((currentTag != null)) {
                     if (currentTag.getDateEndQueue().before(Timestamp.valueOf("1980-01-01 01:01:01.000000001"))) {
                         AnswerList answerListQueue = new AnswerList<>();
                         answerListQueue = executionQueueService.readQueueOpen(tag);
                         if (answerListQueue.isCodeEquals(MessageEventEnum.DATA_OPERATION_OK.getCode()) && (answerListQueue.getDataList().isEmpty())) {
-                            LOG.debug("No More executions (in queue or running) on tag : " + tag + " - " + answerListQueue.getDataList().size() + " " + answerListQueue.getMessageCodeString() + " - ");
+                            LOG.debug("No More executions (in queue or running) on tag : {} - {} {}", tag, answerListQueue.getDataList().size(), answerListQueue.getMessageCodeString());
                             this.updateEndOfQueueData(tag);
                         } else {
-                            LOG.debug("Still executions in queue on tag : " + tag + " - " + answerListQueue.getDataList().size() + " " + answerListQueue.getMessageCodeString());
+                            LOG.debug("Still executions in queue on tag : {} - {} {}", tag, answerListQueue.getDataList().size(), answerListQueue.getMessageCodeString());
                         }
                     } else {
-                        LOG.debug("Tag is already flaged with recent timestamp. " + currentTag.getDateEndQueue());
+                        LOG.debug("Tag is already flagged with recent timestamp. {}", currentTag.getDateEndQueue());
+                    }
+
+                }
+            }
+        } catch (Exception e) {
+            LOG.error(e, e);
+        }
+
+    }
+
+    @Override
+    public void manageCampaignStartOfExecution(String tag, Timestamp startOfExecution) throws CerberusException {
+
+        try {
+            if (!StringUtil.isEmptyOrNull(tag)) {
+                Tag currentTag = this.convert(this.readByKey(tag));
+                if ((currentTag != null)) {
+                    if (currentTag.getDateStartExe().before(Timestamp.valueOf("1980-01-01 01:01:01.000000001"))) {
+                        currentTag.setDateStartExe(startOfExecution);
+                        tagDAO.updateDateStartExe(currentTag);
+                    } else {
+                        LOG.debug("Tag is already flaged with recent start of exe timestamp. {}", currentTag.getDateStartExe());
                     }
 
                 }
@@ -433,8 +491,7 @@ public class TagService implements ITagService {
     }
 
     JSONObject getJSONEnriched() {
-        JSONObject result = new JSONObject();
-        return result;
+        return new JSONObject();
     }
 
 }

@@ -1,5 +1,5 @@
 /**
- * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * Cerberus Copyright (C) 2013 - 2025 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -48,7 +48,7 @@ public class Parameter {
     public static final String VALUE_cerberus_exeautomedia_path = "cerberus_exeautomedia_path";
     public static final String VALUE_cerberus_exemanualmedia_path = "cerberus_exemanualmedia_path";
     public static final String VALUE_cerberus_ftpfile_path = "cerberus_ftpfile_path";
-    public static final String VALUE_cerberus_testdatalibcsv_path = "cerberus_testdatalibcsv_path";
+    public static final String VALUE_cerberus_testdatalibfile_path = "cerberus_testdatalibfile_path";
     public static final String VALUE_cerberus_url = "cerberus_url";
     public static final String VALUE_cerberus_gui_url = "cerberus_gui_url";
     public static final String VALUE_cerberus_screenshot_max_size = "cerberus_screenshot_max_size";
@@ -84,9 +84,21 @@ public class Parameter {
     public static final String VALUE_cerberus_xray_sendenvironments_enable = "cerberus_xray_sendenvironments_enable";
     public static final String VALUE_cerberus_sikuli_typeDelay = "cerberus_sikuli_typeDelay";
     public static final String VALUE_cerberus_testcaseautofeed_enable = "cerberus_testcaseautofeed_enable";
+    public static final String VALUE_cerberus_instancelogo_url = "cerberus_instancelogo_url";
+    public static final String VALUE_cerberus_pdfcampaignreportdisplaycountry_boolean = "cerberus_pdfcampaignreportdisplaycountry_boolean";
+    public static final String VALUE_cerberus_pdfcampaignreportdisplayciresult_boolean = "cerberus_pdfcampaignreportdisplayciresult_boolean";
+    public static final String VALUE_cerberus_reportbytag_nblinestotriggerautohide_int = "cerberus_reportbytag_nblinestotriggerautohide_int";
+    public static final String VALUE_cerberus_featureflipping_tagstatistics_enable = "cerberus_featureflipping_tagstatistics_enable";
+    public static final String VALUE_cerberus_jiracloud_url = "cerberus_jiracloud_url";
+    public static final String VALUE_cerberus_jiradc_url = "cerberus_jiradc_url";
+    public static final String VALUE_cerberus_jiracloud_apiuser = "cerberus_jiracloud_apiuser";
+    public static final String VALUE_cerberus_jiracloud_apiuser_apitoken = "cerberus_jiracloud_apiuser_apitoken";
+    public static final String VALUE_cerberus_autobugcreation_enable = "cerberus_autobugcreation_enable";
+    public static final String VALUE_cerberus_github_apitoken = "cerberus_github_apitoken";
 
     public static final String SECUREDPARAMINSQLCLAUSE = "(\"cerberus_accountcreation_defaultpassword\",\"cerberus_proxyauthentification_password\",\"cerberus_jenkinsadmin_password\","
-            + "\"cerberus_smtp_password\",\"cerberus_executeCerberusCommand_password\",\"cerberus_xraycloud_clientsecret\",\"cerberus_xraycloud_clientid\",\"cerberus_xraydc_token\")";
+            + "\"cerberus_smtp_password\",\"cerberus_executeCerberusCommand_password\",\"cerberus_xraycloud_clientsecret\",\"cerberus_xraycloud_clientid\",\"cerberus_xraydc_token\","
+            + "\"cerberus_jiracloud_apiuser_apitoken\",\"cerberus_github_apitoken\")";
 
     public static final Integer CACHE_DURATION = 60;
     public static final Integer SHORT_CACHE_DURATION = 2;

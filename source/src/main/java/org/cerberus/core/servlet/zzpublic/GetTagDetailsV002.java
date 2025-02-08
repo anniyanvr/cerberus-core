@@ -1,5 +1,5 @@
 /**
- * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * Cerberus Copyright (C) 2013 - 2025 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -45,6 +45,7 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.text.ParseException;
 import java.util.List;
+import org.cerberus.core.crud.entity.LogEvent;
 
 /**
  * @author Nouxx
@@ -74,7 +75,7 @@ public class GetTagDetailsV002 extends HttpServlet {
         apiKeyService = appContext.getBean(IAPIKeyService.class);
         testCaseExecutionService = appContext.getBean(ITestCaseExecutionService.class);
         logEventService = appContext.getBean(LogEventService.class);
-        logEventService.createForPublicCalls("/GetTagDetailsV002", "CALL", "GetTagDetails called : " + request.getRequestURL(), request);
+        logEventService.createForPublicCalls("/GetTagDetailsV002", "CALL", LogEvent.STATUS_INFO, "GetTagDetails called : " + request.getRequestURL(), request);
 
         String tagParameter = ParameterParserUtil.parseStringParam(request.getParameter("Tag"), "");
 
@@ -87,7 +88,7 @@ public class GetTagDetailsV002 extends HttpServlet {
 
                 Tag tag = tagService.convert(tagService.readByKey(tagParameter));
                 String cerberusUrlParameter = parameterService.getParameterStringByKey("cerberus_gui_url", "", "");
-                if (StringUtil.isEmpty(cerberusUrlParameter)) {
+                if (StringUtil.isEmptyOrNull(cerberusUrlParameter)) {
                     cerberusUrlParameter = parameterService.getParameterStringByKey("cerberus_url", "", "");
                 }
 

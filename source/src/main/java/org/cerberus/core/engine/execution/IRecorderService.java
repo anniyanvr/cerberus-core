@@ -1,5 +1,5 @@
 /**
- * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * Cerberus Copyright (C) 2013 - 2025 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -47,13 +47,22 @@ public interface IRecorderService {
     List<TestCaseExecutionFile> recordExecutionInformationAfterStepActionAndControl(TestCaseStepActionExecution testCaseStepActionExecution, TestCaseStepActionControlExecution testCaseStepActionControlExecution);
 
     /**
+     * @param testCaseStepActionExecution
+     * @param testCaseStepActionControlExecution
+     * @return
+     */
+    List<TestCaseExecutionFile> recordExecutionInformationBeforeStepActionAndControl(TestCaseStepActionExecution testCaseStepActionExecution, TestCaseStepActionControlExecution testCaseStepActionControlExecution);
+
+    /**
      * @param testCaseExecution
      * @param testCaseStepActionExecution
      * @param control
      * @param cropValues
+     * @param fileDescription
+     * @param fileName
      * @return
      */
-    List<TestCaseExecutionFile> recordScreenshot(TestCaseExecution testCaseExecution, TestCaseStepActionExecution testCaseStepActionExecution, Integer control, String cropValues);
+    List<TestCaseExecutionFile> recordScreenshot(TestCaseExecution testCaseExecution, TestCaseStepActionExecution testCaseStepActionExecution, Integer control, String cropValues, String fileDescription, String fileName);
 
     /**
      * @param actionExecution
@@ -63,6 +72,12 @@ public interface IRecorderService {
      * @return
      */
     TestCaseExecutionFile recordPicture(TestCaseStepActionExecution actionExecution, Integer controlId, String locator, String valueFieldName);
+
+    /**
+     * @param testCaseExecution
+     * @return
+     */
+    TestCaseExecutionFile recordExeLog(TestCaseExecution testCaseExecution);
 
     /**
      * @param testCaseExecution
@@ -124,6 +139,20 @@ public interface IRecorderService {
     List<TestCaseExecutionFile> recordContent(TestCaseExecution testCaseExecution, TestCaseStepActionExecution testCaseStepActionExecution, Integer control, String property, String content, String contentType);
 
     /**
+     *
+     * @param execution
+     * @param actionExecution
+     * @param control
+     * @param property
+     * @param fileContent
+     * @param preFileName
+     * @param fileName
+     * @param ext
+     * @return
+     */
+    TestCaseExecutionFile recordRobotFile(TestCaseExecution execution, TestCaseStepActionExecution actionExecution, Integer control, String property, byte[] fileContent, String preFileName, String fileName, String ext);
+
+    /**
      * @param runId
      * @param property
      * @param propertyIndex
@@ -165,6 +194,14 @@ public interface IRecorderService {
     TestCaseExecutionFile recordServerCapabilities(TestCaseExecution testCaseExecution, List<RobotCapability> capsFinalList);
 
     /**
+     *
+     * @param execution
+     * @param har
+     * @return
+     */
+    public TestCaseExecutionFile recordHar(TestCaseExecution execution, JSONObject har);
+
+    /**
      * @param testCaseStepActionControlExecution
      * @param testCaseStepActionExecution
      * @param extension
@@ -175,7 +212,8 @@ public interface IRecorderService {
      * @param fileID
      * @return
      */
-    AnswerItem<TestCaseExecutionFile> recordManuallyFile(TestCaseStepActionExecution testCaseStepActionExecution, TestCaseStepActionControlExecution testCaseStepActionControlExecution, String extension, String desc, FileItem file, Integer id, String fileName, Integer fileID);
+    AnswerItem<TestCaseExecutionFile> recordManuallyFile(TestCaseStepActionExecution testCaseStepActionExecution, TestCaseStepActionControlExecution testCaseStepActionControlExecution,
+            String extension, String desc, FileItem file, Integer id, String fileName, Integer fileID);
 
     /**
      * @param testCaseExecution
@@ -183,13 +221,11 @@ public interface IRecorderService {
      */
     TestCaseExecutionFile recordSeleniumLog(TestCaseExecution testCaseExecution);
 
-
     /**
      * @param testCaseExecution
      * @return
      */
     TestCaseExecutionFile recordConsoleLog(TestCaseExecution testCaseExecution);
-
 
     /**
      * @param exeID
@@ -208,7 +244,7 @@ public interface IRecorderService {
     /**
      * attach a physique file to the testcase execution and save it to database
      *
-     * @param tce      the test case execution
+     * @param tce the test case execution
      * @param recorder the recorder that was created to save file on datastorage
      * @param fileDesc description of file : Exxemple : "Video"
      * @param fileType File type (PNG, MP4, etc.)

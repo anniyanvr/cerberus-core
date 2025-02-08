@@ -1,5 +1,5 @@
 /**
- * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * Cerberus Copyright (C) 2013 - 2025 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -29,6 +29,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.cerberus.core.crud.entity.LogEvent;
 import org.cerberus.core.crud.entity.TestCaseExecutionQueue;
 import org.cerberus.core.crud.service.ILogEventService;
 import org.cerberus.core.crud.service.ITagService;
@@ -138,7 +139,7 @@ public class UpdateTestCaseExecutionQueue extends HttpServlet {
         long id = 0;
 
         // Create Tag when exist.
-        if (!StringUtil.isEmpty(tag)) {
+        if (!StringUtil.isEmptyOrNull(tag)) {
             // We create or update it.
             ITagService tagService = appContext.getBean(ITagService.class);
             List<String> envList = new ArrayList<>();
@@ -239,7 +240,7 @@ public class UpdateTestCaseExecutionQueue extends HttpServlet {
                              * Update was successful. Adding Log entry.
                              */
                             ILogEventService logEventService = appContext.getBean(LogEventService.class);
-                            logEventService.createForPrivateCalls("/UpdateTestCaseExecutionQueue", "UPDATE", "Updated ExecutionQueue : ['" + id + "']", request);
+                            logEventService.createForPrivateCalls("/UpdateTestCaseExecutionQueue", "UPDATE", LogEvent.STATUS_INFO, "Updated ExecutionQueue : ['" + id + "']", request);
                         }
 
                     }

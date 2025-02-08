@@ -1,5 +1,5 @@
 /*
- * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * Cerberus Copyright (C) 2013 - 2025 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -190,8 +190,8 @@ function aoColumnsFunc(tableId) {
             "visible": false,
             "sWidth": "50px",
             "title": doc.getDocOnline("robot", "version")},
-        {"data": "active",
-            "sName": "active",
+        {"data": "isActive",
+            "sName": "isActive",
             "sWidth": "30px",
             "title": doc.getDocOnline("robot", "active")},
         {"data": "userAgent",

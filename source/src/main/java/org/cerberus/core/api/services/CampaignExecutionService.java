@@ -1,5 +1,5 @@
 /**
- * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * Cerberus Copyright (C) 2013 - 2025 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -56,7 +56,7 @@ public class CampaignExecutionService {
             List<Invariant> priorities = invariantService.readByIdName("PRIORITY");
             List<Invariant> countries = invariantService.readByIdName("COUNTRY");
             List<Invariant> environments = invariantService.readByIdName("ENVIRONMENT");
-            if (StringUtil.isNotEmpty(campaignId)) {
+            if (StringUtil.isNotEmptyOrNull(campaignId)) {
                 campaignExecutionId = findLastCampaignExecution(campaignId);
             }
             campaignExecution = Optional.ofNullable(tagService.convert(tagService.readByKey(campaignExecutionId)));

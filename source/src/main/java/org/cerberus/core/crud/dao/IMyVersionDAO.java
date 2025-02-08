@@ -1,5 +1,5 @@
 /**
- * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * Cerberus Copyright (C) 2013 - 2025 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -37,10 +37,34 @@ public interface IMyVersionDAO {
      */
     MyVersion findMyVersionByKey(String key);
 
+    /**
+     *
+     * @param myVersion
+     * @return
+     */
     boolean update(MyVersion myVersion);
 
+    /**
+     *
+     * @param myVersion
+     * @return
+     */
     boolean updateMyVersionString(MyVersion myVersion);
 
+    /**
+     *
+     * @param version
+     * @param value
+     * @param lockDurationMs
+     * @return
+     */
+    boolean updateAndLockVersionEntryDuringMs(String version, long value, long lockDurationMs);
+
+    /**
+     *
+     * @param key
+     * @return
+     */
     boolean flagMyVersionString(String key);
 
 }

@@ -1,5 +1,5 @@
 /**
- * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * Cerberus Copyright (C) 2013 - 2025 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -63,6 +63,14 @@ public class MyVersionService implements IMyVersionService {
         DtbVersion.setKey(key);
         DtbVersion.setValueString(value);
         return this.myVersionDAO.updateMyVersionString(DtbVersion);
+    }
+
+    @Override
+    public boolean updateAndLockVersionEntryDuringMs(String version, long value, long lockDurationMs) {
+        if (value == 0) {
+            value = new java.util.Date().getTime();
+        }
+        return this.myVersionDAO.updateAndLockVersionEntryDuringMs(version, value, lockDurationMs);
     }
 
     @Override

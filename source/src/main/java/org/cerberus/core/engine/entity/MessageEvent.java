@@ -1,5 +1,5 @@
 /**
- * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * Cerberus Copyright (C) 2013 - 2025 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -171,6 +171,13 @@ public class MessageEvent {
         return this;
     }
 
+    public MessageEvent resolveDescription_NoLimit(String key, String value) {
+        if (description != null) {
+            description = description.replace(VARIABLE_DELIMITER + key + VARIABLE_DELIMITER, value);
+        }
+        return this;
+    }
+    
     @Override
     public String toString() {
         return "MessageEvent{" + "code=" + code + ", codeString=" + codeString + ", description=" + description + ", stopTest=" + stopTest + ", doScreenshot=" + doScreenshot + ", getPageSource=" + getPageSource + ", message=" + message.toString() + '}';

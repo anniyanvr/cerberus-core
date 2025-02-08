@@ -1,5 +1,5 @@
 /**
- * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * Cerberus Copyright (C) 2013 - 2025 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -19,7 +19,6 @@
  */
 package org.cerberus.core.servlet.crud.transversaltables;
 
-import com.google.common.base.Strings;
 import com.google.gson.Gson;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -115,7 +114,7 @@ public class ReadLabel extends HttpServlet {
 
         try {
             JSONObject jsonResponse = new JSONObject();
-            if ((request.getParameter("id") == null) && (request.getParameter("system") == null) && Strings.isNullOrEmpty(columnName)) {
+            if ((request.getParameter("id") == null) && (request.getParameter("system") == null) && StringUtil.isEmptyOrNull(columnName)) {
                 answer = findLabelList(null, appContext, userHasPermissions, request);
                 jsonResponse = (JSONObject) answer.getItem();
             } else {
@@ -123,17 +122,18 @@ public class ReadLabel extends HttpServlet {
                     Integer id = Integer.valueOf(policy.sanitize(request.getParameter("id")));
                     answer = findLabelByKey(id, appContext, userHasPermissions);
                     jsonResponse = (JSONObject) answer.getItem();
-                } else if (request.getParameter("system") != null && !Strings.isNullOrEmpty(columnName)) {
-                    answer = findDistinctValuesOfColumn(request.getParameter("system"), appContext, request, columnName);
+                } else if (request.getParameter("system") != null && !StringUtil.isEmptyOrNull(columnName)) {
+                    List<String> systems = ParameterParserUtil.parseListParamAndDeleteEmptyValue(request.getParameterValues("system"), Arrays.asList("DEFAULT"), "UTF-8");
+                    answer = findDistinctValuesOfColumn(systems, appContext, request, columnName);
                     jsonResponse = (JSONObject) answer.getItem();
                 } else if (request.getParameter("system") != null) {
-                    List<String> system = ParameterParserUtil.parseListParamAndDecodeAndDeleteEmptyValue(request.getParameterValues("system"), Arrays.asList("DEFAULT"), "UTF-8");
+                    List<String> system = ParameterParserUtil.parseListParamAndDeleteEmptyValue(request.getParameterValues("system"), Arrays.asList("DEFAULT"), "UTF-8");
                     answer = findLabelList(system, appContext, userHasPermissions, request);
                     jsonResponse = (JSONObject) answer.getItem();
                 }
             }
             if ((request.getParameter("withHierarchy") != null)) {
-                List<String> system = ParameterParserUtil.parseListParamAndDecodeAndDeleteEmptyValue(request.getParameterValues("system"), Arrays.asList("DEFAULT"), "UTF-8");
+                List<String> system = ParameterParserUtil.parseListParamAndDeleteEmptyValue(request.getParameterValues("system"), Arrays.asList("DEFAULT"), "UTF-8");
                 answer1 = getLabelHierarchy(system, appContext, userHasPermissions, request, (request.getParameter("isSelectable") != null), (request.getParameter("hasButtons") != null));
                 JSONObject jsonHierarchy = (JSONObject) answer1.getItem();
                 jsonResponse.put("labelHierarchy", jsonHierarchy);
@@ -340,13 +340,13 @@ public class ReadLabel extends HttpServlet {
                 // Standard pills
                 List<String> attributList = new ArrayList<>();
                 if (Label.TYPE_REQUIREMENT.equals(label.getType())) {
-                    if (!StringUtil.isEmpty(label.getRequirementType()) && !"unknown".equalsIgnoreCase(label.getRequirementType())) {
+                    if (!StringUtil.isEmptyOrNull(label.getRequirementType()) && !"unknown".equalsIgnoreCase(label.getRequirementType())) {
                         attributList.add("<span class='badge badge-pill badge-secondary'>" + label.getRequirementType() + "</span>");
                     }
-                    if (!StringUtil.isEmpty(label.getRequirementStatus()) && !"unknown".equalsIgnoreCase(label.getRequirementStatus())) {
+                    if (!StringUtil.isEmptyOrNull(label.getRequirementStatus()) && !"unknown".equalsIgnoreCase(label.getRequirementStatus())) {
                         attributList.add("<span class='badge badge-pill badge-secondary'>" + label.getRequirementStatus() + "</span>");
                     }
-                    if (!StringUtil.isEmpty(label.getRequirementCriticity()) && !"unknown".equalsIgnoreCase(label.getRequirementCriticity())) {
+                    if (!StringUtil.isEmptyOrNull(label.getRequirementCriticity()) && !"unknown".equalsIgnoreCase(label.getRequirementCriticity())) {
                         attributList.add("<span class='badge badge-pill badge-secondary'>" + label.getRequirementCriticity() + "</span>");
                     }
                 }
@@ -428,7 +428,7 @@ public class ReadLabel extends HttpServlet {
         return result;
     }
 
-    private AnswerItem<JSONObject> findDistinctValuesOfColumn(String system, ApplicationContext appContext, HttpServletRequest request, String columnName) throws JSONException {
+    private AnswerItem<JSONObject> findDistinctValuesOfColumn(List<String> systems, ApplicationContext appContext, HttpServletRequest request, String columnName) throws JSONException {
         AnswerItem<JSONObject> answer = new AnswerItem<>();
         JSONObject object = new JSONObject();
 
@@ -452,7 +452,7 @@ public class ReadLabel extends HttpServlet {
             }
         }
 
-        AnswerList testCaseList = labelService.readDistinctValuesByCriteria(system, searchParameter, individualSearch, columnName);
+        AnswerList testCaseList = labelService.readDistinctValuesByCriteria(systems, searchParameter, individualSearch, columnName);
 
         object.put("distinctValues", testCaseList.getDataList());
 

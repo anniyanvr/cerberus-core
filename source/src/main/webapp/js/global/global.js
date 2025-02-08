@@ -1,5 +1,5 @@
 /*
- * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * Cerberus Copyright (C) 2013 - 2025 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -87,12 +87,17 @@ function getSubDataLabel(type) {
  * @param {String} addValue1 [optional] Adds a value on top of the normal List.
  * @param {String} asyn [optional] Do a async ajax request. Default: true
  * @param {String} funcAfterLoad [optional] Function to call after load.
+ * @param {String} extra modal id in order to filter name selcted with .selectName parameter
  * @returns {void}
  */
-function displayInvariantList(selectName, idName, forceReload, defaultValue, addValue1, asyn, funcAfterLoad) {
+function displayInvariantList(selectName, idName, forceReload, defaultValue, addValue1, asyn, funcAfterLoad, modalID) {
+    let selector = "[name='" + selectName + "']";
+    if (modalID !== undefined) {
+        selector = "#" + modalID + " [name='" + selectName + "']";
+    }
     // Adding the specific value when defined.
     if (addValue1 !== undefined) {
-        $("[name='" + selectName + "']").append($('<option></option>').text(addValue1).val(addValue1));
+        $(selector).append($('<option></option>').text(addValue1).val(addValue1));
     }
 
     if (forceReload === undefined) {
@@ -124,10 +129,10 @@ function displayInvariantList(selectName, idName, forceReload, defaultValue, add
                     if (!isEmpty(element.description))
                         desc += " - " + element.description;
 
-                    $("[name='" + selectName + "']").append($('<option></option>').text(desc).val(element.value));
+                    $(selector).append($('<option></option>').text(desc).val(element.value));
                 }
                 if (defaultValue !== undefined) {
-                    $("[name='" + selectName + "']").val(defaultValue);
+                    $(selector).val(defaultValue);
                 }
                 if (funcAfterLoad !== undefined) {
                     funcAfterLoad();
@@ -137,16 +142,43 @@ function displayInvariantList(selectName, idName, forceReload, defaultValue, add
     } else {
         for (const element of list) {
             const desc = element.value + " - " + element.description;
-            $("[name='" + selectName + "']").append($('<option></option>').text(desc).val(element.value));
+            $(selector).append($('<option></option>').text(desc).val(element.value));
         }
         if (defaultValue !== undefined) {
-            $("[name='" + selectName + "']").val(defaultValue);
+            $(selector).val(defaultValue);
         }
         if (funcAfterLoad !== undefined) {
             funcAfterLoad();
         }
     }
 }
+
+/**
+ * Method that display a combo box in all the selectName tags with the value retrieved from the invariant list
+ * @param {String} selectName value name of the select tag in the html
+ * @param {String} idName value that filters the invariants that will be retrieved (ex : "SYSTEM", "COUNTRY", ...)
+ * @param {String} forceReload true in order to force the reload of list from database.
+ * @param {String} defaultValue [optional] value to be selected in combo.
+ * @param {String} addValue1 [optional] Adds a value on top of the normal List.
+ * @param {String} asyn [optional] Do a async ajax request. Default: true
+ * @param {String} funcAfterLoad [optional] Function to call after load.
+ * @returns {void}
+ */
+function displayListFromData(selectName, data, defaultValue) {
+    // Adding the specific value when defined.
+    let list = data;
+    //var select = $("<select></select>").addClass("form-control input-sm");
+
+    for (const element of list) {
+//            const desc = element + " - " + element;
+        $("[name='" + selectName + "']").append($('<option></option>').text(element).val(element));
+    }
+    if (defaultValue !== undefined) {
+        $("[name='" + selectName + "']").val(defaultValue);
+    }
+}
+
+
 
 /**
  * Method that display a list-group-item with the value retrieved from the Application IP list
@@ -179,7 +211,11 @@ function displayRobotList(selectName, idName, forceReload, defaultValue) {
                     if (list[index].browser == "") {
                         browserImg = "";
                     }
-                    var line = $("<button type='button' data-robot='" + list[index].robot + "' class='list-group-item list-group-item-action' name='robotItem'>" +
+                    let isActive = "";
+                    if (list[index].robot === defaultValue) {
+                        isActive = " active";
+                    }
+                    var line = $("<button type='button' data-robot='" + list[index].robot + "' class='list-group-item list-group-item-action" + isActive + "' name='robotItem'>" +
                             "<span class='col-xs-6 grayscale'>" + list[index].robot + "</span>" +
                             "<img class='col-xs-2' style='width:60px;height:30px' src='images/platform-" + list[index].platform + ".png'/>" +
                             browserImg +
@@ -309,6 +345,7 @@ function displayDeployTypeList(selectName, defaultValue) {
  * Method that display a combo box in all the selectName tags with the value retrieved from the DeployType list
  * @param {String} selectName value name of the select tag in the html
  * @param {String} defaultValue to be selected
+ * @param {String} extraValue to be added
  * @returns {void}
  */
 function displayAppServiceList(selectName, defaultValue, extraValue) {
@@ -318,7 +355,7 @@ function displayAppServiceList(selectName, defaultValue, extraValue) {
         if (extraValue === "") {
             extraText = "-- No Service --";
         }
-        $("[name='" + selectName + "']").append($("<option value='" + extraValue + "'></option>").text(extraText));
+        $("select[id='" + selectName + "']").append($('<option></option>').text(extraText).val(extraValue));
     }
 
 
@@ -331,48 +368,8 @@ function displayAppServiceList(selectName, defaultValue, extraValue) {
             $("[name='" + selectName + "']").val(defaultValue);
         }
     });
+
 }
-
-function displayDataLibList(selectName, defaultValue, data) {
-
-    $("#" + selectName).parent().find("select").find('option').remove();
-
-    for (var option in data.contentTable) {
-        let system = "";
-        let environment = "";
-        let country = "";
-        let value = "";
-        let context = "";
-        if (!isEmpty(data.contentTable[option].system)) {
-            system = data.contentTable[option].system + " - ";
-        }
-        if (!isEmpty(data.contentTable[option].environment)) {
-            environment = data.contentTable[option].environment + " - ";
-        }
-        if (!isEmpty(data.contentTable[option].country)) {
-            country = data.contentTable[option].country + " - ";
-        }
-
-        if (data.contentTable[option].type === "INTERNAL") {
-            if (!isEmpty(data.contentTable[option].subDataValue)) {
-                value = data.contentTable[option].subDataValue + " - ";
-            }
-        }
-
-        if (!isEmpty(system) || !isEmpty(environment) || !isEmpty(country) || !isEmpty(value)) {
-            context = system + environment + country + value;
-            context = context.substr(0, context.length - 3);
-            context = " [" + context + "]";
-        }
-
-        $("#" + selectName).parent().find("select").append($('<option></option>').text(data.contentTable[option].name + context).val(data.contentTable[option].testDataLibID));
-    }
-
-    if (defaultValue !== undefined) {
-        $("#" + selectName).parent().find("select").val(defaultValue);
-    }
-}
-
 
 /**
  * Method that display a combo box in all the selectName tags with the value retrieved from the Application list
@@ -398,7 +395,7 @@ function displayApplicationList(selectName, system, defaultValue, extraValue) {
 
     $.when($.getJSON("ReadApplication", myData)).then(function (data) {
         for (var option in data.contentTable) {
-            $("[name='" + selectName + "']").append($("<option></option>").text(data.contentTable[option].application + " - " + data.contentTable[option].description).val(data.contentTable[option].application));
+            $("[name='" + selectName + "']").append($("<option></option>").text(data.contentTable[option].application + " [" + data.contentTable[option].type + "] " + data.contentTable[option].description).val(data.contentTable[option].application));
         }
 
         if (defaultValue !== undefined && defaultValue !== null) {
@@ -563,10 +560,14 @@ function displayEnvList(selectName, system, defaultValue) {
  * @param {String} application value to filter.
  * @returns {void}
  */
-function displayApplicationIpList(selectName, system, application) {
+function displayApplicationIpList(selectName, system, application, country, environment) {
     $.when($.getJSON("ReadCountryEnvironmentParameters", "system=" + system + "&application=" + application)).then(function (data) {
         for (var option in data.contentTable) {
-            var line = $("<button type='button' data-country='" + data.contentTable[option].country + "' data-environment='" + data.contentTable[option].environment + "' name='applicationIpItem' class='list-group-item list-group-item-action'>" +
+            let classActive = "";
+            if ((country === data.contentTable[option].country) && (environment === data.contentTable[option].environment)) {
+                classActive = " active";
+            }
+            var line = $("<button type='button' data-country='" + data.contentTable[option].country + "' data-environment='" + data.contentTable[option].environment + "' name='applicationIpItem' class='list-group-item list-group-item-action" + classActive + "'>" +
                     "<span class='col-lg-8 grayscale' style='word-wrap: break-word;text-overflow;'>" + data.contentTable[option].ip + "</span>" +
                     "<div class='col-lg-4'><span class='label label-primary' style='background-color:#000000'>" + data.contentTable[option].country + "</span>" +
                     "<span class='label label-primary' style='background-color:#000000'>" + data.contentTable[option].environment + "</span></div>" +
@@ -686,6 +687,55 @@ function getUserArray(forceReload, addValue1, asyn) {
     return result;
 }
 
+/**
+ * Method that return a list of value retrieved from the invariant list
+ * @param {String} forceReload true in order to force the reload of list from database.
+ * @param {String} addValue1 [optional] Adds a value on top of the normal List.
+ * @param {String} asyn [optional] Do a async ajax request. Default: true
+ * @returns {array}
+ */
+function getCollectionArray(forceReload, asyn) {
+    var result = [];
+
+    if (forceReload === undefined) {
+        forceReload = true;
+    }
+
+    var async = true;
+    if (asyn !== undefined) {
+        async = asyn;
+    }
+
+    var cacheEntryName = "COLLECTIONLIST";
+    if (forceReload) {
+        sessionStorage.removeItem(cacheEntryName);
+    }
+    var list = JSON.parse(sessionStorage.getItem(cacheEntryName));
+
+    if (list === null) {
+        $.ajax({
+            url: "ReadAppService?columnName=srv.collection",
+            async: async,
+            success: function (data) {
+                list = data.distinctValues;
+                sessionStorage.setItem(cacheEntryName, JSON.stringify(data.distinctValues));
+                for (var index = 0; index < list.length; index++) {
+                    var item = list[index];
+                    result.push(item);
+                }
+            },
+            error: showUnexpectedError
+        });
+    } else {
+        for (var index = 0; index < list.length; index++) {
+            var item = list[index];
+
+            result.push(item);
+        }
+    }
+
+    return result;
+}
 
 /**
  * Auxiliary method that retrieves a list containing the values that belong to the invariant that matches the provided idname.
@@ -885,7 +935,7 @@ function getSelectApplication(system, forceReload) {
                 for (var index = 0; index < list.length; index++) {
                     var item = list[index].application;
 
-                    select.append($("<option></option>").text(item).val(item));
+                    select.append($("<option></option>").text(item + "[" + list[index].type + "]").val(item));
                 }
             },
             error: showUnexpectedError
@@ -914,6 +964,28 @@ function getSelectApplicationWithoutSystem() {
             list = data.contentTable;
             for (var index = 0; index < list.length; index++) {
                 var item = list[index].application;
+                select.append($("<option></option>").text(item + " [" + list[index].type + "]").val(item));
+            }
+        },
+        error: showUnexpectedError
+    });
+
+    return select;
+}
+
+function getSelectFolder() {
+
+    var list = [];
+
+    var select = $("<select></select>").addClass("form-control input-sm");
+
+    $.ajax({
+        url: "ReadTest?iSortCol_0=0&sSortDir_0=asc&sColumns=test",
+        async: false,
+        success: function (data) {
+            list = data.contentTable;
+            for (var index = 0; index < list.length; index++) {
+                var item = list[index].test;
                 select.append($("<option></option>").text(item).val(item));
             }
         },
@@ -1037,7 +1109,16 @@ function getAlertType(code) {
     } else if (code === "WARNING") {
         return "warning";
     }
-
+    return "danger";
+}
+function getAlertHttpType(code) {
+    if ((code >= 200) && (code < 300)) {
+        return "success";
+    } else if ((code < 200)) {
+        return "warning";
+    } else if (code >= 300) {
+        return "danger";
+    }
     return "danger";
 }
 
@@ -1059,7 +1140,7 @@ function Message(messageType, message) {
 function clearResponseMessage(dialog) {
     var elementAlert = dialog.find("div[id*='DialogMessagesAlert']");
     if (Boolean(elementAlert)) {
-        elementAlert.fadeOut();
+        elementAlert.slideUp(0);
     }
 }
 
@@ -1070,7 +1151,7 @@ function clearResponseMessageMainPage() {
     $("#mainAlert").removeClass("alert-success");
     $("#mainAlert").removeClass("alert-danger");
     $("#alertDescription").html("");
-    $("#mainAlert").fadeOut();
+    $("#mainAlert").slideUp(0);
 }
 
 /**
@@ -1085,6 +1166,17 @@ function showMessage(obj, dialog, silentMode, waitinMs) {
     var code = getAlertType(obj.messageType);
 
     if (dialog !== undefined && dialog !== null) {
+
+        if (isEmpty(waitinMs)) {
+            // Automatically fadeout after n second.
+            waitinMs = 10000; // Default wait to 10 seconds.
+            if (code === "success") {
+                waitinMs = 2000;
+            } else if (code === "error") {
+                waitinMs = 5000;
+            }
+        }
+
         //shows the error message in the current dialog
         var elementAlert = dialog.find("div[id*='DialogMessagesAlert']");
         var elementAlertDescription = dialog.find("span[id*='DialogAlertDescription']");
@@ -1094,7 +1186,16 @@ function showMessage(obj, dialog, silentMode, waitinMs) {
         elementAlert.removeClass("alert-danger");
         elementAlert.removeClass("alert-warning");
         elementAlert.addClass("alert-" + code);
-        elementAlert.fadeIn();
+
+        // We slowly hide it after waitinMs ms delay.
+        elementAlert.fadeTo(500, 1, function () {
+            setTimeout(function () {
+                elementAlert.slideUp(500);
+            }, waitinMs);
+        });
+
+
+//        elementAlert.fadeIn();
     } else {
         //shows the message in the main page
         showMessageMainPage(code, obj.message, silentMode, waitinMs);
@@ -1149,17 +1250,21 @@ function showMessageMainPage(type, message, silentMode, waitinMs) {
 
         // We feed the new content and disply the alert.
         $("#mainAlert").removeClass("alert-success");
+        $("#mainAlert").removeClass("alert-warning");
+        $("#mainAlert").removeClass("alert-danger");
         $("#mainAlert").removeClass("alert-error");
         $("#mainAlert").removeClass("alert-info");
-        $("#mainAlert").removeClass("alert-warning");
         $("#mainAlert").addClass("alert-" + type);
         $("#alertDescription").html(message);
         $("#mainAlert").slideDown(10);
 
         // We slowly hide it after waitinMs ms delay.
-        $("#mainAlert").fadeTo(waitinMs, 1, function () {
-            $("#mainAlert").slideUp(500);
+        $("#mainAlert").fadeTo(500, 1, function () {
+            setTimeout(function () {
+                $("#mainAlert").slideUp(500);
+            }, waitinMs);
         });
+
 
     }
 }
@@ -1422,9 +1527,10 @@ function TableConfigurationsClientSide(divId, data, aoColumnsFunction, activateP
     this.aoColumnsFunction = aoColumnsFunction;
     this.aaData = data;
     this.aaSorting = aaSorting;
+    this.bDisplayRefreshButton = false;
 
     if (activatePagination) {
-        this.lengthMenu = [10, 25, 50, 100];
+        this.lengthMenu = [10, 15, 20, 30, 50, 100];
         this.lengthChange = true;
         this.bPaginate = true;
         this.displayLength = 10;
@@ -1472,10 +1578,11 @@ function TableConfigurationsServerSide(divId, ajaxSource, ajaxProp, aoColumnsFun
     this.ajaxSource = ajaxSource;
     this.ajaxProp = ajaxProp;
 
+    this.bDisplayRefreshButton = true;
     this.processing = true;
     this.serverSide = true;
     if (lengthMenu === undefined) {
-        this.lengthMenu = [10, 25, 50, 100];
+        this.lengthMenu = [10, 15, 20, 30, 50, 100];
     } else {
         this.lengthMenu = lengthMenu;
     }
@@ -1484,7 +1591,7 @@ function TableConfigurationsServerSide(divId, ajaxSource, ajaxProp, aoColumnsFun
     this.searchText = "";
     this.searchMenu = "";
     this.tableWidth = "1500px";
-    this.displayLength = 10;
+    this.displayLength = 15;
     this.bJQueryUI = true; //Enable jQuery UI ThemeRoller support (required as ThemeRoller requires some slightly different and additional mark-up from what DataTables has traditionally used
     this.bPaginate = true;
     this.sPaginationType = "full_numbers";
@@ -1543,7 +1650,7 @@ function showUnexpectedError(jqXHR, textStatus, errorThrown) {
  * @param {Function} createdRowCallback callback function to be called after each row
  * @return {Object} Return the dataTable object to use the api
  */
-function createDataTableWithPermissions(tableConfigurations, callbackFunction, objectWaitingLayer, filtrableColumns, checkPermissions, userCallbackFunction, createdRowCallback, async) {
+function createDataTableWithPermissions(tableConfigurations, callbackFunction, objectWaitingLayer, filtrableColumns, checkPermissions, userCallbackFunction, createdRowCallback, async = true) {
     /**
      * Define datatable config with tableConfiguration object received
      */
@@ -1621,18 +1728,7 @@ function createDataTableWithPermissions(tableConfigurations, callbackFunction, o
                 $("#" + tableConfigurations.divId).DataTable().ajax.reload();
             }
         } : false;
-        filtrableColumns = undefined;
-        if (filtrableColumns !== undefined) {
-            configs["fnServerParams"] = function (aoData) {
 
-                var filters = generateFiltersOnMultipleColumns(tableConfigurations.divId, filtrableColumns);
-                for (var f = 0; f < filters.length; f++) {
-                    aoData.push(filters[f]);
-                }
-                aoData.push({name: "iSortCol_0", value: configs["aaSorting"][0][0]});
-                aoData.push({name: "sSortDir_0", value: configs["aaSorting"][0][1]});
-            };
-        }
         configs["fnServerData"] = function (sSource, aoData, fnCallback, oSettings) {
 
             var like = "";
@@ -1745,27 +1841,44 @@ function createDataTableWithPermissions(tableConfigurations, callbackFunction, o
     var saveTableConfigurationButtonTooltip = doc.getDocDescription("page_global", "tooltip_savetableconfig");
     var restoreFilterButtonLabel = doc.getDocLabel("page_global", "btn_restoreuserpreferences");
     var restoreFilterButtonTooltip = doc.getDocDescription("page_global", "tooltip_restoreuserpreferences");
+    var resetTableConfigurationButtonLabel = doc.getDocLabel("page_global", "btn_resettableconfig");
+    var resetTableConfigurationButtonTooltip = doc.getDocDescription("page_global", "tooltip_resettableconfig");
     if (tableConfigurations.showColvis) {
         //Display button show/hide columns and Save table configuration
         $("#" + tableConfigurations.divId + "_wrapper #saveTableConfigurationButton").remove();
         $("#" + tableConfigurations.divId + "_wrapper #restoreFilterButton").remove();
+        $("#" + tableConfigurations.divId + "_wrapper #resetFilterButton").remove();
+
         $("#" + tableConfigurations.divId + "_wrapper")
                 .find("[class='dt-buttons btn-group']").removeClass().addClass("pull-right").find("a").attr('id', 'showHideColumnsButton').removeClass()
                 .addClass("btn btn-default pull-right").attr("data-toggle", "tooltip").attr("title", showHideButtonTooltip).click(function () {
             //$("#" + tableConfigurations.divId + " thead").empty();
         }).html("<span class='glyphicon glyphicon-cog'></span> " + showHideButtonLabel);
+
         $("#" + tableConfigurations.divId + "_wrapper #showHideColumnsButton").parent().before(
                 $("<button type='button' id='saveTableConfigurationButton'></button>").addClass("btn btn-default pull-right").append("<span class='glyphicon glyphicon-floppy-save'></span> " + saveTableConfigurationButtonLabel)
                 .attr("data-toggle", "tooltip").attr("title", saveTableConfigurationButtonTooltip).click(function () {
             updateUserPreferences(objectWaitingLayer);
         })
                 );
+
         $("#" + tableConfigurations.divId + "_wrapper #saveTableConfigurationButton").before(
                 $("<button type='button' id='restoreFilterButton'></button>").addClass("btn btn-default pull-right").append("<span class='glyphicon glyphicon-floppy-open'></span> " + restoreFilterButtonLabel)
                 .attr("data-toggle", "tooltip").attr("title", restoreFilterButtonTooltip).click(function () {
             location.reload();
         })
                 );
+
+        $("#" + tableConfigurations.divId + "_wrapper #restoreFilterButton").before(
+                $("<button type='button' id='resetFilterButton'></button>").addClass("btn btn-default pull-right").append("<span class='glyphicon glyphicon-remove'></span> " + resetTableConfigurationButtonLabel)
+                .attr("data-toggle", "tooltip").attr("title", resetTableConfigurationButtonTooltip).click(function () {
+            localStorage.removeItem('DataTables_' + tableConfigurations.divId + '_' + location.pathname);
+            updateUserPreferences(objectWaitingLayer);
+            location.reload();
+        })
+                );
+
+
     }
     $("#" + tableConfigurations.divId + "_length select[name='" + tableConfigurations.divId + "_length']").addClass("form-control input-sm");
     $("#" + tableConfigurations.divId + "_length select[name='" + tableConfigurations.divId + "_length']").css("display", "inline");
@@ -1774,6 +1887,14 @@ function createDataTableWithPermissions(tableConfigurations, callbackFunction, o
 
     $("#" + tableConfigurations.divId + "_length").addClass("marginBottom10").addClass("width80").addClass("pull-left");
     $("#" + tableConfigurations.divId + "_filter").addClass("marginBottom10").addClass("width150").addClass("pull-left");
+    $("#" + tableConfigurations.divId + "_filter").find('label').addClass("input-group");
+    if (tableConfigurations.bDisplayRefreshButton) {
+        $("#" + tableConfigurations.divId + "_filter").find('label').append("<span class='input-group-btn'><button id='dataTableRefresh' class='buttonObject btn btn-default input-sm' title='Refresh' type='button'><span class='glyphicon glyphicon-refresh'></span></button></span>");
+    }
+
+    $("#dataTableRefresh").click(function () {
+        $("#" + tableConfigurations.divId).dataTable().fnDraw(false);
+    });
 
     return oTable;
 }
@@ -2119,6 +2240,29 @@ function GetURLParameter(sParam, defaultValue) {
 /**
  * Get the parameter passed in the url Example : url?param=value
  * @param {String} sParam parameter you want to get value from
+ * @param {String} defaultValue Default value in case the parameter is not defined in the URL.
+ * @returns {GetURLParameter.sParameterName} the value or defaultValue does not exist in URL or null if not found in URL and no default value specified.
+ */
+function GetURLAnchorValue(sParam, defaultValue) {
+    var sPageURL = window.location.hash.substring(1);
+    var sURLVariables = sPageURL.split('|');
+
+    for (var i = 0; i < sURLVariables.length; i++) {
+        var sParameterName = sURLVariables[i].split('=');
+        if (sParameterName[0] === sParam) {
+            return decodeURIComponent(sParameterName[1]);
+        }
+    }
+    if (defaultValue === undefined) {
+        return null;
+    } else {
+        return defaultValue;
+    }
+}
+
+/**
+ * Get the parameter passed in the url Example : url?param=value
+ * @param {String} sParam parameter you want to get value from
  * @returns {GetURLParameter.sParameterName} the value or defaultValue does not exist in URL or null if not found in URL and no default value specified.
  */
 function GetURLParameters(sParam) {
@@ -2133,6 +2277,35 @@ function GetURLParameters(sParam) {
         }
     }
     return result;
+}
+
+/**
+ * Replace the parameter passed in the url Example : url?param=value&toto=tutu is replaced to  url?param=newValue&toto=tutu
+ * @param {String} sParam parameter you want to replace value from
+ * @param {String} new Value of the sParam
+ * @returns {GetURLParameter.sParameterName} the value or defaultValue does not exist in URL or null if not found in URL and no default value specified.
+ */
+function ReplaceURLParameters(sParam, sValue) {
+    let sPageURL = window.location.search.substring(1);
+    let sURLVariables = sPageURL.split('&');
+    let result = "";
+    let replaced = false;
+
+    for (var i = 0; i < sURLVariables.length; i++) {
+        var sParameterName = sURLVariables[i].split('=');
+        if (sParameterName[0] === sParam) {
+            result += sParameterName[0] + "=" + sValue;
+            replaced = true;
+//            result.push(decodeURIComponent(sParameterName[1]));
+        } else {
+            result += sParameterName[0] + "=" + sParameterName[1];
+        }
+        result += "&";
+    }
+    if (!replaced) {
+        result += sParam + "=" + sValue + "&";
+    }
+    return result.substring(0, result.length - 1);
 }
 
 /**
@@ -2184,18 +2357,18 @@ function bindToggleCollapse() {
     $(".collapse").each(function () {
         if (this.id !== "sidenavbar-subnavlist") {//disable interaction with the navbar
             $(this).on('shown.bs.collapse', function () {
-                localStorage.setItem(this.id, true);
+                localStorage.setItem("PanelCollapse_" + this.id, true);
                 updateUserPreferences();
                 $(this).prev().find(".toggle").removeClass("glyphicon-chevron-down").addClass("glyphicon-chevron-right");
             });
 
             $(this).on('hidden.bs.collapse', function () {
-                localStorage.setItem(this.id, false);
+                localStorage.setItem("PanelCollapse_" + this.id, false);
                 updateUserPreferences();
                 $(this).prev().find(".toggle").removeClass("glyphicon-chevron-right").addClass("glyphicon-chevron-down");
             });
 
-            if (localStorage.getItem(this.id) === "false") {
+            if (localStorage.getItem("PanelCollapse_" + this.id) === "false") {
                 $(this).removeClass('in');
                 $(this).prev().find(".toggle").removeClass("glyphicon-chevron-right").addClass("glyphicon-chevron-down");
             } else {
@@ -2212,7 +2385,8 @@ function drawURL(data) {
 
 function drawHyperlink(href, text) {
     if (text.indexOf("://") > -1) {
-        return "<a target=\"_blank\" href='" + href + "'>" + text + "</a>";//TODO:FN ver se tem caracters que precisam de ser encapsulados
+        let host = text.split("://")[1].split("/")[0];
+        return "<a target=\"_blank\" href='" + href + "'>" + host + "</a>";//TODO:FN ver se tem caracters que precisam de ser encapsulados
     }
     return text;
 }
@@ -2343,7 +2517,22 @@ function getDate(date) {
     var d1 = new Date('1980-01-01');
     var endExe = new Date(date);
     if (endExe > d1) {
-        return endExe;
+        return endExe.toLocaleString();
+    } else {
+        return "";
+    }
+}
+
+/**
+ * Method that return a String that contain the date. If date is 1970, the string return will be empty.
+ * @param {string} date
+ * @returns {string} date in string format
+ */
+function getDateTime(date) {
+    var d1 = new Date('1980-01-01');
+    var endExe = new Date(date);
+    if (endExe > d1) {
+        return endExe.toLocaleTimeString();
     } else {
         return "";
     }
@@ -2373,6 +2562,118 @@ function getDateMedium(date) {
         return "";
     }
 }
+
+function getHumanReadableDuration(durInSec, nbUnits = 2) {
+    let dur = durInSec;
+    let unit = "s";
+    let cnt1 = 0;
+    let cnt2 = 0;
+    if (dur > 60) {
+        dur = dur / 60
+        unit = "min"
+    } else {
+        return Math.round(dur) + " " + unit;
+    }
+    if (dur >= 60) {
+        dur = dur / 60
+        unit = "h"
+    } else {
+        cnt1 = Math.floor(dur);
+        cnt2 = durInSec - (cnt1 * 60)
+        if ((cnt2 > 0) && (nbUnits > 1)) {
+            return cnt1 + " " + unit + " " + cnt2 + " s";
+        } else {
+            return cnt1 + " " + unit;
+        }
+    }
+    if (dur > 24) {
+        dur = dur / 24
+        unit = "d"
+    } else {
+        cnt1 = Math.floor(dur);
+        cnt2 = durInSec - (cnt1 * 60 * 60)
+        if ((cnt2 > 0) && (nbUnits > 1)) {
+            return cnt1 + " " + unit + " " + getHumanReadableDuration(cnt2, (nbUnits - 1));
+        } else {
+            return cnt1 + " " + unit;
+        }
+    }
+    cnt1 = Math.floor(dur);
+    cnt2 = durInSec - (cnt1 * 60 * 60 * 24)
+    if ((cnt2 > 0) && (nbUnits > 1)) {
+        return cnt1 + " " + unit + " " + getHumanReadableDuration(cnt2, (nbUnits - 1));
+    } else {
+        return cnt1 + " " + unit;
+}
+}
+
+
+
+var unitlist = ["", " k", " M", " G"];
+function formatnumberKM(number) {
+    let sign = Math.sign(number);
+    let unit = 0;
+
+    while (Math.abs(number) >= 1000)
+    {
+        unit = unit + 1;
+        number = Math.floor(Math.abs(number) / 100) / 10;
+    }
+    return sign * Math.abs(number) + unitlist[unit];
+}
+
+function getFromStorage(sSessionEntry, defaultValue) {
+    if (sessionStorage.getItem(sSessionEntry) !== null) {
+        return sessionStorage.getItem(sSessionEntry);
+    } else {
+        return defaultValue;
+    }
+}
+
+function setTimeRange(id) {
+    let fromD = new Date();
+    fromD.setHours(00);
+    fromD.setMinutes(00);
+    fromD.setSeconds(00);
+
+    let toD = new Date();
+    toD.setHours(24);
+    toD.setMinutes(00);
+    toD.setSeconds(00);
+
+//    fromD ;
+    if (id === 1) { // Previous Month
+        fromD.setMonth(toD.getMonth() - 1);
+    } else if (id === 2) { // Previous 3 Months
+        fromD.setMonth(fromD.getMonth() - 3);
+    } else if (id === 3) { // Previous 6 Months
+        fromD.setMonth(fromD.getMonth() - 6);
+    } else if (id === 4) { // Previous Year
+        fromD.setMonth(fromD.getMonth() - 12);
+    } else if (id === 5) { // Previous Week
+        fromD.setDate(toD.getDate() - 7);
+    } else if (id === 6) { // Current Day
+        fromD.setDate(toD.getDate() - 1);
+    } else if (id === 7) { // This Month
+        fromD.setDate(1);
+    } else if (id === 8) { // Last Calendar Month       
+        fromD.setMonth(fromD.getMonth() - 1);
+        fromD.setDate(1);
+        toD.setDate(1);
+    } else if (id === 9) { // Previous Calendar Month
+        fromD.setMonth(fromD.getMonth() - 2);
+        fromD.setDate(1);
+        toD.setMonth(toD.getMonth() - 1);
+        toD.setDate(1);
+    }
+
+    $('#frompicker').data("DateTimePicker").date(moment(fromD));
+    $('#topicker').data("DateTimePicker").date(moment(toD));
+
+    console.info("From : " + fromD.toLocaleString() + " - To : " + toD.toLocaleString());
+}
+
+
 
 /**
  * Method used to restrict usage of some specific caracters.
@@ -2726,9 +3027,6 @@ function comboConfigTag_format(tag) {
     let markup = "<div class='select2-result-tag clearfix'>" +
             "<div class='select2-result-tag__title'>" + tag.tag + "</div>";
 
-    if (tag.description) {
-        markup += "<div class='select2-result-tag__description'>" + tag.description + "</div>";
-    }
     markup += "<div class='select2-result-tag__statistics'>";
     if (tag.campaign) {
         markup += "<div class='select2-result-tag__detail'><i class='fa fa-list'></i> " + tag.campaign + "</div>";
@@ -2908,34 +3206,52 @@ function comboConfigApplication_format(application) {
     if (!isEmpty(application.type)) {
         color = "labelBlue";
         appType = doc.getDocLabel("comboApplicationType", application.type);
+        return $('<span name="appNameLabel">' + application.id + ' <img id="AppLogo"  class="" style="height:20px; overflow:hidden; text-overflow:clip; border: 0px; padding:0; margin:0; margin-left: 10px" src="./images/logoapp-' + application.type + '.png"></img></span>');
+    } else {
+        return $('<span name="appNameLabel">' + application.id + ' <span name="appTypeLabel" class="label ' + color + '" style="margin-left:10px;margin-bottom:0px;height:30px;border-radius:30px;padding:8px">' + appType + '</span></span>');
     }
-    return $('<span name="appNameLabel">' + application.id + ' <span name="appTypeLabel" class="label ' + color + '" style="margin-left:10px;margin-bottom:0px;height:30px;border-radius:30px;padding:8px">' + appType + '</span></span>');
 }
-;
+
 
 
 function getBugIdList(data, appUrl) {
     let link = "";
-    if (isEmpty(appUrl)) {
-        $.each(data, function (_, obj) {
-            if (obj.act) {
-                link = link + '' + obj.id;
-                if (obj.desc !== "") {
-                    link = link + " - " + obj.desc;
-                }
-                link = link + "<br>";
-            }
-        });
+    $.each(data, function (_, obj) {
+
+        link = link + getBugIdRow(obj.id, obj.desc, obj.url, obj.act, appUrl);
+
+    });
+    return link;
+}
+
+
+function getBugIdRow(id, desc, url, act, appUrl) {
+    let bugUrl = "";
+    let link = "";
+
+    if (!isEmpty(url)) {
+        bugUrl = url;
     } else {
-        $.each(data, function (_, obj) {
-            if (obj.act) {
-                link = link + '<a target="_blank" href="' + appUrl.replace(/%BUGID%/g, obj.id) + '">' + obj.id;
-                if (obj.desc !== "") {
-                    link = link + " - " + obj.desc;
-                }
-                link = link + "</a><br>";
+        if (!isEmpty(appUrl)) {
+            bugUrl = appUrl.replace(/%BUGID%/g, id);
+        }
+    }
+    if (act) {
+        if (!isEmpty(bugUrl)) {
+            link = link + '<a target="_blank" href="' + bugUrl + '">' + id;
+            if (desc !== "") {
+                link = link + " - " + desc;
             }
-        });
+            link = link + "</a><br>";
+
+        } else {
+            link = link + '' + id;
+            if (desc !== "") {
+                link = link + " - " + desc;
+            }
+            link = link + "<br>";
+
+        }
     }
     return link;
 }

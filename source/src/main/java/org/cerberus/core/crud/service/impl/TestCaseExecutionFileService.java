@@ -1,5 +1,5 @@
 /**
- * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * Cerberus Copyright (C) 2013 - 2025 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -73,7 +73,7 @@ public class TestCaseExecutionFileService implements ITestCaseExecutionFileServi
 
     @Override
     public AnswerList<TestCaseExecutionFile> readByVarious(long ExeId, String level) {
-        return testCaseExecutionFileDAO.readByVariousByCriteria(ExeId, level, 0, 0, null, null, null, null);
+        return testCaseExecutionFileDAO.readByVariousByCriteria(ExeId, level, 0, 0, "ID", "asc", null, null);
     }
 
     @Override
@@ -155,7 +155,7 @@ public class TestCaseExecutionFileService implements ITestCaseExecutionFileServi
                 extension = fileName.substring(fileName.lastIndexOf('.') + 1, fileName.length());
                 extension = extension.trim().toUpperCase();
             } else {
-                if (StringUtil.isEmptyOrNullValue(extension)) {
+                if (StringUtil.isEmptyOrNULLString(extension)) {
 
                     extension = "BIN";
 

@@ -1,5 +1,5 @@
 /**
- * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * Cerberus Copyright (C) 2013 - 2025 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -19,6 +19,9 @@
  */
 package org.cerberus.core.crud.service.impl;
 
+import java.io.UnsupportedEncodingException;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import lombok.AllArgsConstructor;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.fileupload.FileItem;
@@ -92,7 +95,7 @@ public class AppServiceService implements IAppServiceService {
             if (appService != null) {
                 AnswerList<AppServiceContent> content;
                 // Add first the inherited values.
-                if (!StringUtil.isEmpty(appService.getParentContentService())) {
+                if (!StringUtil.isEmptyOrNull(appService.getParentContentService())) {
                     content = appServiceContentService.readByVarious(appService.getParentContentService());
                     if (content != null) {
                         List<AppServiceContent> contentList = content.getDataList();
@@ -129,7 +132,7 @@ public class AppServiceService implements IAppServiceService {
             if (appService != null) {
                 AnswerList<AppServiceContent> content;
                 // Add first the inherited values.
-                if (StringUtil.isNotEmpty(appService.getParentContentService())) {
+                if (StringUtil.isNotEmptyOrNull(appService.getParentContentService())) {
                     content = appServiceContentService.readByVarious(appService.getParentContentService(), activeDetail);
                     if (content != null) {
                         List<AppServiceContent> contentList = content.getDataList();
@@ -164,12 +167,17 @@ public class AppServiceService implements IAppServiceService {
     }
 
     @Override
+    public Integer getNbServices(List<String> systems) {
+        return appServiceDao.getNbServices(systems);
+    }
+    
+    @Override
     public Answer create(AppService object) {
         return appServiceDao.create(object);
     }
 
     @Override
-    public AppService createAPI(AppService newAppService) {
+    public AppService createAPI(AppService newAppService, String login) {
         if (newAppService.getService() == null || newAppService.getService().isEmpty()) {
             throw new InvalidRequestException("service is required to create an ApplicationService");
         }
@@ -181,36 +189,36 @@ public class AppServiceService implements IAppServiceService {
         if (newAppService.getMethod() == null || newAppService.getMethod().isEmpty()) {
             throw new InvalidRequestException("method is required to create an ApplicationService");
         }
-
+        newAppService.setUsrCreated(login);
         Answer answer = this.create(newAppService);
 
         if (answer.isCodeEquals(MessageEventEnum.DATA_OPERATION_OK.getCode())) {
             if (CollectionUtils.isNotEmpty(newAppService.getContentList())) {
                 newAppService.getContentList().forEach(appServiceContent -> {
-                    if (StringUtil.isEmpty(appServiceContent.getKey())) {
+                    if (StringUtil.isEmptyOrNull(appServiceContent.getKey())) {
                         throw new InvalidRequestException("A key is required for each ServiceContent");
                     }
-                    appServiceContent.setUsrCreated(newAppService.getUsrCreated() == null ? "defaultUser" : newAppService.getUsrCreated());
+                    appServiceContent.setUsrCreated(newAppService.getUsrCreated() == null ? "" : newAppService.getUsrCreated());
                     appServiceContent.setService(newAppService.getService());
                 });
 
                 Answer answerContent = this.appServiceContentService.createList(newAppService.getContentList());
-                if (answerContent.isCodeEquals(MessageEventEnum.DATA_OPERATION_OK.getCode())) {
+                if (!answerContent.isCodeEquals(MessageEventEnum.DATA_OPERATION_OK.getCode())) {
                     throw new FailedInsertOperationException("Failed to insert the content list in the database");
                 }
             }
 
             if (CollectionUtils.isNotEmpty(newAppService.getHeaderList())) {
                 newAppService.getHeaderList().forEach(appServiceHeader -> {
-                    if (StringUtil.isNotEmpty(appServiceHeader.getKey())) {
+                    if (StringUtil.isEmptyOrNull(appServiceHeader.getKey())) {
                         throw new InvalidRequestException("A key is required for each ServiceHeader");
                     }
-                    appServiceHeader.setUsrCreated(newAppService.getUsrCreated());
+                    appServiceHeader.setUsrCreated(newAppService.getUsrCreated() == null ? "" : newAppService.getUsrCreated());
                     appServiceHeader.setService(newAppService.getService());
                 });
 
                 Answer answerHeader = this.appServiceHeaderService.createList(newAppService.getHeaderList());
-                if (answerHeader.isCodeEquals(MessageEventEnum.DATA_OPERATION_OK.getCode())) {
+                if (!answerHeader.isCodeEquals(MessageEventEnum.DATA_OPERATION_OK.getCode())) {
                     throw new FailedInsertOperationException("Failed to insert the content list in the database");
                 }
             }
@@ -239,7 +247,7 @@ public class AppServiceService implements IAppServiceService {
     }
 
     @Override
-    public AppService updateAPI(String service, AppService appServiceToUpdate) {
+    public AppService updateAPI(String service, AppService appServiceToUpdate, String login) {
         if (service == null || service.isEmpty()) {
             throw new InvalidRequestException("service is required to update an ApplicationService");
         }
@@ -250,17 +258,20 @@ public class AppServiceService implements IAppServiceService {
         }
 
         appServiceToUpdate.setService(appServiceFromDb.getService());
+        appServiceToUpdate.setUsrModif(login);
         if (appServiceToUpdate.getUsrModif() == null) {
-            appServiceToUpdate.setUsrModif("defaultUser");
+            appServiceToUpdate.setUsrModif("");
         }
         Answer answerService = this.update(service, appServiceToUpdate);
         if (answerService.isCodeEquals(MessageEventEnum.DATA_OPERATION_OK.getCode())) {
-            appServiceToUpdate.getContentList().forEach(appServiceContent -> appServiceContent.setUsrModif(appServiceToUpdate.getUsrModif()));
+            appServiceToUpdate.getHeaderList().forEach(appServiceHeader -> appServiceHeader.setUsrModif(appServiceToUpdate.getUsrModif()));
+            appServiceToUpdate.getHeaderList().forEach(appServiceHeader -> appServiceHeader.setUsrCreated(appServiceToUpdate.getUsrModif()));
             Answer answerHeader = this.appServiceHeaderService.compareListAndUpdateInsertDeleteElements(service, appServiceToUpdate.getHeaderList());
             if (!answerHeader.isCodeEquals(MessageEventEnum.DATA_OPERATION_OK.getCode())) {
                 throw new FailedInsertOperationException("Unable to update service headers for service=" + service);
             }
-            appServiceToUpdate.getHeaderList().forEach(appServiceHeader -> appServiceHeader.setUsrModif(appServiceToUpdate.getUsrModif()));
+            appServiceToUpdate.getContentList().forEach(appServiceContent -> appServiceContent.setUsrModif(appServiceToUpdate.getUsrModif()));
+            appServiceToUpdate.getContentList().forEach(appServiceContent -> appServiceContent.setUsrCreated(appServiceToUpdate.getUsrModif()));
             Answer answerContent = this.appServiceContentService.compareListAndUpdateInsertDeleteElements(service, appServiceToUpdate.getContentList());
             if (!answerContent.isCodeEquals(MessageEventEnum.DATA_OPERATION_OK.getCode())) {
                 throw new FailedInsertOperationException("Unable to update service contents for service=" + service);
@@ -307,7 +318,7 @@ public class AppServiceService implements IAppServiceService {
     public String guessContentType(AppService service, String defaultValue) {
 
         // If service is null, Type is not defined.
-        if (service == null || StringUtil.isEmpty(service.getResponseHTTPBody())) {
+        if (service == null || StringUtil.isEmptyOrNull(service.getResponseHTTPBody())) {
             // Service is null so we don't know the format.
             return AppService.RESPONSEHTTPBODYCONTENTTYPE_UNKNOWN;
         }
@@ -321,6 +332,12 @@ public class AppServiceService implements IAppServiceService {
                 } else if (object.getValue().contains("application/xml")) {
                     LOG.debug("XML format guessed from header : {} : {}", object.getKey(), object.getValue());
                     return AppService.RESPONSEHTTPBODYCONTENTTYPE_XML;
+                } else if (object.getValue().contains("text/html")) {
+                    LOG.debug("HTML format guessed from header : {} : {}", object.getKey(), object.getValue());
+                    return AppService.RESPONSEHTTPBODYCONTENTTYPE_HTML;
+                } else if (object.getValue().contains("text/csv")) {
+                    LOG.debug("CSV format guessed from header : {} : {}", object.getKey(), object.getValue());
+                    return AppService.RESPONSEHTTPBODYCONTENTTYPE_CSV;
                 }
             }
         }
@@ -335,15 +352,18 @@ public class AppServiceService implements IAppServiceService {
         }
 
         // Header did not define the format and could not guess from file content.
-        if (StringUtil.isEmpty(defaultValue)) {
+        if (StringUtil.isEmptyOrNull(defaultValue)) {
+            LOG.debug("Format guessed to value : " + AppService.RESPONSEHTTPBODYCONTENTTYPE_TXT + " (No default value defined)");
             return AppService.RESPONSEHTTPBODYCONTENTTYPE_TXT;
         }
+
+        LOG.debug("Format guessed returned to default value : " + defaultValue);
         return defaultValue;
     }
 
     @Override
     public String guessContentType(String content) {
-        if (StringUtil.isEmpty(content)) {
+        if (StringUtil.isEmptyOrNull(content)) {
             // Service is null so we don't know the format.
             return null;
         }
@@ -359,19 +379,36 @@ public class AppServiceService implements IAppServiceService {
     }
 
     @Override
-    public String convertContentListToQueryString(List<AppServiceContent> serviceContent) {
+    public String convertContentListToQueryString(List<AppServiceContent> serviceContent, boolean encodeParameters) {
         StringBuilder result = new StringBuilder();
         if (serviceContent == null || serviceContent.isEmpty()) {
             return result.toString();
         }
 
-        for (AppServiceContent object : serviceContent) {
-            if (object.isActive()) {
-                result.append(object.getKey());
-                result.append("=");
-                result.append(object.getValue());
-                result.append("&");
+        try {
+
+            for (AppServiceContent object : serviceContent) {
+                if (object.isActive()) {
+                    if (encodeParameters) {
+                        result.append(URLEncoder.encode(object.getKey(), StandardCharsets.UTF_8.toString()));
+                    } else {
+                        result.append(object.getKey());
+                    }
+
+                    result.append("=");
+
+                    if (encodeParameters) {
+                        result.append(URLEncoder.encode(object.getValue(), StandardCharsets.UTF_8.toString()));
+                    } else {
+                        result.append(object.getValue());
+                    }
+
+                    result.append("&");
+                }
             }
+
+        } catch (UnsupportedEncodingException ex) {
+            LOG.error(ex, ex);
         }
         result = new StringBuilder(StringUtil.removeLastChar(result.toString()));
         return result.toString();

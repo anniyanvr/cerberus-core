@@ -1,5 +1,5 @@
 /*
- * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * Cerberus Copyright (C) 2013 - 2025 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -131,12 +131,12 @@ function checkFormSimpleCreationBeforeSubmit() {
         nameElement.parents("div.form-group").addClass("has-error");
         displayErrorMessage(localMessage, $('#editTestCaseSimpleCreationModal'));
     } else if (testElementInvalid !== -1) {
-        localMessage = new Message("danger", "The test name cannot contains the symbol : &");
+        localMessage = new Message("danger", "The test folder name cannot contain the symbol : &");
         // only the Test label will be put in red
         testElement.parents("div.form-group").addClass("has-error");
         displayErrorMessage(localMessage, $('#editTestCaseSimpleCreationModal'));
     } else if (testIdElementInvalid !== -1) {
-        localMessage = new Message("danger", "The testcase id name cannot contains the symbol : &");
+        localMessage = new Message("danger", "The testcase id cannot contain the symbol : &");
         // only the TestId label will be put in red
         testIdElement.parents("div.form-group").addClass("has-error");
         displayErrorMessage(localMessage, $('#editTestCaseSimpleCreationModal'));
@@ -208,7 +208,7 @@ function submitSimpleCreationForm() {
         success: function (dataMessage) {
             hideLoaderInModal('#editTestCaseSimpleCreationModal');
             if (getAlertType(dataMessage.messageType) === "success") {
-                window.location.href = "./TestCaseScript.jsp?test="+dataMessage.test+"&testcase="+dataMessage.testcase+"&oneclickcreation=true";
+                window.location.href = "./TestCaseScript.jsp?test="+encodeURIComponent(dataMessage.test.replace(/\+/g, ' '))+"&testcase="+encodeURIComponent(dataMessage.testcase.replace(/\+/g, ' '))+"&oneclickcreation=true";
             } else {
                 showMessage(dataMessage, $('#editTestCaseSimpleCreationModal'));
             }

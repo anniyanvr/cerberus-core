@@ -1,5 +1,5 @@
 /**
- * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * Cerberus Copyright (C) 2013 - 2025 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -19,6 +19,7 @@
  */
 package org.cerberus.core.crud.service.impl;
 
+import java.text.SimpleDateFormat;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -81,6 +82,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
+import org.cerberus.core.crud.entity.Parameter;
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 /**
  * @author bcivel
@@ -214,6 +219,11 @@ public class TestCaseService implements ITestCaseService {
     }
 
     @Override
+    public Integer getnbtc(List<String> systems) {
+        return testCaseDao.getnbtc(systems);
+    }
+
+    @Override
     public AnswerList<TestCase> findTestCasesByTestByCriteriaWithDependencies(List<String> system, String test, int startPosition, int length, String sortInformation, String searchParameter, Map<String, List<String>> individualSearch, boolean isCalledFromListPage) throws CerberusException {
 
         AnswerList<TestCase> testCases = this.readByTestByCriteria(system, test, startPosition, length, sortInformation, searchParameter, individualSearch);
@@ -277,7 +287,7 @@ public class TestCaseService implements ITestCaseService {
 
     @Override
     public AnswerList<TestCase> readByVarious(String[] test, String[] app, String[] creator, String[] implementer, String[] system,
-                                              String[] campaign, List<Integer> labelid, String[] priority, String[] type, String[] status, int length) {
+            String[] campaign, List<Integer> labelid, String[] priority, String[] type, String[] status, int length) {
         return testCaseDao.readByVarious(test, app, creator, implementer, system, campaign, labelid, priority, type, status, length);
     }
 
@@ -363,6 +373,7 @@ public class TestCaseService implements ITestCaseService {
         String[] application = null;
         String[] priority = null;
         String[] type = null;
+        String[] testFolder = null;
 
         AnswerItem<Map<String, List<String>>> parameters = campaignParameterService.parseParametersByCampaign(campaign);
 
@@ -386,6 +397,9 @@ public class TestCaseService implements ITestCaseService {
                 case CampaignParameter.TYPE_PARAMETER:
                     type = valeur.toArray(new String[valeur.size()]);
                     break;
+                case CampaignParameter.TYPE_TESTFOLDER:
+                    testFolder = valeur.toArray(new String[valeur.size()]);
+                    break;
             }
         }
 
@@ -401,7 +415,7 @@ public class TestCaseService implements ITestCaseService {
 
         Integer maxReturn = parameterService.getParameterIntegerByKey("cerberus_campaign_maxtestcase", "", 1000);
 
-        result = testCaseDao.findTestCaseByCampaignNameAndCountries(campaign, countries, labelIdList, status, system, application, priority, type, maxReturn);
+        result = testCaseDao.findTestCaseByCampaignNameAndCountries(campaign, countries, labelIdList, status, system, application, priority, type, testFolder, maxReturn);
 
         return result;
     }
@@ -540,6 +554,46 @@ public class TestCaseService implements ITestCaseService {
     }
 
     @Override
+    public boolean isBugAlreadyOpen(TestCase tc) {
+        try {
+            JSONArray bugList = tc.getBugs();
+            for (int n = 0; n < bugList.length(); n++) {
+                JSONObject bug = bugList.getJSONObject(n);
+                if (bug.has("act")) {
+                    if (bug.getBoolean("act")) {
+                        return true;
+                    }
+                }
+            }
+        } catch (JSONException ex) {
+            LOG.warn(ex, ex);
+        }
+        return false;
+    }
+
+    @Override
+    public JSONObject addNewBugEntry(TestCase tc, String testFolder, String testCase, String bugKey, String bugURL, String description) {
+        JSONObject bugCreated = new JSONObject();
+        try {
+            JSONArray bugList = tc.getBugs();
+            JSONObject newBug = new JSONObject();
+            newBug.put("act", true);
+            newBug.put("dateCreated", new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.S'Z'").format(new java.util.Date()));
+            newBug.put("id", bugKey);
+            newBug.put("dateClosed", "1970-01-01T00:00:00.000Z");
+            newBug.put("desc", description);
+            newBug.put("url", bugURL);
+            bugList.put(newBug);
+            tc.setBugs(bugList);
+            testCaseDao.updateBugList(testFolder, testCase, bugList.toString());
+            return newBug;
+        } catch (JSONException | CerberusException ex) {
+            LOG.warn(ex, ex);
+        }
+        return bugCreated;
+    }
+
+    @Override
     public Answer create(TestCase testCase) {
         // We first create the corresponding test if it doesn,'t exist.
         if (testCase.getTest() != null && !testService.exist(testCase.getTest())) {
@@ -607,7 +661,17 @@ public class TestCaseService implements ITestCaseService {
     @Override
     public boolean hasPermissionsUpdate(TestCase testCase, HttpServletRequest request) {
         // Access right calculation.
-        if (testCase.getStatus().equalsIgnoreCase("WORKING")) { // If testcase is WORKING only TestAdmin can update it
+        if (testCase.getStatus().equalsIgnoreCase(TestCase.TESTCASE_STATUS_WORKING)) { // If testcase is WORKING only TestAdmin can update it
+            return request.isUserInRole("TestAdmin");
+        } else {
+            return request.isUserInRole("Test");
+        }
+    }
+
+    @Override
+    public boolean hasPermissionsUpdateFromStatus(String status, HttpServletRequest request) {
+        // Access right calculation.
+        if (status.equalsIgnoreCase(TestCase.TESTCASE_STATUS_WORKING)) { // If testcase is WORKING only TestAdmin can update it
             return request.isUserInRole("TestAdmin");
         } else {
             return request.isUserInRole("Test");
@@ -706,15 +770,15 @@ public class TestCaseService implements ITestCaseService {
 
         final String FAILED_TO_INSERT = "Failed to insert the testcase in the database";
 
-        if (StringUtil.isEmpty(newTestcase.getTest())) {
+        if (StringUtil.isEmptyOrNull(newTestcase.getTest())) {
             throw new InvalidRequestException("testFolderId required to create Testcase");
         }
 
-        if (StringUtil.isEmpty(newTestcase.getApplication())) {
+        if (StringUtil.isEmptyOrNull(newTestcase.getApplication())) {
             throw new InvalidRequestException("application is required to create a Testcase");
         }
 
-        if (StringUtil.isEmpty(newTestcase.getTestcase())) {
+        if (StringUtil.isEmptyOrNull(newTestcase.getTestcase())) {
             newTestcase.setTestcase(this.getNextAvailableTestcaseId(newTestcase.getTest()));
         }
         Answer testcaseCreationAnswer = this.create(newTestcase);
@@ -907,6 +971,29 @@ public class TestCaseService implements ITestCaseService {
         return this.findTestCaseByKeyWithDependencies(newTestcaseVersion.getTest(), newTestcaseVersion.getTestcase(), true).getItem();
     }
 
+    @Override
+    public String getRefOriginUrl(String origin, String refOrigin, String system) {
+        String url = "";
+        switch (origin) {
+            case TestCase.TESTCASE_ORIGIN_JIRACLOUD:
+                url = parameterService.getParameterStringByKey(Parameter.VALUE_cerberus_jiracloud_url, system, "");
+                if (StringUtil.isNotEmptyOrNull(url)) {
+                    return StringUtil.addSuffixIfNotAlready(url, "/") + "browse/" + refOrigin;
+                } else {
+                    return "";
+                }
+            case TestCase.TESTCASE_ORIGIN_JIRADC:
+                url = parameterService.getParameterStringByKey(Parameter.VALUE_cerberus_jiradc_url, system, "");
+                if (StringUtil.isNotEmptyOrNull(url)) {
+                    return StringUtil.addSuffixIfNotAlready(url, "/") + "browse/" + refOrigin;
+                } else {
+                    return "";
+                }
+            default:
+                return null;
+        }
+    }
+
     private void fillTestcaseCountriesFromInvariantsCountry(TestCase testcase) {
         if (testcase.getInvariantCountries() == null || testcase.getInvariantCountries().isEmpty()) {
             try {
@@ -918,24 +1005,24 @@ public class TestCaseService implements ITestCaseService {
 
         testcase.getInvariantCountries()
                 .forEach(invariantCountry -> testcase.appendTestCaseCountries(
-                        TestCaseCountry.builder()
-                                .test(testcase.getTest())
-                                .testcase(testcase.getTestcase())
-                                .country(invariantCountry.getValue())
-                                .build()
-                ));
+                TestCaseCountry.builder()
+                        .test(testcase.getTest())
+                        .testcase(testcase.getTestcase())
+                        .country(invariantCountry.getValue())
+                        .build()
+        ));
     }
 
     private List<TestCaseLabel> getTestcaseLabelsFromLabels(List<Label> labels, String testFolderId, String testcaseId, String userCreated) {
         return labels
                 .stream()
                 .map(label -> TestCaseLabel.builder()
-                        .test(testFolderId)
-                        .testcase(testcaseId)
-                        .labelId(label.getId())
-                        .usrCreated(userCreated)
-                        .label(label)
-                        .build())
+                .test(testFolderId)
+                .testcase(testcaseId)
+                .labelId(label.getId())
+                .usrCreated(userCreated)
+                .label(label)
+                .build())
                 .collect(Collectors.toList());
     }
 
@@ -952,8 +1039,8 @@ public class TestCaseService implements ITestCaseService {
                 .stream()
                 .filter(step -> !step.isUsingLibraryStep())
                 .flatMap(testCaseStep -> testCaseStep.getActions()
-                        .stream()
-                        .flatMap(testCaseStepAction -> testCaseStepAction.getControls().stream())
+                .stream()
+                .flatMap(testCaseStepAction -> testCaseStepAction.getControls().stream())
                 )
                 .collect(Collectors.toList());
     }

@@ -1,5 +1,5 @@
 /**
- * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * Cerberus Copyright (C) 2013 - 2025 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -19,6 +19,7 @@
  */
 package org.cerberus.core.crud.factory;
 
+import java.sql.Timestamp;
 import org.cerberus.core.crud.entity.CountryEnvironmentParameters;
 
 /**
@@ -27,6 +28,7 @@ import org.cerberus.core.crud.entity.CountryEnvironmentParameters;
  */
 public interface IFactoryCountryEnvironmentParameters {
 
-    CountryEnvironmentParameters create(String system, String country, String environment, String application, String ip,
-            String Domain, String url, String urlLogin, String var1, String var2, String var3, String var4, int poolSize, String mobileActivity, String mobilePackage);
+    CountryEnvironmentParameters create(String system, String country, String environment, String application, boolean isActive, String ip,
+            String Domain, String url, String urlLogin, String var1, String var2, String var3, String var4, String secret1, String secret2, int poolSize,
+            String mobileActivity, String mobilePackage, String usrCreated, Timestamp dateCreated, String usrModif, Timestamp dateModif);
 }

@@ -1,5 +1,5 @@
 /*
- * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * Cerberus Copyright (C) 2013 - 2025 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -23,15 +23,21 @@ import com.fasterxml.jackson.annotation.JsonView;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiResponse;
+import java.security.Principal;
+import java.util.List;
+import java.util.stream.Collectors;
+import javax.servlet.http.HttpServletRequest;
 import lombok.AllArgsConstructor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.cerberus.core.api.controllers.wrappers.ResponseWrapper;
-import org.cerberus.core.api.dto.v001.TestcaseStepDTOV001;
+import org.cerberus.core.api.dto.testcasestep.TestcaseStepDTOV001;
+import org.cerberus.core.api.dto.testcasestep.TestcaseStepMapperV001;
 import org.cerberus.core.api.dto.views.View;
-import org.cerberus.core.api.mappers.v001.TestcaseStepMapperV001;
 import org.cerberus.core.api.services.PublicApiAuthenticationService;
 import org.cerberus.core.api.services.TestcaseStepApiService;
+import org.cerberus.core.crud.entity.LogEvent;
+import org.cerberus.core.crud.service.ILogEventService;
 import org.cerberus.core.crud.service.ITestCaseStepService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -42,10 +48,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
-
-import java.security.Principal;
-import java.util.List;
-import java.util.stream.Collectors;
 
 /**
  * @author MorganLmd
@@ -63,6 +65,7 @@ public class TestcaseStepController {
     private final TestcaseStepApiService testcaseStepApiService;
     private final TestcaseStepMapperV001 stepMapper;
     private final PublicApiAuthenticationService apiAuthenticationService;
+    private final ILogEventService logEventService;
 
     private static final Logger LOG = LogManager.getLogger(TestcaseStepController.class);
 
@@ -74,8 +77,11 @@ public class TestcaseStepController {
     public ResponseWrapper<List<TestcaseStepDTOV001>> findAll(
             @RequestParam(name = "islibrarystep", defaultValue = "false") boolean isLibraryStep,
             @RequestHeader(name = API_KEY, required = false) String apiKey,
+            HttpServletRequest request,
             Principal principal) {
-        this.apiAuthenticationService.authenticate(principal, apiKey);
+        
+        String login = this.apiAuthenticationService.authenticateLogin(principal, apiKey);
+        logEventService.createForPublicCalls("/public/testcasesteps", "CALL-GET", LogEvent.STATUS_INFO, String.format("API /testcasesteps called with URL: %s", request.getRequestURL()), request, login);
 
         return ResponseWrapper.wrap(
                 this.testcaseStepApiService
@@ -94,8 +100,12 @@ public class TestcaseStepController {
     public ResponseWrapper<List<TestcaseStepDTOV001>> findAllByTestFolderId(
             @PathVariable("testFolderId") String testFolderId,
             @RequestHeader(name = API_KEY, required = false) String apiKey,
+            HttpServletRequest request,
             Principal principal) {
-        this.apiAuthenticationService.authenticate(principal, apiKey);
+        
+        String login = this.apiAuthenticationService.authenticateLogin(principal, apiKey);
+        logEventService.createForPublicCalls("/public/testcasesteps", "CALL-GET", LogEvent.STATUS_INFO, String.format("API /testcasesteps called with URL: %s", request.getRequestURL()), request, login);
+        
         return ResponseWrapper.wrap(
                 this.testcaseStepApiService.findByTestFolderId(testFolderId)
                         .stream()
@@ -113,8 +123,12 @@ public class TestcaseStepController {
             @PathVariable("testFolderId") String testFolderId,
             @PathVariable("testcaseId") String testcaseId,
             @RequestHeader(name = API_KEY, required = false) String apiKey,
+            HttpServletRequest request,
             Principal principal) {
-        this.apiAuthenticationService.authenticate(principal, apiKey);
+        
+        String login = this.apiAuthenticationService.authenticateLogin(principal, apiKey);
+        logEventService.createForPublicCalls("/public/testcasesteps", "CALL-GET", LogEvent.STATUS_INFO, String.format("API /testcasesteps called with URL: %s", request.getRequestURL()), request, login);
+        
         return ResponseWrapper.wrap(
                 this.testCaseStepService.readByTestTestCaseAPI(testFolderId, testcaseId)
                         .stream()
@@ -134,8 +148,12 @@ public class TestcaseStepController {
             @PathVariable("stepId") int stepId,
             @RequestParam(name = "islibrarystep", defaultValue = "false") boolean isLibraryStep,
             @RequestHeader(name = API_KEY, required = false) String apiKey,
+            HttpServletRequest request,
             Principal principal) {
-        this.apiAuthenticationService.authenticate(principal, apiKey);
+        
+        String login = this.apiAuthenticationService.authenticateLogin(principal, apiKey);
+        logEventService.createForPublicCalls("/public/testcasesteps", "CALL-GET", LogEvent.STATUS_INFO, String.format("API /testcasesteps called with URL: %s", request.getRequestURL()), request, login);
+        
         return ResponseWrapper.wrap(
                 this.stepMapper.toDTO(
                         this.testCaseStepService.readTestcaseStepWithDependenciesAPI(

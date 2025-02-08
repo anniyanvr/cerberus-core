@@ -1,5 +1,5 @@
 /**
- * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * Cerberus Copyright (C) 2013 - 2025 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -20,7 +20,10 @@
 package org.cerberus.core.service.ciresult;
 
 import org.cerberus.core.api.entity.CICampaignResult;
+import org.cerberus.core.crud.entity.TestCaseExecution;
 import org.json.JSONObject;
+
+import java.util.List;
 
 /**
  * @author bcivel
@@ -30,9 +33,10 @@ public interface ICIService {
     /**
      * @param tag
      * @param campaign
+     * @param executions
      * @return
      */
-    JSONObject getCIResult(String tag, String campaign);
+    JSONObject getCIResult(String tag, String campaign, List<TestCaseExecution> executions);
 
     /**
      * @param resultCal

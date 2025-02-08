@@ -1,5 +1,5 @@
 /**
- * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * Cerberus Copyright (C) 2013 - 2025 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -27,7 +27,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.logging.Level;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
@@ -46,10 +45,12 @@ import org.cerberus.core.crud.entity.Invariant;
 import org.cerberus.core.crud.entity.TestCase;
 import org.cerberus.core.crud.entity.TestCaseStep;
 import org.cerberus.core.crud.entity.TestCaseStepAction;
+import org.cerberus.core.crud.entity.TestCaseStepActionControl;
 import org.cerberus.core.crud.factory.IFactoryTestCase;
 import org.cerberus.core.crud.factory.IFactoryTestCaseCountry;
 import org.cerberus.core.crud.factory.IFactoryTestCaseStep;
 import org.cerberus.core.crud.factory.IFactoryTestCaseStepAction;
+import org.cerberus.core.crud.factory.IFactoryTestCaseStepActionControl;
 import org.cerberus.core.crud.service.IApplicationService;
 import org.cerberus.core.crud.service.ICountryEnvironmentParametersService;
 import org.cerberus.core.crud.service.IInvariantService;
@@ -81,6 +82,7 @@ public class ImportTestCaseFromSIDE extends HttpServlet {
     private IFactoryTestCaseCountry testcaseCountryFactory;
     private IFactoryTestCaseStep testcaseStepFactory;
     private IFactoryTestCaseStepAction testcaseStepActionFactory;
+    private IFactoryTestCaseStepActionControl testcaseStepActionControlFactory;
 
     /**
      * Processes requests for both HTTP <code>GET</code> and <code>POST</code>
@@ -102,6 +104,7 @@ public class ImportTestCaseFromSIDE extends HttpServlet {
                 testcaseFactory = appContext.getBean(IFactoryTestCase.class);
                 testcaseStepFactory = appContext.getBean(IFactoryTestCaseStep.class);
                 testcaseStepActionFactory = appContext.getBean(IFactoryTestCaseStepAction.class);
+                testcaseStepActionControlFactory = appContext.getBean(IFactoryTestCaseStepActionControl.class);
                 applicationService = appContext.getBean(IApplicationService.class);
                 invariantService = appContext.getBean(IInvariantService.class);
                 testcaseCountryFactory = appContext.getBean(IFactoryTestCaseCountry.class);
@@ -162,7 +165,7 @@ public class ImportTestCaseFromSIDE extends HttpServlet {
                                 newTC.setConditionOperator("always");
                                 newTC.setOrigine(TestCase.TESTCASE_ORIGIN_SIDE);
                                 newTC.setRefOrigine(test.getString("id"));
-                                newTC.setStatus("WORKING");
+                                newTC.setStatus(invariantService.convert(invariantService.readFirstByIdName(Invariant.IDNAME_TCSTATUS)).getValue());
                                 newTC.setUsrCreated(userCreated);
 
                                 countries.forEach(country -> {
@@ -216,10 +219,13 @@ public class ImportTestCaseFromSIDE extends HttpServlet {
 
     private TestCaseStepAction getActionFromSIDE(JSONObject command, Integer i, String masterSIDEURL, List<String> applicationURLs, String targetFolder, String targetTestcase) {
         TestCaseStepAction newAction = null;
+        TestCaseStepActionControl newControl = null;
         try {
             String action = null;
-            String value1 = "";
-            String value2 = "";
+            String action_value1 = "";
+            String action_value2 = "";
+            String control = null;
+            String control_value1 = "";
             String description = command.getString("comment");
             String cond = TestCaseStepAction.CONDITIONOPERATOR_ALWAYS;
             String commandS = command.getString("command");
@@ -236,55 +242,73 @@ public class ImportTestCaseFromSIDE extends HttpServlet {
                 case "open":
                     LOG.debug(masterSIDEURL);
                     LOG.debug(applicationURLs);
-                    value1 = masterSIDEURL + command.getString("target");
-                    if (!isURLInApplication(value1, applicationURLs)) {
+                    action_value1 = masterSIDEURL + command.getString("target");
+                    if (!isURLInApplication(action_value1, applicationURLs)) {
                         action = TestCaseStepAction.ACTION_OPENURL;
                     } else {
                         action = TestCaseStepAction.ACTION_OPENURLWITHBASE;
-                        value1 = command.getString("target");
+                        action_value1 = command.getString("target");
                     }
                     break;
                 case "type":
                     action = TestCaseStepAction.ACTION_TYPE;
-                    value1 = convertElement(command);
-                    value2 = command.getString("value");
+                    action_value1 = convertElement(command);
+                    action_value2 = command.getString("value");
                     break;
                 case "click":
                     action = TestCaseStepAction.ACTION_CLICK;
-                    value1 = convertElement(command);
+                    action_value1 = convertElement(command);
                     break;
                 case "mouseDown":
                     action = TestCaseStepAction.ACTION_MOUSELEFTBUTTONPRESS;
-                    value1 = convertElement(command);
+                    action_value1 = convertElement(command);
                     break;
                 case "sendKeys":
                     action = TestCaseStepAction.ACTION_KEYPRESS;
-                    value1 = convertElement(command);
-                    value2 = mappKey(command.getString("value"));
+                    action_value1 = convertElement(command);
+                    action_value2 = mappKey(command.getString("value"));
                     break;
                 case "mouseUp":
                     action = TestCaseStepAction.ACTION_MOUSELEFTBUTTONRELEASE;
-                    value1 = convertElement(command);
+                    action_value1 = convertElement(command);
                     break;
                 case "mouseOver":
                     action = TestCaseStepAction.ACTION_MOUSEOVER;
-                    value1 = convertElement(command);
+                    action_value1 = convertElement(command);
+                    break;
+                case "waitForElementVisible":
+                    action = TestCaseStepAction.ACTION_WAIT;
+                    action_value1 = convertElement(command);
+                    break;
+                case "verifyText":
+                    action = TestCaseStepAction.ACTION_DONOTHING;
+                    control = TestCaseStepActionControl.CONTROL_VERIFYELEMENTPRESENT;
+                    control_value1 = convertElement(command);
                     break;
                 default:
                     action = TestCaseStepAction.ACTION_DONOTHING;
                     description = "Unknow Selenium IDE command '" + commandS + "'";
-                    if (!StringUtil.isEmpty(command.getString("target"))) {
+                    if (!StringUtil.isEmptyOrNull(command.getString("target"))) {
                         description += " on target '" + convertElement(command) + "'";
                     }
-                    if (!StringUtil.isEmpty(command.getString("value"))) {
+                    if (!StringUtil.isEmptyOrNull(command.getString("value"))) {
                         description += " with value '" + command.getString("value") + "'";
                     }
-                    if (!StringUtil.isEmpty(command.getString("comment"))) {
+                    if (!StringUtil.isEmptyOrNull(command.getString("comment"))) {
                         description += " - " + command.getString("comment");
                     }
             }
             if (action != null) {
-                newAction = testcaseStepActionFactory.create(targetFolder, targetTestcase, 1, i, i, TestCaseStepAction.CONDITIONOPERATOR_ALWAYS, "", "", "", new JSONArray(), action, value1, value2, "", new JSONArray(), false, description, null);
+                newAction = testcaseStepActionFactory.create(targetFolder, targetTestcase, 1, i, i, TestCaseStepAction.CONDITIONOPERATOR_ALWAYS, "", "", "", new JSONArray(), action, action_value1, action_value2, "",
+                        new JSONArray(), false, description, null,
+                        false, false, 0, 0);
+                if (control != null) {
+                    newControl = testcaseStepActionControlFactory.create(targetFolder, targetTestcase, 1, i, 1, 1, TestCaseStepAction.CONDITIONOPERATOR_ALWAYS, "", "", "", new JSONArray(), control, control_value1, "", "", new JSONArray(), true, description, null, false, false, 0, 0);
+                    List<TestCaseStepActionControl> controlList = new ArrayList<>();
+                    controlList.add(newControl);
+                    newAction.setControls(controlList);
+                }
+
             }
         } catch (JSONException ex) {
             LOG.error(ex, ex);
@@ -401,7 +425,7 @@ public class ImportTestCaseFromSIDE extends HttpServlet {
                 }
             }
         } catch (FileUploadException ex) {
-            java.util.logging.Logger.getLogger(ImportTestCaseFromSIDE.class.getName()).log(Level.SEVERE, null, ex);
+            LOG.error(ex,ex);
         }
         LOG.debug("result : " + result.size());
         return result;
@@ -438,7 +462,7 @@ public class ImportTestCaseFromSIDE extends HttpServlet {
                 }
             }
         } catch (FileUploadException ex) {
-            java.util.logging.Logger.getLogger(ImportTestCaseFromSIDE.class.getName()).log(Level.SEVERE, null, ex);
+            LOG.error(ex,ex);
         }
         LOG.debug("result Param : " + result.size());
         return result;

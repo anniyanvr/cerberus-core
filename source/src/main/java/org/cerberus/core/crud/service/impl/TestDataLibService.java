@@ -1,5 +1,5 @@
 /**
- * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * Cerberus Copyright (C) 2013 - 2025 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -128,7 +128,7 @@ public class TestDataLibService implements ITestDataLibService {
                 row.put(tdld.getSubData(), tdld.getValue());
                 if (ParameterParserUtil.parseBooleanParam(tdld.getEncrypt(), false)) {
                     LOG.debug("Adding string to secret list : " + tdld.getSubData() + " - " + tdld.getValue() + " --> " + tdld.getEncrypt());
-                    execution.appendSecret(tdld.getValue());
+                    execution.addSecret(tdld.getValue());
                 }
             }
             row.put("TestDataLibID", String.valueOf(tdl.getTestDataLibID()));

@@ -1,5 +1,5 @@
 /*
- * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * Cerberus Copyright (C) 2013 - 2025 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -279,7 +279,10 @@ function aoColumnsFunc(tableId) {
             "like": true,
             "sName": "dateCreated",
             "sWidth": "80px",
-            "title": doc.getDocOnline("page_applicationObject", "DateCreated")
+            "title": doc.getDocOnline("page_applicationObject", "DateCreated"),
+            "mRender": function (data, type, oObj) {
+                return getDate(oObj["dateCreated"]);
+            }
         },
         {
             "data": "usrModif",
@@ -295,7 +298,10 @@ function aoColumnsFunc(tableId) {
             "visible": false,
             "sName": "dateModif",
             "sWidth": "80px",
-            "title": doc.getDocOnline("page_applicationObject", "DateModif")
+            "title": doc.getDocOnline("page_applicationObject", "DateModif"),
+            "mRender": function (data, type, oObj) {
+                return getDate(oObj["dateModif"]);
+            }
         }];
     return aoColumns;
 }

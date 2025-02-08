@@ -1,5 +1,5 @@
 /**
- * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * Cerberus Copyright (C) 2013 - 2025 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -22,10 +22,15 @@ package org.cerberus.core.servlet.zzpublic;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.cerberus.core.crud.entity.LogEvent;
 import org.cerberus.core.crud.entity.Tag;
+import org.cerberus.core.crud.entity.TestCaseExecution;
 import org.cerberus.core.crud.service.ILogEventService;
 import org.cerberus.core.crud.service.ITagService;
+import org.cerberus.core.crud.service.ITestCaseExecutionService;
 import org.cerberus.core.enums.MessageEventEnum;
+import org.cerberus.core.exception.CerberusException;
+import org.cerberus.core.service.authentification.IAPIKeyService;
 import org.cerberus.core.service.ciresult.ICIService;
 import org.cerberus.core.util.StringUtil;
 import org.cerberus.core.util.answer.AnswerList;
@@ -44,8 +49,8 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.text.ParseException;
 import java.util.List;
-import org.cerberus.core.service.authentification.IAPIKeyService;
 
 /**
  * @author bcivel
@@ -55,6 +60,7 @@ public class ResultCIV004 extends HttpServlet {
 
     private static Logger LOG = LogManager.getLogger(ResultCIV004.class);
     private IAPIKeyService apiKeyService;
+    private ITestCaseExecutionService testCaseExecutionService;
 
     protected void processRequest(HttpServletRequest request,
             HttpServletResponse response) throws ServletException, IOException {
@@ -70,7 +76,7 @@ public class ResultCIV004 extends HttpServlet {
          * Adding Log entry.
          */
         ILogEventService logEventService = appContext.getBean(ILogEventService.class);
-        logEventService.createForPublicCalls("/ResultCIV004", "CALL", "ResultCIV004 called : " + request.getRequestURL(), request);
+        logEventService.createForPublicCalls("/ResultCIV004", "CALL", LogEvent.STATUS_INFO, "ResultCIV004 called : " + request.getRequestURL(), request);
 
         if (apiKeyService.authenticate(request, response)) {
 
@@ -102,9 +108,9 @@ public class ResultCIV004 extends HttpServlet {
                 String error_message = "";
 
                 // Checking the parameter validity. Tag is a mandatory parameter
-                if (StringUtil.isEmpty(tag)) {
+                if (StringUtil.isEmptyOrNull(tag)) {
 
-                    if (!StringUtil.isEmpty(campaign)) {
+                    if (!StringUtil.isEmptyOrNull(campaign)) {
                         ITagService tagService = appContext.getBean(ITagService.class);
 
                         List<Tag> myList;
@@ -117,7 +123,7 @@ public class ResultCIV004 extends HttpServlet {
                     }
 
                 }
-                if (StringUtil.isEmpty(tag)) {
+                if (StringUtil.isEmptyOrNull(tag)) {
                     error_message += "Error - Either specify a tag or specify a campaign to get the latest tag from that campaign.";
                     error = true;
 
@@ -126,10 +132,12 @@ public class ResultCIV004 extends HttpServlet {
                 if (!error) {
 
                     ICIService ciService = appContext.getBean(ICIService.class);
-                    jsonResponse = ciService.getCIResult(tag, null);
+                    testCaseExecutionService = appContext.getBean(ITestCaseExecutionService.class);
+                    List<TestCaseExecution> executions = testCaseExecutionService.readLastExecutionAndExecutionInQueueByTag(tag);
+                    jsonResponse = ciService.getCIResult(tag, null, executions);
 
                     // Log the result with calculation detail.
-                    logEventService.createForPublicCalls("/ResultCIV004", "CALLRESULT", "ResultCIV004 calculated for tag " + tag + " result [" + jsonResponse.getString("result") + "]", request);
+                    logEventService.createForPublicCalls("/ResultCIV004", "CALLRESULT", LogEvent.STATUS_INFO, "ResultCIV004 calculated for tag " + tag + " result [" + jsonResponse.getString("result") + "]", request);
 
                 } else {
 
@@ -143,6 +151,8 @@ public class ResultCIV004 extends HttpServlet {
                 LOG.warn(e);
                 //returns a default error message with the json format that is able to be parsed by the client-side
                 response.getWriter().print(AnswerUtil.createGenericErrorAnswer());
+            } catch (CerberusException | ParseException exception) {
+                LOG.error(exception, exception);
             }
         }
 

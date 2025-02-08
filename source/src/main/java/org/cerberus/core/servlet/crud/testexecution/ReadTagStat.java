@@ -1,5 +1,5 @@
 /**
- * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * Cerberus Copyright (C) 2013 - 2025 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -107,7 +107,7 @@ public class ReadTagStat extends HttpServlet {
          * Parsing and securing all required parameters.
          */
         factoryTestCase = appContext.getBean(IFactoryTestCase.class);
-        List<String> system = ParameterParserUtil.parseListParam(request.getParameterValues("system"), new ArrayList<>(), "UTF8");
+        List<String> system = ParameterParserUtil.parseListParamAndSanitize(request.getParameterValues("system"), new ArrayList<>(), "UTF8");
         String from = ParameterParserUtil.parseStringParamAndDecode(request.getParameter("from"), "2020-01-01T01:01:01.001Z", "UTF8");
         String to = ParameterParserUtil.parseStringParamAndDecode(request.getParameter("to"), "2020-06-01T01:01:01.001Z", "UTF8");
 
@@ -136,28 +136,32 @@ public class ReadTagStat extends HttpServlet {
         LOG.debug("from : " + fromD);
         LOG.debug("to : " + toD);
 
-        List<String> gp1 = ParameterParserUtil.parseListParam(request.getParameterValues("group1s"), new ArrayList<>(), "UTF8");
-        List<String> gp2 = ParameterParserUtil.parseListParam(request.getParameterValues("group2s"), new ArrayList<>(), "UTF8");
-        List<String> gp3 = ParameterParserUtil.parseListParam(request.getParameterValues("group3s"), new ArrayList<>(), "UTF8");
+        List<String> gp1 = ParameterParserUtil.parseListParamAndSanitize(request.getParameterValues("group1s"), new ArrayList<>(), "UTF8");
+        List<String> gp2 = ParameterParserUtil.parseListParamAndSanitize(request.getParameterValues("group2s"), new ArrayList<>(), "UTF8");
+        List<String> gp3 = ParameterParserUtil.parseListParamAndSanitize(request.getParameterValues("group3s"), new ArrayList<>(), "UTF8");
 
         List<String> defaultCampaigns = new ArrayList<>();
         if (gp1.isEmpty() && gp2.isEmpty() && gp3.isEmpty()) {
             // If none of the groups are defined we allow not to filter per campaign.
             defaultCampaigns.add("");
         }
-        List<String> campaigns = ParameterParserUtil.parseListParam(request.getParameterValues("campaigns"), defaultCampaigns, "UTF8");
+        List<String> campaigns = ParameterParserUtil.parseListParamAndSanitize(request.getParameterValues("campaigns"), defaultCampaigns, "UTF8");
 
-        List<String> countries = ParameterParserUtil.parseListParam(request.getParameterValues("countries"), new ArrayList<>(), "UTF8");
+        List<String> countries = ParameterParserUtil.parseListParamAndSanitize(request.getParameterValues("countries"), new ArrayList<>(), "UTF8");
         Boolean countriesDefined = (request.getParameterValues("countries") != null);
         LOG.debug("countries : " + countries);
 
-        List<String> environments = ParameterParserUtil.parseListParam(request.getParameterValues("environments"), new ArrayList<>(), "UTF8");
+        List<String> environments = ParameterParserUtil.parseListParamAndSanitize(request.getParameterValues("environments"), new ArrayList<>(), "UTF8");
         Boolean environmentsDefined = (request.getParameterValues("environments") != null);
         LOG.debug("environments : " + environments);
 
-        List<String> robotDeclis = ParameterParserUtil.parseListParam(request.getParameterValues("robotDeclis"), new ArrayList<>(), "UTF8");
+        List<String> robotDeclis = ParameterParserUtil.parseListParamAndSanitize(request.getParameterValues("robotDeclis"), new ArrayList<>(), "UTF8");
         Boolean robotDeclisDefined = (request.getParameterValues("robotDeclis") != null);
         LOG.debug("robotDeclis : " + robotDeclis);
+
+        List<String> ciResults = ParameterParserUtil.parseListParamAndSanitize(request.getParameterValues("ciResults"), new ArrayList<>(), "UTF8");
+        Boolean ciResultsDefined = (request.getParameterValues("ciResults") != null);
+        LOG.debug("ciResults : " + ciResults);
 
         // Init Answer with potencial error from Parsing parameter.
         AnswerItem<JSONObject> answer = new AnswerItem<>(msg);
@@ -166,6 +170,7 @@ public class ReadTagStat extends HttpServlet {
         HashMap<String, Boolean> countryMap = new HashMap<>();
         HashMap<String, Boolean> environmentMap = new HashMap<>();
         HashMap<String, Boolean> robotDecliMap = new HashMap<>();
+        HashMap<String, Boolean> ciResultMap = new HashMap<>();
         tagService = appContext.getBean(ITagService.class);
 
 //        List<TestCaseExecution> exeL = testCaseExecutionService.readByCriteria(null, null, null, null, ltc, fromD, toD);
@@ -180,15 +185,20 @@ public class ReadTagStat extends HttpServlet {
             if (tagExe.getRobotDecliList() != null) {
                 robotDecliMap.put(tagExe.getRobotDecliList(), robotDeclis.contains(formatedJSONArray(tagExe.getRobotDecliList())));
             }
+            if (tagExe.getCiResult() != null) {
+                ciResultMap.put(tagExe.getCiResult(), ciResults.contains(formatedJSONArray(tagExe.getCiResult())));
+            }
         }
         LOG.debug(countryMap);
         LOG.debug(environmentMap);
+        LOG.debug(robotDecliMap);
         LOG.debug(robotDecliMap);
 
         try {
 
             JSONObject jsonResponse = new JSONObject();
-            answer = findExeStatList(appContext, request, tagExeL, countryMap, countries, countriesDefined, environmentMap, environments, environmentsDefined, robotDecliMap, robotDeclis, robotDeclisDefined);
+            answer = findExeStatList(appContext, request, tagExeL,
+                    countryMap, countries, countriesDefined, environmentMap, environments, environmentsDefined, robotDecliMap, robotDeclis, robotDeclisDefined, ciResultMap, ciResults, ciResultsDefined);
             jsonResponse = answer.getItem();
 
             jsonResponse.put("messageType", answer.getResultMessage().getMessage().getCodeString());
@@ -208,7 +218,9 @@ public class ReadTagStat extends HttpServlet {
             List<Tag> tagExeList,
             HashMap<String, Boolean> countryMap, List<String> countries, Boolean countriesDefined,
             HashMap<String, Boolean> environmentMap, List<String> environments, Boolean environmentsDefined,
-            HashMap<String, Boolean> robotDecliMap, List<String> robotDeclis, Boolean robotDeclisDefined) throws JSONException {
+            HashMap<String, Boolean> robotDecliMap, List<String> robotDeclis, Boolean robotDeclisDefined,
+            HashMap<String, Boolean> ciResultMap, List<String> ciResults, Boolean ciResultsDefined
+    ) throws JSONException {
 
         // Default message to unexpected error.
         MessageEvent msg = new MessageEvent(MessageEventEnum.DATA_OPERATION_OK);
@@ -241,7 +253,8 @@ public class ReadTagStat extends HttpServlet {
 
             if ((countries.isEmpty() || countries.contains(formatedJSONArray(exeCur.getCountryList())))
                     && (environments.isEmpty() || environments.contains(formatedJSONArray(exeCur.getEnvironmentList())))
-                    && (robotDeclis.isEmpty() || robotDeclis.contains(formatedJSONArray(exeCur.getRobotDecliList())))) {
+                    && (robotDeclis.isEmpty() || robotDeclis.contains(formatedJSONArray(exeCur.getRobotDecliList())))
+                    && (ciResults.isEmpty() || ciResults.contains(exeCur.getCiResult()))) {
 
                 /**
                  * Curves of tag response time.
@@ -250,7 +263,7 @@ public class ReadTagStat extends HttpServlet {
 
                 long y = 0;
                 long ymin = 0;
-                y = exeCur.getDateEndQueue().getTime() - exeCur.getDateCreated().getTime();
+                y = exeCur.getDateEndQueue().getTime() - exeCur.getDateStartExe().getTime();
                 ymin = y / 60000;
 
                 if (!countryMap.containsKey(exeCur.getCountryList())) {
@@ -270,14 +283,15 @@ public class ReadTagStat extends HttpServlet {
                     robotDecliMap.put(exeCur.getRobotDecliList(), true);
 
                     pointObj = new JSONObject();
-                    Date d = new Date(exeCur.getDateCreated().getTime());
-//                    TimeZone tz = TimeZone.getTimeZone("UTC");
+                    Date d = new Date(exeCur.getDateStartExe().getTime());
+                    TimeZone tz = TimeZone.getTimeZone("UTC");
                     DateFormat df = new SimpleDateFormat(DATE_FORMAT);
-//                    df.setTimeZone(tz);
+                    df.setTimeZone(tz);
                     pointObj.put("x", df.format(d));
 
                     pointObj.put("y", ymin);
                     pointObj.put("tag", exeCur.getTag());
+                    pointObj.put("falseNegative", exeCur.isFalseNegative());
                     pointObj.put("ciRes", exeCur.getCiResult());
                     pointObj.put("ciSc", exeCur.getCiScore());
                     pointObj.put("ciScT", exeCur.getCiScoreThreshold());
@@ -402,7 +416,7 @@ public class ReadTagStat extends HttpServlet {
         }
         object.put("curvesTime", curvesArray);
 
-        JSONObject objectdist = getAllDistinct(countryMap, environmentMap, robotDecliMap, countriesDefined, environmentsDefined, robotDeclisDefined);
+        JSONObject objectdist = getAllDistinct(countryMap, environmentMap, robotDecliMap, ciResultMap, countriesDefined, environmentsDefined, robotDeclisDefined, ciResultsDefined);
         object.put("distinct", objectdist);
 
         /**
@@ -471,12 +485,8 @@ public class ReadTagStat extends HttpServlet {
     }
 
     private JSONObject getAllDistinct(
-            HashMap<String, Boolean> countryMap,
-            HashMap<String, Boolean> environmentMap,
-            HashMap<String, Boolean> robotDecliMap,
-            Boolean countriesDefined,
-            Boolean environmentsDefined,
-            Boolean robotDeclisDefined) throws JSONException {
+            HashMap<String, Boolean> countryMap, HashMap<String, Boolean> environmentMap, HashMap<String, Boolean> robotDecliMap, HashMap<String, Boolean> ciResultMap,
+            Boolean countriesDefined, Boolean environmentsDefined, Boolean robotDeclisDefined, Boolean ciResultsDefined) throws JSONException {
 
         JSONObject objectdist = new JSONObject();
 
@@ -524,6 +534,21 @@ public class ReadTagStat extends HttpServlet {
             objectdinst.put(objectcount);
         }
         objectdist.put("robotDeclis", objectdinst);
+
+        objectdinst = new JSONArray();
+        for (Map.Entry<String, Boolean> env : ciResultMap.entrySet()) {
+            String key = env.getKey();
+            JSONObject objectcount = new JSONObject();
+            objectcount.put("name", formatedJSONArray(key));
+            objectcount.put("hasData", ciResultMap.containsKey(key));
+            if (ciResultsDefined) {
+                objectcount.put("isRequested", ciResultMap.get(key));
+            } else {
+                objectcount.put("isRequested", true);
+            }
+            objectdinst.put(objectcount);
+        }
+        objectdist.put("ciResults", objectdinst);
 
         return objectdist;
     }

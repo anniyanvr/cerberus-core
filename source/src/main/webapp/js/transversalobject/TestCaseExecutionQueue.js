@@ -1,5 +1,5 @@
 /*
- * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * Cerberus Copyright (C) 2013 - 2025 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -346,8 +346,10 @@ function feedExecutionQueueModalData(exeQ, modalId, mode, hasPermissionsUpdate) 
 
     var formEdit = $('#' + modalId);
     var doc = new Doc();
-    var isEditable = (((hasPermissionsUpdate) && (mode === "EDIT") && ((exeQ.state === "WAITING") || (exeQ.state === "QUEUED") || (exeQ.state === "ERROR") || (exeQ.state === "CANCELLED")))
-            || (mode === "DUPLICATE"));
+    var isEditable = (
+            ((hasPermissionsUpdate) && (mode === "EDIT") && ((exeQ.state === "WAITING") || (exeQ.state === "QUEUED") || (exeQ.state === "QUWITHDEP") || (exeQ.state === "ERROR") || (exeQ.state === "CANCELLED")))
+            || (mode === "DUPLICATE")
+            );
 
     formEdit.find("#test").empty();
     formEdit.find("#testCase").empty();
@@ -439,7 +441,7 @@ function feedExecutionQueueModalData(exeQ, modalId, mode, hasPermissionsUpdate) 
         $("[name='editSoapLibraryField']").html(doc.getDocOnline("page_global", "btn_duplicate"));
         formEdit.find("#id").prop("value", exeQ.id);
         formEdit.find("#usrcreated").prop("value", exeQ.UsrCreated);
-        formEdit.find("#datecreated").prop("value", exeQ.DateCreated);
+        formEdit.find("#datecreated").prop("value", getDate(exeQ.DateCreated));
         formEdit.find("#usrmodif").prop("value", exeQ.UsrModif);
         formEdit.find("#datemodif").prop("value", getDate(exeQ.DateModif));
         formEdit.find("#priority").prop("value", exeQ.priority);
@@ -472,7 +474,7 @@ function feedExecutionQueueModalData(exeQ, modalId, mode, hasPermissionsUpdate) 
         formEdit.find("#timeout").prop("value", "");
     } else {
         formEdit.find("#tag").val(exeQ.tag);
-        formEdit.find("#requestDate").val(exeQ.requestDate);
+        formEdit.find("#requestDate").val(getDate(exeQ.requestDate));
         formEdit.find("#state").val(exeQ.state);
         formEdit.find("#comment").prop("value", exeQ.comment);
         formEdit.find("#exeId").prop("value", exeQ.exeId);
@@ -611,24 +613,58 @@ function appendDepRow(dep, targetTableBody) {
     var typeInput = $("<input readonly>").addClass("form-control input-sm").val(dep.type);
     var depTestInput = $("<input readonly>").addClass("form-control input-sm").val(dep.depTest);
     var depTestcaseInput = $("<input readonly>").addClass("form-control input-sm").val(dep.depTestCase);
+    var depTCDelayInput = $("<input readonly>").addClass("form-control input-sm").val(dep.depTCDelay);
     var depEventInput = $("<input readonly>").addClass("form-control input-sm").val(dep.depEvent);
+    var depDateInput = $("<input readonly>").addClass("form-control input-sm").val(getDate(dep.depDate));
     var statusInput = $("<input readonly>").addClass("form-control input-sm").val(dep.status);
-    var releaseDateInput = $("<input readonly>").addClass("form-control input-sm").val(getDateShort(dep.releaseDate));
+    var releaseDateInput = $("<input readonly>").addClass("form-control input-sm").val(getDate(dep.releaseDate));
     var commentInput = $("<input readonly>").addClass("form-control input-sm").val(dep.comment);
-    var exeIdInput = $("<input readonly>").addClass("form-control input-sm").val(dep.exeId);
-    var queueIdInput = $("<input readonly>").addClass("form-control input-sm").val(dep.queueId);
+    var exeButton = $("<button>").attr("type", "button").addClass("btn btn-sm").append($("<span>").addClass("glyphicon glyphicon-new-window"));
+    var exeButtonA = $("<a>");
+    if (dep.exeId > 0) {
+        exeButtonA.attr("href", "./TestCaseExecution.jsp?executionId=" + dep.exeId);
+    } else {
+        exeButton.attr("disabled", true);
+    }
+    exeButtonA.append(exeButton);
+
+    var queButton = $("<button>").attr("type", "button").addClass("btn btn-sm").append($("<span>").addClass("glyphicon glyphicon-new-window"));
+    var queButtonA = $("<a>");
+    if (dep.exeId > 0) {
+        queButtonA.attr("href", "./TestCaseExecution.jsp?executionQueueId=" + dep.queueId);
+    } else {
+        queButton.attr("disabled", true);
+    }
+    queButtonA.append(queButton);
+
+    //onclick=\"window.open=('this.href'); target='_blank';stopPropagation(event)\"
+    var exeIdInput = $("<div>").addClass("input-group")
+            .append($("<input readonly>").addClass("form-control input-sm").val(dep.exeId))
+            .append($("<span>").addClass("input-group-btn").append(exeButtonA));
+    var queueIdInput = $("<div>").addClass("input-group")
+            .append($("<input readonly>").addClass("form-control input-sm").val(dep.queueId))
+            .append($("<span>").addClass("input-group-btn").append(queButtonA));
+//    var queueIdInput = $("<input readonly>").addClass("form-control input-sm").val(dep.queueId);
     var table = $("#" + targetTableBody);
 
     var row = $("<tr></tr>");
+    if (dep.status === "RELEASED")
+        row.addClass("success");
+    if (dep.status === "IGNORED")
+        row.addClass("info");
 
     var type = $("<div class='form-group col-lg-3 col-sm-12'></div>").append("<label for='name'>" + doc.getDocOnline("testcaseexecutionqueuedep", "type") + "</label>").append(typeInput);
     var drow01 = $("<div class='row'></div>").append(type);
-    if (dep.type === "TCEXEEND") {
-        var det1 = $("<div class='form-group col-lg-6 col-sm-7'></div>").append("<label for='name'>" + doc.getDocOnline("test", "Test") + "</label>").append(depTestInput);
-        var det2 = $("<div class='form-group col-lg-3 col-sm-5'></div>").append("<label for='name'>" + doc.getDocOnline("testcase", "TestCase") + "</label>").append(depTestcaseInput);
-        drow01.append(det1).append(det2);
+    if ((dep.type === "TCEXEENDOK") || (dep.type === "TCEXEEND")) {
+        var det1 = $("<div class='form-group col-lg-5 col-sm-7'></div>").append("<label for='name'>" + doc.getDocOnline("test", "Test") + "</label>").append(depTestInput);
+        var det2 = $("<div class='form-group col-lg-4 col-sm-5'></div>").append("<label for='name'>" + doc.getDocOnline("testcase", "TestCase") + "</label>").append(depTestcaseInput);
+        var det3 = $("<div class='form-group col-lg-2 col-sm-4'></div>").append("<label for='name'>" + doc.getDocOnline("testcaseexecutionqueuedep", "DepTCDelay") + "</label>").append(depTCDelayInput);
+        drow01.append(det1).append(det2).append(det3);
+    } else if (dep.type === "TIMING") {
+        var det1 = $("<div class='form-group col-lg-6'></div>").append("<label for='name'>" + doc.getDocOnline("testcaseexecutionqueuedep", "DepDate") + "</label>").append(depDateInput);
+        drow01.append(det1);
     } else if (dep.type === "EVENT") {
-        var det1 = $("<div class='form-group col-lg-10'></div>").append("<label for='name'>" + doc.getDocOnline("testcaseexecutionqueuedep", "executor") + "</label>").append(depEventInput);
+        var det1 = $("<div class='form-group col-lg-9'></div>").append("<label for='name'>" + doc.getDocOnline("testcaseexecutionqueuedep", "executor") + "</label>").append(depEventInput);
         drow01.append(det1);
     }
     var td1 = $("<td></td>").append(drow01);
@@ -637,10 +673,12 @@ function appendDepRow(dep, targetTableBody) {
     var relDate = $("<div class='form-group col-lg-3 col-md-6 col-sm-6'></div>").append("<label for='name'>" + doc.getDocOnline("testcaseexecutionqueuedep", "releaseDate") + "</label>").append(releaseDateInput);
     var comDate = $("<div class='form-group col-lg-6 col-md-12 col-sm-12'></div>").append("<label for='name'>" + doc.getDocOnline("testcaseexecutionqueuedep", "comment") + "</label>").append(commentInput);
     var drow01 = $("<div class='row'></div>").append(status).append(relDate).append(comDate);
-    if (dep.type === "TCEXEEND") {
-        var det1 = $("<div class='form-group col-lg-3 col-md-3 col-sm-3'></div>").append("<label for='name'>" + doc.getDocOnline("testcaseexecutionqueuedep", "exeId") + "</label>").append(exeIdInput);
-        var det2 = $("<div class='form-group col-lg-3 col-md-3 col-sm-3'></div>").append("<label for='name'>" + doc.getDocOnline("testcaseexecutionqueuedep", "exeQueueId") + "</label>").append(queueIdInput);
+    if ((dep.type === "TCEXEENDOK") || (dep.type === "TCEXEEND")) {
+        var det1 = $("<div class='form-group col-lg-4 col-md-4 col-sm-6'></div>").append("<label for='name'>" + doc.getDocOnline("testcaseexecutionqueuedep", "exeId") + "</label>").append(exeIdInput);
+        var det2 = $("<div class='form-group col-lg-4 col-md-4 col-sm-6'></div>").append("<label for='name'>" + doc.getDocOnline("testcaseexecutionqueuedep", "exeQueueId") + "</label>").append(queueIdInput);
         drow01.append(det1).append(det2);
+    } else if (dep.type === "TIMING") {
+//        drow01.append(det1);
     }
     var td2 = $("<td></td>").append(drow01);
 

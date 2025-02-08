@@ -1,5 +1,5 @@
 /**
- * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * Cerberus Copyright (C) 2013 - 2025 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -168,7 +168,7 @@ public class LabelService implements ILabelService {
             AnswerItem<Label> answerLabelParent = readByKey(object.getParentLabelID());
             if ((answerLabelParent.isCodeEquals(MessageEventEnum.DATA_OPERATION_OK.getCode())) && (answerLabelParent.getItem() != null)) {
                 Label parentLabel = answerLabelParent.getItem();
-                if ((!parentLabel.getSystem().equals(object.getSystem())) && (!StringUtil.isEmpty(parentLabel.getSystem()))) {
+                if ((!parentLabel.getSystem().equals(object.getSystem())) && (!StringUtil.isEmptyOrNull(parentLabel.getSystem()))) {
                     // Parent Label system is not empty and different from child label system.
                     msg.setDescription(msg.getDescription()
                             .replace("%LABEL%", object.getLabel())
@@ -297,8 +297,8 @@ public class LabelService implements ILabelService {
     }
 
     @Override
-    public AnswerList<String> readDistinctValuesByCriteria(String system, String searchParameter, Map<String, List<String>> individualSearch, String columnName) {
-        return labelDAO.readDistinctValuesByCriteria(system, searchParameter, individualSearch, columnName);
+    public AnswerList<String> readDistinctValuesByCriteria(List<String> systems, String searchParameter, Map<String, List<String>> individualSearch, String columnName) {
+        return labelDAO.readDistinctValuesByCriteria(systems, searchParameter, individualSearch, columnName);
     }
 
     @Override

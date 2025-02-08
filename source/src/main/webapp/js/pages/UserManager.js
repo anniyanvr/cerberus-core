@@ -1,5 +1,5 @@
 /*
- * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * Cerberus Copyright (C) 2013 - 2025 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -59,6 +59,10 @@ function initPage() {
 
     $('#setAPIKey').click(function (e) {
         $("#apiKey").val(generateUUID());
+    });
+    $('#copyAPIKey').click(function (e) {
+        navigator.clipboard.writeText($("#apiKey").val());
+        showMessage(new Message("OK", 'apikey copied !!!'), $('#editUserModal'), false, 1000);
     });
     //configure and create the dataTable
     var configurations = new TableConfigurationsServerSide("usersTable", "ReadUser?systems=true&roles=true", "contentTable", aoColumnsFunc(), [1, 'asc']);
@@ -144,9 +148,9 @@ function editEntryClick(param) {
         formEdit.find("#apiKey").prop("value", obj["apiKey"]);
 
         formEdit.find("#usrcreated").prop("value", obj.usrCreated);
-        formEdit.find("#datecreated").prop("value", obj.dateCreated);
+        formEdit.find("#datecreated").prop("value", getDate(obj.dateCreated));
         formEdit.find("#usrmodif").prop("value", obj.usrModif);
-        formEdit.find("#datemodif").prop("value", obj.dateModif);
+        formEdit.find("#datemodif").prop("value", getDate(obj.dateModif));
 
         formEdit.find("#defaultSystem").prop("value", obj["defaultSystem"]);
         formEdit.find("#defaultSystem").prop("readonly", "readonly");
@@ -560,7 +564,7 @@ function removeEntryClick(key) {
     showModalConfirmation(function (ev) {
         var id = $('#confirmationModal #hiddenField1').prop("value");
         $.ajax({
-            url: "DeleteUser?login=" + key,
+            url: "DeleteUser?login=" + encodeURIComponent(key),
             async: true,
             method: "GET",
             success: function (data) {
@@ -725,6 +729,45 @@ function aoColumnsFunc(tableId) {
             "sName": "reqest",
             "sWidth": "50px",
             "title": doc.getDocLabel("page_user", "request_col")
+        },
+        {
+            "data": "usrCreated",
+            "visible": false,
+            "sName": "UsrCreated",
+            "sWidth": "70px",
+            "defaultContent": "",
+            "title": doc.getDocOnline("transversal", "UsrCreated")
+        },
+        {
+            "data": "dateCreated",
+            "visible": false,
+            "like": true,
+            "sName": "DateCreated",
+            "sWidth": "110px",
+            "defaultContent": "",
+            "title": doc.getDocOnline("transversal", "DateCreated"),
+            "mRender": function (data, type, oObj) {
+                return getDate(oObj["dateCreated"]);
+            }
+        },
+        {
+            "data": "usrModif",
+            "visible": false,
+            "sName": "UsrModif",
+            "sWidth": "70px",
+            "defaultContent": "",
+            "title": doc.getDocOnline("transversal", "UsrModif")
+        },
+        {
+            "data": "uateModif",
+            "visible": false,
+            "sName": "DateModif",
+            "sWidth": "110px",
+            "defaultContent": "",
+            "title": doc.getDocOnline("transversal", "DateModif"),
+            "mRender": function (data, type, oObj) {
+                return getDate(oObj["dateModif"]);
+            }
         }
     ];
     return aoColumns;

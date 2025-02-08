@@ -1,5 +1,5 @@
 /*
- * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * Cerberus Copyright (C) 2013 - 2025 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -59,6 +59,7 @@ public class QueuedExecutionService {
     private final ICampaignService campaignService;
     private final ICampaignParameterService campaignParameterService;
     private final ICountryEnvParamService countryEnvParamService;
+    private final ICountryEnvironmentParametersService countryEnvironmentParametersService;
     private final IExecutionThreadPoolService executionThreadService;
     private final IFactoryTestCaseExecutionQueue inQueueFactoryService;
     private final ITestCaseExecutionQueueService inQueueService;
@@ -94,10 +95,10 @@ public class QueuedExecutionService {
         ManualUrlParameters manualUrlParameters;
         if (queuedExecution.getManualUrlParameters() != null) {
             manualUrlParameters = ManualUrlParameters.builder()
-                    .host(StringUtil.isNotEmpty(queuedExecution.getManualUrlParameters().getHost()) ? queuedExecution.getManualUrlParameters().getHost() : "")
-                    .contextRoot(StringUtil.isNotEmpty(queuedExecution.getManualUrlParameters().getContextRoot()) ? queuedExecution.getManualUrlParameters().getContextRoot() : "")
-                    .loginRelativeUrl(StringUtil.isNotEmpty(queuedExecution.getManualUrlParameters().getLoginRelativeUrl()) ? queuedExecution.getManualUrlParameters().getLoginRelativeUrl() : "")
-                    .envData(StringUtil.isNotEmpty(queuedExecution.getManualUrlParameters().getEnvData()) ? queuedExecution.getManualUrlParameters().getEnvData() : "")
+                    .host(StringUtil.isNotEmptyOrNull(queuedExecution.getManualUrlParameters().getHost()) ? queuedExecution.getManualUrlParameters().getHost() : "")
+                    .contextRoot(StringUtil.isNotEmptyOrNull(queuedExecution.getManualUrlParameters().getContextRoot()) ? queuedExecution.getManualUrlParameters().getContextRoot() : "")
+                    .loginRelativeUrl(StringUtil.isNotEmptyOrNull(queuedExecution.getManualUrlParameters().getLoginRelativeUrl()) ? queuedExecution.getManualUrlParameters().getLoginRelativeUrl() : "")
+                    .envData(StringUtil.isNotEmptyOrNull(queuedExecution.getManualUrlParameters().getEnvData()) ? queuedExecution.getManualUrlParameters().getEnvData() : "")
                     .build();
         } else {
             manualUrlParameters = ManualUrlParameters.builder()
@@ -107,7 +108,7 @@ public class QueuedExecutionService {
                     .loginRelativeUrl("")
                     .build();
         }
-        String tag = StringUtil.isNotEmpty(queuedExecution.getTag())
+        String tag = StringUtil.isNotEmptyOrNull(queuedExecution.getTag())
                 ? queuedExecution.getTag()
                 : campaign.getTag();
         int screenshot = queuedExecution.getScreenshot() != null
@@ -119,7 +120,7 @@ public class QueuedExecutionService {
         int verbose = queuedExecution.getVerbose() != null
                 ? queuedExecution.getVerbose()
                 : ParameterParserUtil.parseIntegerParamAndDecode(campaign.getVerbose(), 1, "UTF-8");
-        String timeout = StringUtil.isNotEmpty(queuedExecution.getTimeout())
+        String timeout = StringUtil.isNotEmptyOrNull(queuedExecution.getTimeout())
                 ? queuedExecution.getTimeout()
                 : ParameterParserUtil.parseStringParamAndDecode(campaign.getTimeout(), "30000", "UTF-8");
         int pageSource = queuedExecution.getPageSource() != null
@@ -131,7 +132,7 @@ public class QueuedExecutionService {
         int consoleLog = queuedExecution.getConsoleLog() != null
                 ? queuedExecution.getConsoleLog()
                 : ParameterParserUtil.parseIntegerParamAndDecode(campaign.getConsoleLog(), 1, "UTF-8");
-        String manualExecution = StringUtil.isNotEmpty(queuedExecution.getManualExecution())
+        String manualExecution = StringUtil.isNotEmptyOrNull(queuedExecution.getManualExecution())
                 ? queuedExecution.getManualExecution()
                 : ParameterParserUtil.parseStringParamAndDecode(campaign.getManualExecution(), "N", "UTF-8");
         int retries = queuedExecution.getRetries() != null
@@ -146,7 +147,7 @@ public class QueuedExecutionService {
 
         verifyTestcasesListConsistency(selectedTestcases);
 
-        if (manualUrl == 1 && (StringUtil.isEmpty(manualUrlParameters.getHost()) || StringUtil.isEmpty(manualUrlParameters.getEnvData()))) {
+        if (manualUrl == 1 && (StringUtil.isEmptyOrNull(manualUrlParameters.getHost()) || StringUtil.isEmptyOrNull(manualUrlParameters.getEnvData()))) {
             throw new InvalidRequestException("manualUrl is activated so host and envData of manualUrlParameters are required");
         }
 
@@ -196,7 +197,7 @@ public class QueuedExecutionService {
         LOG.debug("MANUALEXEC {}", manualExecution);
         if (CollectionUtils.isEmpty(robots)) {
             if (manualExecution.equalsIgnoreCase("Y") || manualExecution.equalsIgnoreCase("A")) {
-                robotsMap.put("", robotFactory.create(0, "", "", "", "", "Y", "", "", "", "", "", "", true, "", ""));
+                robotsMap.put("", robotFactory.create(0, "", "", "", "", true, "", "", "", "", "", 0, "", true, "", ""));
             } else {
                 throw new InvalidRequestException("No robots found for this campaign");
             }
@@ -228,10 +229,10 @@ public class QueuedExecutionService {
         ManualUrlParameters manualUrlParameters;
         if (queuedExecution.getManualUrlParameters() != null) {
             manualUrlParameters = ManualUrlParameters.builder()
-                    .host(StringUtil.isNotEmpty(queuedExecution.getManualUrlParameters().getHost()) ? queuedExecution.getManualUrlParameters().getHost() : "")
-                    .contextRoot(StringUtil.isNotEmpty(queuedExecution.getManualUrlParameters().getContextRoot()) ? queuedExecution.getManualUrlParameters().getContextRoot() : "")
-                    .loginRelativeUrl(StringUtil.isNotEmpty(queuedExecution.getManualUrlParameters().getLoginRelativeUrl()) ? queuedExecution.getManualUrlParameters().getLoginRelativeUrl() : "")
-                    .envData(StringUtil.isNotEmpty(queuedExecution.getManualUrlParameters().getEnvData()) ? queuedExecution.getManualUrlParameters().getEnvData() : "")
+                    .host(StringUtil.isNotEmptyOrNull(queuedExecution.getManualUrlParameters().getHost()) ? queuedExecution.getManualUrlParameters().getHost() : "")
+                    .contextRoot(StringUtil.isNotEmptyOrNull(queuedExecution.getManualUrlParameters().getContextRoot()) ? queuedExecution.getManualUrlParameters().getContextRoot() : "")
+                    .loginRelativeUrl(StringUtil.isNotEmptyOrNull(queuedExecution.getManualUrlParameters().getLoginRelativeUrl()) ? queuedExecution.getManualUrlParameters().getLoginRelativeUrl() : "")
+                    .envData(StringUtil.isNotEmptyOrNull(queuedExecution.getManualUrlParameters().getEnvData()) ? queuedExecution.getManualUrlParameters().getEnvData() : "")
                     .build();
         } else {
             manualUrlParameters = ManualUrlParameters.builder()
@@ -245,11 +246,11 @@ public class QueuedExecutionService {
         int screenshot = queuedExecution.getScreenshot() != null ? queuedExecution.getScreenshot() : 1;
         int video = queuedExecution.getVideo() != null ? queuedExecution.getVideo() : 1;
         int verbose = queuedExecution.getVerbose() != null ? queuedExecution.getVerbose() : 1;
-        String timeout = StringUtil.isNotEmpty(queuedExecution.getTimeout()) ? queuedExecution.getTimeout() : "30000";
+        String timeout = StringUtil.isNotEmptyOrNull(queuedExecution.getTimeout()) ? queuedExecution.getTimeout() : "30000";
         int pageSource = queuedExecution.getPageSource() != null ? queuedExecution.getPageSource() : 1;
         int robotLog = queuedExecution.getRobotLog() != null ? queuedExecution.getRobotLog() : 1;
         int consoleLog = queuedExecution.getConsoleLog() != null ? queuedExecution.getConsoleLog() : 1;
-        String manualExecution = StringUtil.isNotEmpty(queuedExecution.getManualExecution()) ? queuedExecution.getManualExecution() : "N";
+        String manualExecution = StringUtil.isNotEmptyOrNull(queuedExecution.getManualExecution()) ? queuedExecution.getManualExecution() : "N";
         int retries = queuedExecution.getRetries() != null ? queuedExecution.getRetries() : 0;
         int priority = queuedExecution.getPriority() != null ? queuedExecution.getPriority() : 0;
         String user = principal != null ? principal.getName() : "";
@@ -265,7 +266,7 @@ public class QueuedExecutionService {
 
         verifyTestcasesListConsistency(selectedTestcases);
 
-        if (manualUrl == 1 && (StringUtil.isEmpty(manualUrlParameters.getHost()) || StringUtil.isEmpty(manualUrlParameters.getEnvData()))) {
+        if (manualUrl == 1 && (StringUtil.isEmptyOrNull(manualUrlParameters.getHost()) || StringUtil.isEmptyOrNull(manualUrlParameters.getEnvData()))) {
             throw new InvalidRequestException("manualUrl is activated so host and envData of manualUrlParameters are required.");
         }
 
@@ -333,7 +334,7 @@ public class QueuedExecutionService {
      */
     private Map<String, String> getManualHostMap(String manualHost) {
         Map<String, String> myHostMap = new HashMap<>();
-        if (StringUtil.isEmpty(manualHost)) {
+        if (StringUtil.isEmptyOrNull(manualHost)) {
             LOG.debug("Converting from empty.");
             myHostMap.put("", "");
             return myHostMap;
@@ -351,17 +352,17 @@ public class QueuedExecutionService {
             // parameter could not be converted to JSON Array so we try with the : and ; separators.
             String newManualHost = "";
             // Remove the http:// and https:// in order to avoid conflict with : split that will be done
-            if (!StringUtil.isEmpty(manualHost)) {
+            if (!StringUtil.isEmptyOrNull(manualHost)) {
                 newManualHost = manualHost.replace("http://", "|ZZZHTTPZZZ|");
                 newManualHost = newManualHost.replace("https://", "|ZZZHTTPSZZZ|");
             }
-            if (!StringUtil.isEmpty(manualHost) && !newManualHost.contains(":")) {
+            if (!StringUtil.isEmptyOrNull(manualHost) && !newManualHost.contains(":")) {
                 LOG.debug("Converting from string.");
                 myHostMap.put("", manualHost);
                 return myHostMap; // if no :, just return manual host (case 1)
             }
             // (case 2)
-            if (!StringUtil.isEmpty(manualHost)) {
+            if (!StringUtil.isEmptyOrNull(manualHost)) {
                 LOG.debug("Converting from separator.");
                 String[] manualHostByApp = newManualHost.split(";");
                 for (String appManualHost : manualHostByApp) {
@@ -376,8 +377,8 @@ public class QueuedExecutionService {
 
     private QueuedExecution cleanStringAndListOfDefaultValueFromSwagger(QueuedExecution queuedExecution) {
         if (CollectionUtils.isNotEmpty(queuedExecution.getTestcases()) && queuedExecution.getTestcases().size() == 1) {
-            if (StringUtil.isNotEmpty(queuedExecution.getTestcases().get(0).getTestcaseId()) && queuedExecution.getTestcases().get(0).getTestcaseId().equals("string")
-                    || StringUtil.isNotEmpty(queuedExecution.getTestcases().get(0).getTestFolderId()) && queuedExecution.getTestcases().get(0).getTestFolderId().equals("string")) {
+            if (StringUtil.isNotEmptyOrNull(queuedExecution.getTestcases().get(0).getTestcaseId()) && queuedExecution.getTestcases().get(0).getTestcaseId().equals("string")
+                    || StringUtil.isNotEmptyOrNull(queuedExecution.getTestcases().get(0).getTestFolderId()) && queuedExecution.getTestcases().get(0).getTestFolderId().equals("string")) {
                 queuedExecution.getTestcases().clear();
             }
         }
@@ -390,29 +391,35 @@ public class QueuedExecutionService {
         if (CollectionUtils.isNotEmpty(queuedExecution.getRobots()) && queuedExecution.getRobots().contains("string") && queuedExecution.getRobots().size() == 1) {
             queuedExecution.getRobots().clear();
         }
-        if (StringUtil.isNotEmpty(queuedExecution.getTag()) && queuedExecution.getTag().equals("string"))
+        if (StringUtil.isNotEmptyOrNull(queuedExecution.getTag()) && queuedExecution.getTag().equals("string")) {
             queuedExecution.setTag("");
-        if (StringUtil.isNotEmpty(queuedExecution.getManualExecution()) && queuedExecution.getManualExecution().equals("string"))
+        }
+        if (StringUtil.isNotEmptyOrNull(queuedExecution.getManualExecution()) && queuedExecution.getManualExecution().equals("string")) {
             queuedExecution.setManualExecution("");
+        }
         if (queuedExecution.getManualUrlParameters() != null) {
-            if (StringUtil.isNotEmpty(queuedExecution.getManualUrlParameters().getHost()) && queuedExecution.getManualUrlParameters().getHost().equals("string"))
+            if (StringUtil.isNotEmptyOrNull(queuedExecution.getManualUrlParameters().getHost()) && queuedExecution.getManualUrlParameters().getHost().equals("string")) {
                 queuedExecution.getManualUrlParameters().setHost("");
-            if (StringUtil.isNotEmpty(queuedExecution.getManualUrlParameters().getContextRoot()) && queuedExecution.getManualUrlParameters().getContextRoot().equals("string"))
+            }
+            if (StringUtil.isNotEmptyOrNull(queuedExecution.getManualUrlParameters().getContextRoot()) && queuedExecution.getManualUrlParameters().getContextRoot().equals("string")) {
                 queuedExecution.getManualUrlParameters().setContextRoot("");
-            if (StringUtil.isNotEmpty(queuedExecution.getManualUrlParameters().getLoginRelativeUrl()) && queuedExecution.getManualUrlParameters().getLoginRelativeUrl().equals("string"))
+            }
+            if (StringUtil.isNotEmptyOrNull(queuedExecution.getManualUrlParameters().getLoginRelativeUrl()) && queuedExecution.getManualUrlParameters().getLoginRelativeUrl().equals("string")) {
                 queuedExecution.getManualUrlParameters().setLoginRelativeUrl("");
-            if (StringUtil.isNotEmpty(queuedExecution.getManualUrlParameters().getEnvData()) && queuedExecution.getManualUrlParameters().getEnvData().equals("string"))
+            }
+            if (StringUtil.isNotEmptyOrNull(queuedExecution.getManualUrlParameters().getEnvData()) && queuedExecution.getManualUrlParameters().getEnvData().equals("string")) {
                 queuedExecution.getManualUrlParameters().setEnvData("");
+            }
         }
 
         return queuedExecution;
     }
 
     private QueuedExecutionResult addToQueue(Campaign campaign, List<QueuedExecutionTestcase> selectedTestcases,
-                                             List<String> environments, List<String> countries, Map<String, Robot> robotsMap,
-                                             ManualUrlParameters manualUrlParameters, String tag, String user, int manualUrl,
-                                             int screenshot, int verbose, int video, int pageSource, int robotLog, int consoleLog,
-                                             String timeout, int retries, String manualExecution, int priority, int nbRobots, List<String> robots) {
+            List<String> environments, List<String> countries, Map<String, Robot> robotsMap,
+            ManualUrlParameters manualUrlParameters, String tag, String user, int manualUrl,
+            int screenshot, int verbose, int video, int pageSource, int robotLog, int consoleLog,
+            String timeout, int retries, String manualExecution, int priority, int nbRobots, List<String> robots) {
         int nbExe = 0;
         int nbTestcaseNotActive = 0;
         int nbTestcaseNotExist = 0;
@@ -443,7 +450,13 @@ public class QueuedExecutionService {
                 envMap.put(envParam.getSystem() + LOCAL_SEPARATOR + envParam.getCountry() + LOCAL_SEPARATOR + envParam.getEnvironment(), envParam);
             }
 
-            if (campaign != null && !StringUtil.isEmpty(campaign.getCampaign())) {
+            HashMap<String, CountryEnvironmentParameters> envAppMap = new HashMap<>();
+            LOG.debug("Loading all environments.");
+            for (CountryEnvironmentParameters envAppParam : countryEnvironmentParametersService.convert(countryEnvironmentParametersService.readByVarious(null, null, null, null))) {
+                envAppMap.put(envAppParam.getSystem() + LOCAL_SEPARATOR + envAppParam.getCountry() + LOCAL_SEPARATOR + envAppParam.getEnvironment() + LOCAL_SEPARATOR + envAppParam.getApplication(), envAppParam);
+            }
+
+            if (campaign != null && !StringUtil.isEmptyOrNull(campaign.getCampaign())) {
                 LOG.info("Campaign [{}] asked to triggered.", campaign);
                 LOG.info("[{}] testcases: {}", campaign, selectedTestcases);
                 LOG.info("[{}] environments: {}", campaign, environments);
@@ -452,24 +465,21 @@ public class QueuedExecutionService {
             }
             LOG.debug("Nb of Testcases: {}", selectedTestcases.size());
             for (QueuedExecutionTestcase selectedTestcase : selectedTestcases) {
-                LOG.debug("PASS");
                 String test = selectedTestcase.getTestFolderId();
                 String testCase = selectedTestcase.getTestcaseId();
                 TestCase tc = testCaseService.convert(testCaseService.readByKey(test, testCase));
-                LOG.debug("PASS");
                 // TestCases that are not active are not inserted into queue.
                 if (tc != null) {
-                    LOG.debug("PASS");
                     if (tc.isActive()) {
                         // We only insert testcase that exist for the given country.
                         for (TestCaseCountry country : testCaseCountryService.convert(testCaseCountryService.readByTestTestCase(null, test, testCase, null))) {
                             if (countries.contains(country.getCountry())) {
-                                LOG.debug("PASS");
                                 // for each environment we test that correspondng gp1 is compatible with testcase environment flag activation.
                                 for (String environment : environments) {
                                     String envGp1 = invariantEnvMap.get(environment);
-                                    if (StringUtil.isEmpty(envGp1))
+                                    if (StringUtil.isEmptyOrNull(envGp1)) {
                                         envGp1 = "";
+                                    }
                                     if (((envGp1.equals("PROD")) && tc.isActivePROD())
                                             || ((envGp1.equals("UAT")) && tc.isActiveUAT())
                                             || ((envGp1.equals("QA")) && tc.isActiveQA())
@@ -481,79 +491,87 @@ public class QueuedExecutionService {
                                         if ((envMap.containsKey(app.getSystem() + LOCAL_SEPARATOR + country.getCountry() + LOCAL_SEPARATOR + environment))
                                                 || (environment.equals("MANUAL"))) {
 
-                                            // Create Tag only if not already done and defined.
-                                            if (!StringUtil.isEmpty(tag) && !tagAlreadyAdded) {
-                                                // We create or update it.
-                                                if (campaign != null) {
-                                                    tagService.createAuto(tag, campaign.getCampaign(), user, new JSONArray(environments), new JSONArray(countries));
-                                                } else {
-                                                    tagService.createAuto(tag, "", user, new JSONArray(environments), new JSONArray(countries));
+                                            if ((envAppMap.containsKey(app.getSystem() + LOCAL_SEPARATOR + country.getCountry() + LOCAL_SEPARATOR + environment + LOCAL_SEPARATOR + app.getApplication()))
+                                                    || (environment.equals("MANUAL"))) {
+
+                                                // Create Tag only if not already done and defined.
+                                                if (!StringUtil.isEmptyOrNull(tag) && !tagAlreadyAdded) {
+                                                    // We create or update it.
+                                                    if (campaign != null) {
+                                                        tagService.createAuto(tag, campaign.getCampaign(), user, new JSONArray(environments), new JSONArray(countries));
+                                                    } else {
+                                                        tagService.createAuto(tag, "", user, new JSONArray(environments), new JSONArray(countries));
+                                                    }
+                                                    tagAlreadyAdded = true;
                                                 }
-                                                tagAlreadyAdded = true;
-                                            }
 
-                                            // manage manual host for this execution
-                                            String manualHostforThisApplication = getManualHostForThisApplication(myHostMap, app.getApplication());
+                                                // manage manual host for this execution
+                                                String manualHostforThisApplication = getManualHostForThisApplication(myHostMap, app.getApplication());
 
-                                            if ((app != null)
-                                                    && (app.getType() != null)
-                                                    && (app.getType().equalsIgnoreCase(Application.TYPE_GUI) || app.getType().equalsIgnoreCase(Application.TYPE_APK)
-                                                    || app.getType().equalsIgnoreCase(Application.TYPE_IPA) || app.getType().equalsIgnoreCase(Application.TYPE_FAT))) {
+                                                if ((app != null)
+                                                        && (app.getType() != null)
+                                                        && (app.getType().equalsIgnoreCase(Application.TYPE_GUI) || app.getType().equalsIgnoreCase(Application.TYPE_APK)
+                                                        || app.getType().equalsIgnoreCase(Application.TYPE_IPA) || app.getType().equalsIgnoreCase(Application.TYPE_FAT))) {
 
-                                                for (Map.Entry<String, Robot> entry : robotsMap.entrySet()) {
-                                                    String key = entry.getKey();
-                                                    Robot robot = entry.getValue();
+                                                    for (Map.Entry<String, Robot> entry : robotsMap.entrySet()) {
+                                                        String key = entry.getKey();
+                                                        Robot robot = entry.getValue();
 
-                                                    try {
-                                                        if ("".equals(robot.getType()) || app.getType().equals(robot.getType())) {
-                                                            // Robot type is not feeded (not attached to any techno) or robot type match the one of the application.
-                                                            LOG.debug("Insert Queue Entry.");
-                                                            // We get here the corresponding robotDecli value from robot.
-                                                            String robotDecli = robot.getRobotDecli();
-                                                            if (StringUtil.isEmpty(robotDecli)) {
-                                                                robotDecli = robot.getRobot();
-                                                            }
-                                                            if ("".equals(robot.getRobot()) && !(manualExecution.equalsIgnoreCase("Y") || manualExecution.equalsIgnoreCase("A"))) {
-                                                                // We don't insert the execution for robot application that have no robot and if it's not manual execution
-                                                                nbRobotMissing++;
+                                                        try {
+                                                            if ("".equals(robot.getType()) || app.getType().equals(robot.getType())) {
+                                                                // Robot type is not feeded (not attached to any techno) or robot type match the one of the application.
+                                                                LOG.debug("Insert Queue Entry.");
+                                                                // We get here the corresponding robotDecli value from robot.
+                                                                String robotDecli = robot.getRobotDecli();
+                                                                if (StringUtil.isEmptyOrNull(robotDecli)) {
+                                                                    robotDecli = robot.getRobot();
+                                                                }
+                                                                if ("".equals(robot.getRobot()) && !(manualExecution.equalsIgnoreCase("Y") || manualExecution.equalsIgnoreCase("A"))) {
+                                                                    // We don't insert the execution for robot application that have no robot and if it's not manual execution
+                                                                    nbRobotMissing++;
+                                                                } else {
+                                                                    toInserts.add(inQueueFactoryService.create(app.getSystem(),
+                                                                            test, testCase, country.getCountry(), environment,
+                                                                            robot.getRobot(), robotDecli, "", "", robot.getBrowser(),
+                                                                            robot.getVersion(), robot.getPlatform(), robot.getScreenSize(), manualUrl,
+                                                                            manualHostforThisApplication, manualUrlParameters.getContextRoot(),
+                                                                            manualUrlParameters.getLoginRelativeUrl(), manualUrlParameters.getEnvData(), tag,
+                                                                            screenshot, video, verbose, timeout, pageSource,
+                                                                            robotLog, consoleLog, 0, retries, manualExecution, priority,
+                                                                            user, null, null, null));
+                                                                }
                                                             } else {
-                                                                toInserts.add(inQueueFactoryService.create(app.getSystem(),
-                                                                        test, testCase, country.getCountry(), environment,
-                                                                        robot.getRobot(), robotDecli, "", "", robot.getBrowser(),
-                                                                        robot.getVersion(), robot.getPlatform(), robot.getScreenSize(), manualUrl,
-                                                                        manualHostforThisApplication, manualUrlParameters.getContextRoot(),
-                                                                        manualUrlParameters.getLoginRelativeUrl(), manualUrlParameters.getEnvData(), tag,
-                                                                        screenshot, video, verbose, timeout, pageSource,
-                                                                        robotLog, consoleLog, 0, retries, manualExecution, priority,
-                                                                        user, null, null, null));
+                                                                LOG.debug("Not inserted because app type {} does not match robot type {}", app.getType(), robot.getType());
+                                                                messages.add(String.format("%s-%s for %s-%s not inserted because app type '%s' doesn't match robot type '%s'", test, testCase, environment, country.getCountry(), app.getType(), robot.getType()));
                                                             }
-                                                        } else {
-                                                            LOG.debug("Not inserted because app type {} does not match robot type {}", app.getType(), robot.getType());
-                                                            messages.add(String.format("%s-%s for %s-%s not inserted because app type '%s' doesn't match robot type '%s'", test, testCase, environment, country.getCountry(), app.getType(), robot.getType()));
+                                                        } catch (FactoryCreationException e) {
+                                                            LOG.error("Unable to insert record due to: {}", e.toString());
+                                                            LOG.error("test: {}-{}-{}-{}-{}", test, testCase, country.getCountry(), environment, robots);
+                                                            messages.add(String.format("Unable to insert %s-%s-%s-%s-%s due to: %s", test, testCase, country.getCountry(), environment, robots, e));
                                                         }
+                                                    }
+
+                                                } else {
+                                                    // Application does not need any robot so we force an empty value.
+                                                    LOG.debug("Forcing Robot to empty value. Application type={}", app.getType());
+                                                    try {
+                                                        LOG.debug("Insert Queue Entry.");
+                                                        toInserts.add(inQueueFactoryService.create(app.getSystem(), test,
+                                                                testCase, country.getCountry(), environment, "", "", "", "",
+                                                                "", "", "", "", manualUrl, manualHostforThisApplication, manualUrlParameters.getContextRoot(),
+                                                                manualUrlParameters.getLoginRelativeUrl(), manualUrlParameters.getEnvData(), tag, screenshot, video,
+                                                                verbose, timeout, pageSource, robotLog, consoleLog, 0, retries,
+                                                                manualExecution, priority, user, null, null, null));
                                                     } catch (FactoryCreationException e) {
                                                         LOG.error("Unable to insert record due to: {}", e.toString());
                                                         LOG.error("test: {}-{}-{}-{}-{}", test, testCase, country.getCountry(), environment, robots);
                                                         messages.add(String.format("Unable to insert %s-%s-%s-%s-%s due to: %s", test, testCase, country.getCountry(), environment, robots, e));
                                                     }
                                                 }
-
                                             } else {
-                                                // Application does not support robot so we force an empty value.
-                                                LOG.debug("Forcing Robot to empty value. Application type={}", app.getType());
-                                                try {
-                                                    LOG.debug("Insert Queue Entry.");
-                                                    toInserts.add(inQueueFactoryService.create(app.getSystem(), test,
-                                                            testCase, country.getCountry(), environment, "", "", "", "",
-                                                            "", "", "", "", manualUrl, manualHostforThisApplication, manualUrlParameters.getContextRoot(),
-                                                            manualUrlParameters.getLoginRelativeUrl(), manualUrlParameters.getEnvData(), tag, screenshot, video,
-                                                            verbose, timeout, pageSource, robotLog, consoleLog, 0, retries,
-                                                            manualExecution, priority, user, null, null, null));
-                                                } catch (FactoryCreationException e) {
-                                                    LOG.error("Unable to insert record due to: {}", e.toString());
-                                                    LOG.error("test: {}-{}-{}-{}-{}", test, testCase, country.getCountry(), environment, robots);
-                                                    messages.add(String.format("Unable to insert %s-%s-%s-%s-%s due to: %s", test, testCase, country.getCountry(), environment, robots, e));
-                                                }
+                                                LOG.debug("Env Application does not exist.");
+                                                messages.add(String.format("Environment '%s' and Country %s doesn't exist for application '%s'", environment, country.getCountry(), tc.getApplication()));
+                                                nbEnvNotExist += nbRobots;
                                             }
                                         } else {
                                             LOG.debug("Env does not exist or is not active.");
@@ -586,12 +604,20 @@ public class QueuedExecutionService {
         } catch (CerberusException ex) {
             LOG.warn(ex);
         }
+
+        Map<String, TestCaseExecutionQueue> testCasesInserted = new HashMap<>();
+        for (TestCaseExecutionQueue toInsert : toInserts) {
+            if (!testCasesInserted.containsKey(inQueueService.getUniqKey(toInsert.getTest(), toInsert.getTestCase(), toInsert.getCountry(), toInsert.getEnvironment()))) {
+                testCasesInserted.put(inQueueService.getUniqKey(toInsert.getTest(), toInsert.getTestCase(), toInsert.getCountry(), toInsert.getEnvironment()), toInsert);
+            }
+        }
+
         // Part 2a: Try to insert all these test cases to the execution queue.
         List<Long> queueInsertedIds = new ArrayList<>();
         List<QueuedEntry> queuedEntries = new ArrayList<>();
         for (TestCaseExecutionQueue toInsert : toInserts) {
             try {
-                inQueueService.convert(inQueueService.create(toInsert, true, 0, TestCaseExecutionQueue.State.QUTEMP));
+                inQueueService.convert(inQueueService.create(toInsert, true, 0, TestCaseExecutionQueue.State.QUTEMP, testCasesInserted));
                 nbExe++;
                 queuedEntries.add(
                         QueuedEntry.builder()
@@ -637,10 +663,10 @@ public class QueuedExecutionService {
     private void verifyTestcasesListConsistency(List<QueuedExecutionTestcase> selectedTestcases) {
         if (CollectionUtils.isNotEmpty(selectedTestcases)) {
             for (QueuedExecutionTestcase queuedExecutionTestcase : selectedTestcases) {
-                if (StringUtil.isEmpty(queuedExecutionTestcase.getTestFolderId())) {
+                if (StringUtil.isEmptyOrNull(queuedExecutionTestcase.getTestFolderId())) {
                     throw new InvalidRequestException("testFolderId is required for each testcase object");
                 }
-                if (StringUtil.isEmpty(queuedExecutionTestcase.getTestcaseId())) {
+                if (StringUtil.isEmptyOrNull(queuedExecutionTestcase.getTestcaseId())) {
                     throw new InvalidRequestException("testCaseId is required for each testcase object");
                 }
             }
@@ -666,8 +692,8 @@ public class QueuedExecutionService {
     }
 
     private String generateTagAndControlTag(String tag, Campaign campaign, Principal principal) {
-        if (StringUtil.isEmpty(tag)) {
-            if (principal != null && StringUtil.isNotEmpty(principal.getName())) {
+        if (StringUtil.isEmptyOrNull(tag)) {
+            if (principal != null && StringUtil.isNotEmptyOrNull(principal.getName())) {
                 tag = principal.getName() + ".";
             }
             if (campaign != null) {

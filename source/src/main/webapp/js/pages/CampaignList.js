@@ -1,5 +1,5 @@
 /*
- * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * Cerberus Copyright (C) 2013 - 2025 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -31,19 +31,6 @@ $.when($.getScript("js/global/global.js")).then(function () {
 function initPage() {
     displayPageLabel();
 
-    // handle the click for specific action buttons
-    $("#editTestcampaignButton").click(editEntryModalSaveHandler);
-    $("#addTestcampaignButton").click(addEntryModalSaveHandler);
-
-    //clear the modals fields when closed
-    $('#editTestcampaignModal').on('hidden.bs.modal', editEntryModalCloseHandler);
-    $('#addTestcampaignModal').on('hidden.bs.modal', addEntryModalCloseHandler);
-    $('#viewTestcampaignModal').on('hidden.bs.modal', viewEntryModalCloseHandler);
-
-    displayInvariantList("notifystart", "CAMPAIGNSTARTNOTIF", false);
-    displayInvariantList("notifyend", "CAMPAIGNENDNOTIF", false);
-    displayInvariantList("notifySlackstart", "CAMPAIGNSTARTNOTIF", false);
-    displayInvariantList("notifySlackend", "CAMPAIGNENDNOTIF", false);
     displayInvariantList("screenshot", "SCREENSHOT", false, undefined, "");
     displayInvariantList("video", "VIDEO", false, undefined, "");
     displayInvariantList("verbose", "VERBOSE", false, undefined, "");
@@ -54,7 +41,7 @@ function initPage() {
     displayInvariantList("manualExecution", "MANUALEXECUTION", false, undefined, "");
     // Pre load eventconnector invariant.
     getSelectInvariant("EVENTCONNECTOR", false);
-    
+
     $('#editTestcampaignModal a[data-toggle="tab"]').on('shown.bs.tab', function (e) {
         var target = $(e.target).attr("href"); // activated tab
         if (target == "#tabsCreate-1") {
@@ -141,7 +128,7 @@ function removeEntryClick(key) {
     showModalConfirmation(function (ev) {
         var id = $('#confirmationModal #hiddenField1').prop("value");
         $.ajax({
-            url: "DeleteCampaign?key=" + key,
+            url: "DeleteCampaign?key=" + encodeURIComponent(key),
             async: true,
             method: "GET",
             success: function (data) {
@@ -169,19 +156,19 @@ function aoColumnsFunc(tableId) {
             "mRender": function (data, type, obj) {
                 var hasPermissions = $("#" + tableId).attr("hasPermissions");
 
-                var editTestcampaign = '<button id="editTestcampaign" onclick="editEntryClick(\'' + obj["campaign"] + '\');"\n\
+                var editTestcampaign = '<button id="editTestcampaign" onclick="editEntryClick(\'' + escapeHtml(obj["campaign"]) + '\');"\n\
                                         class="editCampaign btn btn-default btn-xs margin-right5" \n\
                                         name="editTestcampaign" title="' + doc.getDocLabel("page_testcampaign", "button_edit") + '" type="button">\n\
                                         <span class="glyphicon glyphicon-pencil"></span></button>';
-                var removeTestcampaign = '<button id="removeTestcampaign" onclick="removeEntryClick(\'' + obj["campaign"] + '\');"\n\
+                var removeTestcampaign = '<button id="removeTestcampaign" onclick="removeEntryClick(\'' + escapeHtml(obj["campaign"]) + '\');"\n\
                                         class="removeTestcampaign btn btn-default btn-xs margin-right25" \n\
                                         name="removeTestcampaign" title="' + doc.getDocLabel("page_testcampaign", "button_remove") + '" type="button">\n\
                                         <span class="glyphicon glyphicon-trash"></span></button>';
-                var viewTestcampaign = '<button id="viewTestcampaign" onclick="viewEntryClick(\'' + obj["campaign"] + '\');"\n\
+                var viewTestcampaign = '<button id="viewTestcampaign" onclick="viewEntryClick(\'' + escapeHtml(obj["campaign"]) + '\');"\n\
                                         class="viewTestcampaign btn btn-default btn-xs margin-right5" \n\
                                         name="viewTestcampaign" title="' + doc.getDocLabel("page_testcampaign", "button_testcaselist") + '" type="button">\n\
                                         <span class="glyphicon glyphicon-list"></span></button>';
-                var viewStatcampaign = '<button id="viewStatcampaign" onclick="viewStatEntryClick(\'' + obj["campaign"] + '\');"\n\
+                var viewStatcampaign = '<button id="viewStatcampaign" onclick="viewStatEntryClick(\'' + escapeHtml(obj["campaign"]) + '\');"\n\
                                         class="viewStatcampaign btn btn-default btn-xs margin-right5" \n\
                                         name="viewStatcampaign" title="' + doc.getDocLabel("page_testcampaign", "button_taglist") + '" type="button">\n\
                                         <span class="glyphicon glyphicon-stats"></span></button>';
@@ -228,18 +215,95 @@ function aoColumnsFunc(tableId) {
             "title": doc.getDocLabel("campaign", "Group1")
         },
         {
-            "data": "group1",
+            "data": "group2",
             "visible": false,
-            "sName": "group1",
+            "sName": "group2",
             "sWidth": "80px",
             "title": doc.getDocLabel("campaign", "Group2")
         },
         {
-            "data": "group1",
+            "data": "group3",
             "visible": false,
-            "sName": "group1",
+            "sName": "group3",
             "sWidth": "80px",
             "title": doc.getDocLabel("campaign", "Group3")
+        },
+        {
+            "data": "Tag",
+            "visible": false,
+            "sName": "Tag",
+            "sWidth": "80px",
+            "title": doc.getDocLabel("campaign", "tag")
+        },
+        {
+            "data": "Verbose",
+            "visible": false,
+            "sName": "Verbose",
+            "sWidth": "80px",
+            "title": doc.getDocLabel("campaign", "Verbose")
+        },
+        {
+            "data": "Screenshot",
+            "visible": false,
+            "sName": "Screenshot",
+            "sWidth": "80px",
+            "title": doc.getDocLabel("campaign", "Screenshot")
+        },
+        {
+            "data": "Video",
+            "visible": false,
+            "sName": "Video",
+            "sWidth": "80px",
+            "title": doc.getDocLabel("campaign", "Video")
+        },
+        {
+            "data": "PageSource",
+            "visible": false,
+            "sName": "PageSource",
+            "sWidth": "80px",
+            "title": doc.getDocLabel("campaign", "PageSource")
+        },
+        {
+            "data": "RobotLog",
+            "visible": false,
+            "sName": "RobotLog",
+            "sWidth": "80px",
+            "title": doc.getDocLabel("campaign", "RobotLog")
+        },
+        {
+            "data": "ConsoleLog",
+            "visible": false,
+            "sName": "ConsoleLog",
+            "sWidth": "80px",
+            "title": doc.getDocLabel("campaign", "ConsoleLog")
+        },
+        {
+            "data": "Timeout",
+            "visible": false,
+            "sName": "Timeout",
+            "sWidth": "80px",
+            "title": doc.getDocLabel("campaign", "Timeout")
+        },
+        {
+            "data": "Retries",
+            "visible": false,
+            "sName": "Retries",
+            "sWidth": "80px",
+            "title": doc.getDocLabel("campaign", "Retries")
+        },
+        {
+            "data": "Priority",
+            "visible": false,
+            "sName": "Priority",
+            "sWidth": "80px",
+            "title": doc.getDocLabel("campaign", "Priority")
+        },
+        {
+            "data": "ManualExecution",
+            "visible": false,
+            "sName": "ManualExecution",
+            "sWidth": "80px",
+            "title": doc.getDocLabel("campaign", "ManualExecution")
         },
         {
             "data": "UsrCreated",
@@ -256,7 +320,10 @@ function aoColumnsFunc(tableId) {
             "sName": "DateCreated",
             "sWidth": "110px",
             "defaultContent": "",
-            "title": doc.getDocOnline("transversal", "DateCreated")
+            "title": doc.getDocOnline("transversal", "DateCreated"),
+            "mRender": function (data, type, oObj) {
+                return getDate(oObj["DateCreated"]);
+            }
         },
         {
             "data": "UsrModif",

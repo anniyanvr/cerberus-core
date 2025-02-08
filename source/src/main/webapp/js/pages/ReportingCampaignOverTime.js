@@ -1,5 +1,5 @@
 /*
- * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * Cerberus Copyright (C) 2013 - 2025 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -23,10 +23,13 @@ var configTagDur = {};
 var configTagSco = {};
 var configTagExe = {};
 var configTagBar = {};
+var configAvailability1 = {};
+var configAvailability2 = {};
 // Counters of different countries, env and robotdecli (used to shorten the labels)
 var nbCountries = 0;
 var nbEnv = 0;
 var nbRobot = 0;
+var nbCIResult = 0;
 
 $.when($.getScript("js/global/global.js")).then(function () {
     $(document).ready(function () {
@@ -40,19 +43,17 @@ $.when($.getScript("js/global/global.js")).then(function () {
             'container': 'body'}
         );
 
-        moment.locale("fr");
-
         $('#frompicker').datetimepicker();
         $('#topicker').datetimepicker({
             useCurrent: false //Important! See issue #1075
         });
 
-        $("#frompicker").on("dp.change", function (e) {
-            $('#topicker').data("DateTimePicker").minDate(e.date);
-        });
-        $("#topicker").on("dp.change", function (e) {
-            $('#frompicker').data("DateTimePicker").maxDate(e.date);
-        });
+//        $("#frompicker").on("dp.change", function (e) {
+//            $('#topicker').data("DateTimePicker").minDate(e.date);
+//        });
+//        $("#topicker").on("dp.change", function (e) {
+//            $('#frompicker').data("DateTimePicker").maxDate(e.date);
+//        });
 
 
         var campaigns = GetURLParameters("campaigns");
@@ -61,6 +62,7 @@ $.when($.getScript("js/global/global.js")).then(function () {
         var environments = GetURLParameters("environments");
         var countries = GetURLParameters("countries");
         var robotDeclis = GetURLParameters("robotDeclis");
+        var ciResults = GetURLParameters("ciResults");
         var gp1s = GetURLParameters("group1s");
         var gp2s = GetURLParameters("group2s");
         var gp3s = GetURLParameters("group3s");
@@ -83,7 +85,7 @@ $.when($.getScript("js/global/global.js")).then(function () {
 
         $("#campaignSelect").empty();
         $("#campaignSelect").select2({width: "100%"});
-        feedPerfCampaign("#campaignSelect", campaigns, countries, environments, robotDeclis, gp1s, gp2s, gp3s);
+        feedPerfCampaign("#campaignSelect", campaigns, countries, environments, robotDeclis, ciResults, gp1s, gp2s, gp3s);
 
     });
 });
@@ -106,7 +108,7 @@ function multiSelectConfPerf(name) {
  * @param {String} defaultCampaigns - id of testcase to select.
  * @returns {null}
  */
-function feedPerfCampaign(selectElement, defaultCampaigns, countries, environments, robotDeclis, gp1s, gp2s, gp3s) {
+function feedPerfCampaign(selectElement, defaultCampaigns, countries, environments, robotDeclis, ciResults, gp1s, gp2s, gp3s) {
     showLoader($("#otFilterPanel"));
 
     var campaignList = $(selectElement);
@@ -123,7 +125,7 @@ function feedPerfCampaign(selectElement, defaultCampaigns, countries, environmen
         feedCampaignGp("#gp1Select", data.distinct.group1);
         feedCampaignGp("#gp2Select", data.distinct.group2);
         feedCampaignGp("#gp3Select", data.distinct.group3);
-        loadPerfGraph(false, countries, environments, robotDeclis, gp1s, gp2s, gp3s)
+        loadPerfGraph(false, countries, environments, robotDeclis, ciResults, gp1s, gp2s, gp3s)
         hideLoader($("#otFilterPanel"));
 
     });
@@ -169,7 +171,7 @@ function displayPageLabel(doc) {
     $("#filters").html(doc.getDocOnline("page_global", "filters"));
 }
 
-function loadPerfGraph(saveURLtoHistory, countries, environments, robotDeclis, gp1s, gp2s, gp3s) {
+function loadPerfGraph(saveURLtoHistory, countries, environments, robotDeclis, ciResults, gp1s, gp2s, gp3s) {
     showLoader($("#otFilterPanel"));
 
     if (countries === null || countries === undefined) {
@@ -180,6 +182,9 @@ function loadPerfGraph(saveURLtoHistory, countries, environments, robotDeclis, g
     }
     if (robotDeclis === null || robotDeclis === undefined) {
         robotDeclis = [];
+    }
+    if (ciResults === null || ciResults === undefined) {
+        ciResults = [];
     }
 
     let from = new Date($('#frompicker').data("DateTimePicker").date());
@@ -213,6 +218,15 @@ function loadPerfGraph(saveURLtoHistory, countries, environments, robotDeclis, g
     var robotDeclisQ = "";
     for (var i = 0; i < len; i++) {
         robotDeclisQ += "&robotDeclis=" + encodeURI(robotDeclis[i]);
+    }
+
+    if ($("#ciResultSelect").val() !== null) {
+        ciResults = $("#ciResultSelect").val();
+    }
+    len = ciResults.length;
+    var ciResultsQ = "";
+    for (var i = 0; i < len; i++) {
+        ciResultsQ += "&ciResults=" + encodeURI(ciResults[i]);
     }
 
     var campaignString = "";
@@ -255,7 +269,7 @@ function loadPerfGraph(saveURLtoHistory, countries, environments, robotDeclis, g
         }
     }
 
-    let qS = "from=" + from.toISOString() + "&to=" + to.toISOString() + campaignString + countriesQ + environmentsQ + robotDeclisQ + gp1sQ + gp2sQ + gp3sQ;
+    let qS = "from=" + from.toISOString() + "&to=" + to.toISOString() + campaignString + countriesQ + environmentsQ + robotDeclisQ + ciResultsQ + gp1sQ + gp2sQ + gp3sQ;
     if (saveURLtoHistory) {
         InsertURLInHistory("./ReportingCampaignOverTime.jsp?" + qS);
     }
@@ -271,6 +285,7 @@ function loadPerfGraph(saveURLtoHistory, countries, environments, robotDeclis, g
                 loadCombos(data);
                 buildTagGraphs(data);
                 buildTagBarGraphs(data);
+                buildAvailabilityGraphs(data);
             }
             hideLoader($("#otFilterPanel"));
         }
@@ -297,31 +312,12 @@ function updateNbDistinct(data) {
             nbRobot++;
         }
     }
-}
-
-function setTimeRange(id) {
-    let fromD;
-    let toD = new Date();
-    toD.setHours(23);
-    toD.setMinutes(59);
-    fromD = new Date();
-    fromD.setHours(23);
-    fromD.setMinutes(59);
-    if (id === 1) { // 1 month
-        fromD.setMonth(fromD.getMonth() - 1);
-    } else if (id === 2) { // 3 months
-        fromD.setMonth(fromD.getMonth() - 3);
-    } else if (id === 3) { // 6 months
-        fromD.setMonth(fromD.getMonth() - 6);
-    } else if (id === 4) { //
-        fromD.setMonth(fromD.getMonth() - 12);
-    } else if (id === 5) {
-        fromD.setHours(fromD.getHours() - 168);
-    } else if (id === 6) {
-        fromD.setHours(fromD.getHours() - 24);
+    nbCIResult = 0;
+    for (var i = 0; i < data.ciResults.length; i++) {
+        if (data.ciResults[i].isRequested) {
+            nbCIResult++;
+        }
     }
-    $('#frompicker').data("DateTimePicker").date(moment(fromD));
-    $('#topicker').data("DateTimePicker").date(moment(toD));
 }
 
 function loadCombos(data) {
@@ -380,6 +376,24 @@ function loadCombos(data) {
     }
     select.multiselect(new multiSelectConfPerf("robotSelect"));
 
+    var select = $("#ciResultSelect");
+    select.multiselect('destroy');
+    var array = data.distinct.ciResults;
+    $("#ciResultSelect option").remove();
+    for (var i = 0; i < array.length; i++) {
+        let n = array[i].name;
+        if (isEmpty(n)) {
+            n = "[Empty]";
+        }
+        $("#ciResultSelect").append($('<option></option>').text(n).val(array[i].name));
+    }
+    for (var i = 0; i < array.length; i++) {
+        if (array[i].isRequested) {
+            $("#ciResultSelect option[value='" + array[i].name + "']").attr("selected", "selected");
+        }
+    }
+    select.multiselect(new multiSelectConfPerf("ciResultSelect"));
+
 }
 
 function getOptions(title, unit, axisType) {
@@ -393,25 +407,48 @@ function getOptions(title, unit, axisType) {
         tooltips: {
             callbacks: {
                 label: function (t, d) {
+                    newlabel = [];
                     var xLabel = d.datasets[t.datasetIndex].label;
-                    let com = "";
-                    if (!isEmpty(d.datasets[t.datasetIndex].data[t.index].desc)) {
-                        com += " - ";
-                        com += d.datasets[t.datasetIndex].data[t.index].desc;
+                    let xlab = "";
+                    let com1 = "";
+                    let desc = "";
+                    if (!isEmpty(d.datasets[t.datasetIndex].data[t.index].tag)) {
+                        xlab += " - ";
+                        xlab += d.datasets[t.datasetIndex].data[t.index].tag;
                     }
                     if (!isEmpty(d.datasets[t.datasetIndex].data[t.index].comment)) {
-                        com += " - ";
-                        com += d.datasets[t.datasetIndex].data[t.index].comment;
+//                        com1 += " - ";
+                        com1 = "   " + d.datasets[t.datasetIndex].data[t.index].comment;
                     }
+                    if (!isEmpty(d.datasets[t.datasetIndex].data[t.index].desc)) {
+//                        com += " - ";
+                        desc = "   " + d.datasets[t.datasetIndex].data[t.index].desc.replace(/<[^>]*>/g, "");
+                    }
+//                    newlabel.push(xLabel + ': ' + t.yLabel);
+//                    newlabel.push(com);
                     if (unit === "size") {
-                        return xLabel + ': ' + formatNumber(Math.round(t.yLabel / 1024)) + " kb" + com;
+                        newlabel.push(xLabel + ': ' + formatNumber(Math.round(t.yLabel / 1024)) + " kb" + xlab);
+                        if (desc !== "")
+                            newlabel.push(desc);
+                        if (com1 !== "")
+                            newlabel.push(com1);
+//                        return  + com;
                     } else if (unit === "time") {
-                        return xLabel + ': ' + t.yLabel.toString().replace(/(\d)(?=(\d{3})+(?!\d))/g, "$1 ") + " min" + com;
+                        newlabel.push(xLabel + ': ' + t.yLabel.toString().replace(/(\d)(?=(\d{3})+(?!\d))/g, "$1 ") + " min" + xlab);
+                        if (desc !== "")
+                            newlabel.push(desc);
+                        if (com1 !== "")
+                            newlabel.push(com1);
                     } else {
-                        return xLabel + ': ' + t.yLabel + com;
+                        newlabel.push(xLabel + ': ' + t.yLabel + xlab);
+                        if (desc !== "")
+                            newlabel.push(desc);
+                        if (com1 !== "")
+                            newlabel.push(com1);
                     }
+                    return newlabel;
                 }
-            },
+            }
         },
         title: {
             text: title
@@ -516,23 +553,23 @@ function buildTagGraphs(data) {
         let d3b = [];
         lend = c.points.length;
         for (var j = 0; j < lend; j++) {
-            let p = {x: c.points[j].x, y: c.points[j].y, tag: c.points[j].tag, ciResult: c.points[j].ciRes, desc: c.points[j].description, comment: c.points[j].comment};
+            let p = {x: c.points[j].x, y: c.points[j].y, tag: c.points[j].tag, ciResult: c.points[j].ciRes, desc: c.points[j].description, comment: c.points[j].comment, falseNegative: c.points[j].falseNegative};
             d1.push(p);
         }
         for (var j = 0; j < lend; j++) {
-            let p = {x: c.points[j].x, y: c.points[j].ciSc, tag: c.points[j].tag, ciResult: c.points[j].ciRes, desc: c.points[j].description, comment: c.points[j].comment};
+            let p = {x: c.points[j].x, y: c.points[j].ciSc, tag: c.points[j].tag, ciResult: c.points[j].ciRes, desc: c.points[j].description, comment: c.points[j].comment, falseNegative: c.points[j].falseNegative};
             d2a.push(p);
         }
         for (var j = 0; j < lend; j++) {
-            let p = {x: c.points[j].x, y: c.points[j].ciScT, tag: c.points[j].tag, desc: c.points[j].description, comment: c.points[j].comment};
+            let p = {x: c.points[j].x, y: c.points[j].ciScT, tag: c.points[j].tag, desc: c.points[j].description, comment: c.points[j].comment, falseNegative: c.points[j].falseNegative};
             d2b.push(p);
         }
         for (var j = 0; j < lend; j++) {
-            let p = {x: c.points[j].x, y: c.points[j].nbExeU, tag: c.points[j].tag, ciResult: c.points[j].ciRes, desc: c.points[j].description, comment: c.points[j].comment};
+            let p = {x: c.points[j].x, y: c.points[j].nbExeU, tag: c.points[j].tag, ciResult: c.points[j].ciRes, desc: c.points[j].description, comment: c.points[j].comment, falseNegative: c.points[j].falseNegative};
             d3a.push(p);
         }
         for (var j = 0; j < lend; j++) {
-            let p = {x: c.points[j].x, y: c.points[j].nbExe, tag: c.points[j].tag, desc: c.points[j].description, comment: c.points[j].comment};
+            let p = {x: c.points[j].x, y: c.points[j].nbExe, tag: c.points[j].tag, desc: c.points[j].description, comment: c.points[j].comment, falseNegative: c.points[j].falseNegative};
             d3b.push(p);
         }
         let lab = getLabel("c.key.testcase.description", c.key.country, c.key.environment, c.key.robotdecli, undefined, undefined, undefined, c.key.campaign);
@@ -543,12 +580,28 @@ function buildTagGraphs(data) {
             label: lab,
             backgroundColor: "white",
             borderColor: get_Color_fromindex(i),
+            pointBorderWidth: function (d) {
+                var index = d.dataIndex;
+                var value = d.dataset.data[index];
+                return value.falseNegative === true ? 3
+                        : 1;
+            },
+            pointBorderColor: function (d) {
+                var index = d.dataIndex;
+                var value = d.dataset.data[index];
+                return value.falseNegative === true ? '#00d27a'
+                        : get_Color_fromindex(i);
+            },
             pointBackgroundColor: function (d) {
                 var index = d.dataIndex;
                 var value = d.dataset.data[index];
                 return getExeStatusRowColor(value.ciResult);
             },
-            pointRadius: 4,
+            pointRadius: function (context) {
+                var index = context.dataIndex;
+                var value = context.dataset.data[index];
+                return value.comment === '' ? 4 : 8;
+            },
             pointHoverRadius: 6,
             hitRadius: 10,
             fill: false,
@@ -558,12 +611,29 @@ function buildTagGraphs(data) {
             label: lab,
             backgroundColor: "white",
             borderColor: get_Color_fromindex(i),
+            pointBorderWidth: function (d) {
+                var index = d.dataIndex;
+                var value = d.dataset.data[index];
+                return value.falseNegative === true ? 3
+                        : 1;
+            },
+            pointBorderColor: function (d) {
+                var index = d.dataIndex;
+                var value = d.dataset.data[index];
+                return value.falseNegative === true ? '#00d27a'
+                        : get_Color_fromindex(i);
+            },
             pointBackgroundColor: function (d) {
                 var index = d.dataIndex;
                 var value = d.dataset.data[index];
                 return getExeStatusRowColor(value.ciResult);
             },
-            pointRadius: 4,
+            pointRadius: function (context) {
+                var index = context.dataIndex;
+                var value = context.dataset.data[index];
+
+                return value.comment === '' ? 4 : 8;
+            },
             pointHoverRadius: 6,
             hitRadius: 10,
             fill: false,
@@ -573,12 +643,28 @@ function buildTagGraphs(data) {
             label: lab + " Threshold",
             backgroundColor: "white",
             borderColor: get_Color_fromindex(i),
+            pointBorderWidth: function (d) {
+                var index = d.dataIndex;
+                var value = d.dataset.data[index];
+                return value.falseNegative === true ? 3
+                        : 1;
+            },
+            pointBorderColor: function (d) {
+                var index = d.dataIndex;
+                var value = d.dataset.data[index];
+                return value.falseNegative === true ? '#00d27a'
+                        : get_Color_fromindex(i);
+            },
             pointBackgroundColor: function (d) {
                 var index = d.dataIndex;
                 var value = d.dataset.data[index];
                 return getExeStatusRowColor(value.ciResult);
             },
-            pointRadius: 4,
+            pointRadius: function (context) {
+                var index = context.dataIndex;
+                var value = context.dataset.data[index];
+                return value.comment === '' ? 4 : 8;
+            },
             pointHoverRadius: 6,
             hitRadius: 10,
             pointStyle: 'line',
@@ -589,12 +675,28 @@ function buildTagGraphs(data) {
             label: lab + " Useful",
             backgroundColor: "white",
             borderColor: get_Color_fromindex(i),
+            pointBorderWidth: function (d) {
+                var index = d.dataIndex;
+                var value = d.dataset.data[index];
+                return value.falseNegative === true ? 3
+                        : 1;
+            },
+            pointBorderColor: function (d) {
+                var index = d.dataIndex;
+                var value = d.dataset.data[index];
+                return value.falseNegative === true ? '#00d27a'
+                        : get_Color_fromindex(i);
+            },
             pointBackgroundColor: function (d) {
                 var index = d.dataIndex;
                 var value = d.dataset.data[index];
                 return getExeStatusRowColor(value.ciResult);
             },
-            pointRadius: 4,
+            pointRadius: function (context) {
+                var index = context.dataIndex;
+                var value = context.dataset.data[index];
+                return value.comment === '' ? 4 : 8;
+            },
             pointHoverRadius: 6,
             hitRadius: 10,
             fill: false,
@@ -609,7 +711,12 @@ function buildTagGraphs(data) {
                 var value = d.dataset.data[index];
                 return getExeStatusRowColor(value.ciResult);
             },
-            pointRadius: 4,
+            pointRadius: function (context) {
+                var index = context.dataIndex;
+                var value = context.dataset.data[index];
+
+                return value.comment === '' ? 4 : 8;
+            },
             pointHoverRadius: 6,
             hitRadius: 10,
             pointStyle: 'line',
@@ -704,6 +811,71 @@ function buildTagBarGraphs(data) {
     window.myLineTagBar.update();
 }
 
+function buildAvailabilityGraphs(data) {
+
+    let curves = data.curvesTime;
+
+    var len = curves.length;
+
+    let nbOK = 0;
+    let nbKO = 0;
+
+    let durOK = 0;
+    let durKO = 0;
+
+    for (var i = 0; i < len; i++) {
+        let newCurve = curves[i];
+        let lend = newCurve.points.length;
+        for (var j = 0; j < lend; j++) {
+            let dur = 0;
+            if (j === (lend - 1)) {
+                dur = 0;
+            } else {
+                dur = (new Date(newCurve.points[j + 1].x) - new Date(newCurve.points[j].x)) / 1000;
+            }
+            if ((newCurve.points[j].ciRes === "OK") || (newCurve.points[j].falseNegative)) {
+                nbOK++;
+                durOK = durOK + dur;
+            } else {
+                nbKO++;
+                durKO = durKO + dur;
+            }
+        }
+    }
+
+
+    configAvailability1.data.datasets = [];
+    configAvailability1.data.datasets.push({
+        data: [nbOK, nbKO],
+        backgroundColor: [getExeStatusRowColor("OK"), getExeStatusRowColor("KO")],
+//        label: 'Nb',
+//        labels: ["OK", "Others"]
+    });
+    configAvailability1.data.labels = ["nb OK", "nb KO"];
+
+    configAvailability2.data.datasets = [];
+    configAvailability2.data.datasets.push({
+        data: [durOK, durKO],
+        backgroundColor: [getExeStatusRowColor("OK"), getExeStatusRowColor("KO")],
+//        label: 'Nb',
+//        labels: ["OK", "Others"]
+    });
+    configAvailability2.data.labels = ["OK duration (s)", "KO duration (s)"];
+    configAvailability2.data.labels.display = false;
+//    display: true,
+
+//    configAvailability1.data.datasets = [nbOK, nbKO];
+//    configTagBar.data.labels = data.curvesTag;
+
+    document.getElementById('ChartAvailabilty1Counter').innerHTML = Math.round(nbOK / (nbOK + nbKO) * 100) + " %";
+    document.getElementById('ChartAvailabilty1CounterDet').innerHTML = "<b style='color:#e63757'>" + nbKO + "</b> / " + (nbOK + nbKO);
+    document.getElementById('ChartAvailabilty2Counter').innerHTML = Math.round(durOK / (durOK + durKO) * 100) + " %";
+    document.getElementById('ChartAvailabilty2CounterDet').innerHTML = "<b style='color:#e63757'>" + getHumanReadableDuration(durKO) + "</b> / " + getHumanReadableDuration((durOK + durKO));
+
+    window.myAvailability1.update();
+    window.myAvailability2.update();
+}
+
 
 function getLabel(tcDesc, country, env, robot, unit, party, type, testcaseid) {
     let lab = tcDesc;
@@ -750,6 +922,8 @@ function initGraph() {
     let tagscodatasets = [];
     let tagexedatasets = [];
     let tagbardatasets = [];
+    let availability1datasets = [];
+    let availability2datasets = [];
 
     configTagDur = {
         type: 'line',
@@ -780,6 +954,44 @@ function initGraph() {
         options: tagbaroption
     };
 
+    configAvailability1 = {
+        type: 'pie',
+        data: {
+            datasets: availability1datasets
+        },
+        options: {
+            circumference: Math.PI,
+            rotation: Math.PI,
+            responsive: true,
+            legend: {
+                display: false
+            },
+            title: {
+                display: true,
+                text: "Campaign Availability (Nb)"
+            }
+        }
+    };
+    configAvailability2 = {
+        type: 'pie',
+        data: {
+            datasets: availability2datasets
+        },
+        options: {
+            circumference: Math.PI,
+            rotation: Math.PI,
+            responsive: true,
+            legend: {
+                display: false
+            },
+            title: {
+                display: true,
+                text: "Campaign Availability (Time)"
+            }
+        }
+    };
+
+
     var ctx = document.getElementById('canvasTagDStat').getContext('2d');
     window.myLineTagDur = new Chart(ctx, configTagDur);
 
@@ -792,12 +1004,18 @@ function initGraph() {
     var ctx = document.getElementById('canvasTagBar').getContext('2d');
     window.myLineTagBar = new Chart(ctx, configTagBar);
 
+    var ctx = document.getElementById('canvasAvailability1').getContext('2d');
+    window.myAvailability1 = new Chart(ctx, configAvailability1);
+
+    var ctx = document.getElementById('canvasAvailability2').getContext('2d');
+    window.myAvailability2 = new Chart(ctx, configAvailability2);
+
     document.getElementById('canvasTagDStat').onclick = function (evt) {
         var activePoints = window.myLineTagDur.getElementAtEvent(event);
         // make sure click was on an actual point
         if (activePoints.length > 0) {
             let tag = window.myLineTagDur.data.datasets[activePoints[0]._datasetIndex].data[activePoints[0]._index].tag;
-            window.open('./ReportingExecutionByTag.jsp?Tag=' + tag, '_blank');
+            window.open('./ReportingExecutionByTag.jsp?Tag=' + tag);
         }
     };
 
@@ -806,7 +1024,7 @@ function initGraph() {
         // make sure click was on an actual point
         if (activePoints.length > 0) {
             let tag = window.myLineTagSco.data.datasets[activePoints[0]._datasetIndex].data[activePoints[0]._index].tag;
-            window.open('./ReportingExecutionByTag.jsp?Tag=' + tag, '_blank');
+            window.open('./ReportingExecutionByTag.jsp?Tag=' + tag);
         }
     };
 
@@ -815,7 +1033,7 @@ function initGraph() {
         // make sure click was on an actual point
         if (activePoints.length > 0) {
             let tag = window.myLineTagExe.data.datasets[activePoints[0]._datasetIndex].data[activePoints[0]._index].tag;
-            window.open('./ReportingExecutionByTag.jsp?Tag=' + tag, '_blank');
+            window.open('./ReportingExecutionByTag.jsp?Tag=' + tag);
         }
     };
 
@@ -824,7 +1042,7 @@ function initGraph() {
         // make sure click was on an actual point
         if (activePoints.length > 0) {
             let tag = window.myLineTagBar.data.labels[activePoints[0]._index];
-            window.open('./ReportingExecutionByTag.jsp?Tag=' + tag, '_blank');
+            window.open('./ReportingExecutionByTag.jsp?Tag=' + tag);
         }
     };
 

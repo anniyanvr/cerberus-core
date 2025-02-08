@@ -1,5 +1,5 @@
 /**
- * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * Cerberus Copyright (C) 2013 - 2025 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -48,10 +48,15 @@ public interface IFactoryTestCaseStepAction {
      * @param isFatal
      * @param description
      * @param screenshotFilename
+     * @param doScreenshotBefore
+     * @param doScreenshotAfter
+     * @param waitBefore
+     * @param waitAfter
      * @return
      */
     TestCaseStepAction create(String test, String testcase, int stepId, int actionId, int sort, String conditionOperator, String conditionValue1, String conditionValue2, String conditionValue3, JSONArray conditionOptions,
-            String action, String value1, String value2, String value3, JSONArray options, boolean isFatal, String description, String screenshotFilename);
+            String action, String value1, String value2, String value3, JSONArray options, boolean isFatal, String description, String screenshotFilename,
+            boolean doScreenshotBefore, boolean doScreenshotAfter, int waitBefore, int waitAfter);
 
     /**
      *
@@ -73,6 +78,10 @@ public interface IFactoryTestCaseStepAction {
      * @param isFatal
      * @param description
      * @param screenshotFilename
+     * @param doScreenshotBefore
+     * @param doScreenshotAfter
+     * @param waitBefore
+     * @param waitAfter
      * @param usrCreated
      * @param dateCreated
      * @param usrModif
@@ -80,6 +89,8 @@ public interface IFactoryTestCaseStepAction {
      * @return
      */
     TestCaseStepAction create(String test, String testcase, int stepId, int actionId, int sort, String conditionOperator, String conditionValue1, String conditionValue2, String conditionValue3, JSONArray conditionOptions,
-            String action, String value1, String value2, String value3, JSONArray options, boolean isFatal, String description, String screenshotFilename, String usrCreated, Timestamp dateCreated, String usrModif, Timestamp dateModif);
+            String action, String value1, String value2, String value3, JSONArray options, boolean isFatal, String description, String screenshotFilename,
+            boolean doScreenshotBefore, boolean doScreenshotAfter, int waitBefore, int waitAfter,
+            String usrCreated, Timestamp dateCreated, String usrModif, Timestamp dateModif);
 
 }

@@ -1,5 +1,5 @@
 /**
- * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * Cerberus Copyright (C) 2013 - 2025 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -96,5 +96,38 @@ public final class JSONUtil {
         } catch (IOException e) {
             return false;
         }
+    }
+
+    /**
+     * Verify if a value is present in a JSONArray
+     * @param array array to search
+     * @param value value to search
+     * @return false is value is not present, true if value is present
+     * @throws JSONException
+     */
+    public static boolean jsonArrayContains(JSONArray array, String value) throws JSONException {
+        for (int i = 0; i < array.length(); i++) {
+            if (array.getString(i).equals(value)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Create a JSONArray with distinct values from another JSONArray
+     * @param source source array with duplicated values
+     * @param target target array with distinct values
+     * @return JSONArray with distinct values
+     * @throws JSONException
+     */
+    public static JSONArray jsonArrayAddUniqueElement(JSONArray source, JSONArray target) throws JSONException {
+        for (int i = 0; i < source.length(); i++) {
+            String element = source.getString(i);
+            if (!jsonArrayContains(target, element)) {
+                target.put(element);
+            }
+        }
+        return target;
     }
 }

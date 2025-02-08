@@ -1,5 +1,5 @@
 /**
- * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * Cerberus Copyright (C) 2013 - 2025 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -27,6 +27,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.cerberus.core.crud.entity.LogEvent;
 import org.cerberus.core.engine.entity.MessageEvent;
 import org.cerberus.core.crud.entity.Test;
 import org.cerberus.core.crud.service.ILogEventService;
@@ -89,7 +90,7 @@ public class UpdateTest extends HttpServlet {
         /**
          * Checking all constrains before calling the services.
          */
-        if (StringUtil.isEmpty(test)) {
+        if (StringUtil.isEmptyOrNull(test)) {
             msg = new MessageEvent(MessageEventEnum.DATA_OPERATION_ERROR_EXPECTED);
             msg.setDescription(msg.getDescription().replace("%ITEM%", "Test")
                     .replace("%OPERATION%", "Update")
@@ -130,7 +131,7 @@ public class UpdateTest extends HttpServlet {
                      * Update was successful. Adding Log entry.
                      */
                     ILogEventService logEventService = appContext.getBean(LogEventService.class);
-                    logEventService.createForPrivateCalls("/UpdateTest", "UPDATE", "Updated Test : ['" + originalTest + "']", request);
+                    logEventService.createForPrivateCalls("/UpdateTest", "UPDATE", LogEvent.STATUS_INFO, "Updated Test : ['" + originalTest + "']", request);
                 }
             }
 

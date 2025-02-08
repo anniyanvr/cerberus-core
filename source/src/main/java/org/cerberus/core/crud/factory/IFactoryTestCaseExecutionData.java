@@ -1,5 +1,5 @@
 /**
- * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * Cerberus Copyright (C) 2013 - 2025 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -28,9 +28,9 @@ import org.cerberus.core.crud.entity.TestCaseExecutionData;
  */
 public interface IFactoryTestCaseExecutionData {
 
-    TestCaseExecutionData create(long id, String property, int index, String description, String value, String type, int rank, String value1, String value2,
+    TestCaseExecutionData create(long id, String property, int index, String description, String value, String type, int rank, String value1, String value2, String value3,
             String rC, String rMessage, long start, long end, long startLong, long endLong, MessageEvent message, int retrynb, int retryperiod,
-            String database, String value1Init, String value2Init, String LengthInit, String Length, int rowLimit, String nature,
+            String database, String value1Init, String value2Init,String value3Init, String LengthInit, String Length, int rowLimit, String nature,
             String sytem, String environment, String country, String dataLib, String jsonResult, String fromCache);
 
 }

@@ -1,5 +1,5 @@
 /**
- * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * Cerberus Copyright (C) 2013 - 2025 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -43,6 +43,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import javax.servlet.annotation.WebServlet;
+import org.cerberus.core.crud.entity.LogEvent;
 
 /**
  * @author bcivel
@@ -70,15 +71,15 @@ public class DeleteUser extends HttpServlet {
         ans.setResultMessage(msg);
         PolicyFactory policy = Sanitizers.FORMATTING.and(Sanitizers.LINKS);
         String charset = request.getCharacterEncoding() == null ? "UTF-8" : request.getCharacterEncoding();
-
-        String login = ParameterParserUtil.parseStringParamAndDecodeAndSanitize(request.getParameter("login"), "", charset);
-
+        LOG.debug(request.getParameter("login"));
+        String login = ParameterParserUtil.parseStringParam(request.getParameter("login"), "");
+        LOG.debug(login);
         boolean userHasPermissions = request.isUserInRole("Administrator");
 
         /**
          * Checking all constrains before calling the services.
          */
-        if (StringUtil.isEmpty(login)) {
+        if (StringUtil.isEmptyOrNull(login)) {
             msg = new MessageEvent(MessageEventEnum.DATA_OPERATION_ERROR_EXPECTED);
             msg.setDescription(msg.getDescription().replace("%ITEM%", "User")
                     .replace("%OPERATION%", "Delete")
@@ -108,7 +109,7 @@ public class DeleteUser extends HttpServlet {
                          * Object updated. Adding Log entry.
                          */
                         ILogEventService logEventService = appContext.getBean(LogEventService.class);
-                        logEventService.createForPrivateCalls("/DeleteUser", "DELETE", "Delete User : ['" + login + "']", request);
+                        logEventService.createForPrivateCalls("/DeleteUser", "DELETE", LogEvent.STATUS_INFO, "Delete User : ['" + login + "']", request);
                     }
                 } else {
                     msg = new MessageEvent(MessageEventEnum.DATA_OPERATION_ERROR_EXPECTED);

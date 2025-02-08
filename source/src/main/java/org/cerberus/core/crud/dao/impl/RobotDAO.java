@@ -1,5 +1,5 @@
 /**
- * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * Cerberus Copyright (C) 2013 - 2025 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -19,7 +19,6 @@
  */
 package org.cerberus.core.crud.dao.impl;
 
-import com.google.common.base.Strings;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.cerberus.core.crud.dao.IRobotDAO;
@@ -143,7 +142,7 @@ public class RobotDAO implements IRobotDAO {
         }
         query.append(searchSQL);
 
-        if (!StringUtil.isEmpty(typeRobot)) {
+        if (!StringUtil.isEmptyOrNull(typeRobot)) {
             query.append(" and type=? ");
         }
 
@@ -162,7 +161,7 @@ public class RobotDAO implements IRobotDAO {
                     }
                 }
 
-                if (!StringUtil.isEmpty(typeRobot)) {
+                if (!StringUtil.isEmptyOrNull(typeRobot)) {
                     preStat.setString(i++, typeRobot);
                 }
 
@@ -253,7 +252,7 @@ public class RobotDAO implements IRobotDAO {
 
         searchSQL.append(" where 1=1 ");
 
-        if (!StringUtil.isEmpty(searchTerm)) {
+        if (!StringUtil.isEmptyOrNull(searchTerm)) {
             searchSQL.append(" and (`platform` like ?");
             searchSQL.append(" or `description` like ?");
             searchSQL.append(" or `robot` like ?");
@@ -274,7 +273,7 @@ public class RobotDAO implements IRobotDAO {
         }
         query.append(searchSQL);
 
-        if (!StringUtil.isEmpty(column)) {
+        if (!StringUtil.isEmptyOrNull(column)) {
             query.append(" order by `").append(column).append("` ").append(dir);
         }
 
@@ -293,7 +292,7 @@ public class RobotDAO implements IRobotDAO {
             PreparedStatement preStat = connection.prepareStatement(query.toString());
             try {
                 int i = 1;
-                if (!Strings.isNullOrEmpty(searchTerm)) {
+                if (!StringUtil.isEmptyOrNull(searchTerm)) {
                     preStat.setString(i++, "%" + searchTerm + "%");
                     preStat.setString(i++, "%" + searchTerm + "%");
                     preStat.setString(i++, "%" + searchTerm + "%");
@@ -381,9 +380,9 @@ public class RobotDAO implements IRobotDAO {
     public Answer create(Robot robot) {
         MessageEvent msg = null;
         StringBuilder query = new StringBuilder();
-        query.append("INSERT INTO robot (`robot`, `platform`,`browser`, `version`,`active` , `description`, `useragent`, `screensize`, `ProfileFolder`, `ExtraParam`, `IsAcceptInsecureCerts`, `robotdecli`, `lbexemethod`, `type`) ");
+        query.append("INSERT INTO robot (`robot`, `platform`,`browser`, `version`,`isactive` , `description`, `useragent`, `screensize`, `ProfileFolder`, `AcceptNotifications`, `ExtraParam`, `IsAcceptInsecureCerts`, `robotdecli`, `lbexemethod`, `type`) ");
 
-        query.append("VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
+        query.append("VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
 
         // Debug message on SQL.
         if (LOG.isDebugEnabled()) {
@@ -398,11 +397,12 @@ public class RobotDAO implements IRobotDAO {
                 preStat.setString(i++, robot.getPlatform());
                 preStat.setString(i++, robot.getBrowser());
                 preStat.setString(i++, robot.getVersion());
-                preStat.setString(i++, robot.getActive());
+                preStat.setBoolean(i++, robot.isActive());
                 preStat.setString(i++, robot.getDescription());
                 preStat.setString(i++, robot.getUserAgent());
                 preStat.setString(i++, robot.getScreenSize());
                 preStat.setString(i++, robot.getProfileFolder());
+                preStat.setInt(i++, robot.getAcceptNotifications());
                 preStat.setString(i++, robot.getExtraParam());
                 preStat.setBoolean(i++, robot.isAcceptInsecureCerts());
                 preStat.setString(i++, robot.getRobotDecli());
@@ -488,7 +488,7 @@ public class RobotDAO implements IRobotDAO {
         MessageEvent msg = null;
         StringBuilder query = new StringBuilder();
         query.append("UPDATE robot SET robot= ? ,");
-        query.append("platform = ?, browser = ? , version = ?, active=?, description = ?, useragent = ?, screensize = ?, ProfileFolder = ?, ExtraParam = ?, IsAcceptInsecureCerts = ?, robotdecli = ?, lbexemethod = ?, type = ?, dateModif = NOW() ");
+        query.append("platform = ?, browser = ? , version = ?, isactive=?, description = ?, useragent = ?, screensize = ?, ProfileFolder = ?, AcceptNotifications = ?, ExtraParam = ?, IsAcceptInsecureCerts = ?, robotdecli = ?, lbexemethod = ?, type = ?, dateModif = NOW() ");
         query.append("WHERE robotID = ?");
 
         // Debug message on SQL.
@@ -504,11 +504,12 @@ public class RobotDAO implements IRobotDAO {
                 preStat.setString(cpt++, robot.getPlatform());
                 preStat.setString(cpt++, robot.getBrowser());
                 preStat.setString(cpt++, robot.getVersion());
-                preStat.setString(cpt++, robot.getActive());
+                preStat.setBoolean(cpt++, robot.isActive());
                 preStat.setString(cpt++, robot.getDescription());
                 preStat.setString(cpt++, robot.getUserAgent());
                 preStat.setString(cpt++, robot.getScreenSize());
                 preStat.setString(cpt++, robot.getProfileFolder());
+                preStat.setInt(cpt++, robot.getAcceptNotifications());
                 preStat.setString(cpt++, robot.getExtraParam());
                 preStat.setBoolean(cpt++, robot.isAcceptInsecureCerts());
                 preStat.setString(cpt++, robot.getRobotDecli());
@@ -549,7 +550,7 @@ public class RobotDAO implements IRobotDAO {
         String platform = ParameterParserUtil.parseStringParam(rs.getString("platform"), "");
         String browser = ParameterParserUtil.parseStringParam(rs.getString("browser"), "");
         String version = ParameterParserUtil.parseStringParam(rs.getString("version"), "");
-        String active = ParameterParserUtil.parseStringParam(rs.getString("active"), "");
+        boolean isActive = ParameterParserUtil.parseBooleanParam(rs.getString("isActive"), true);
         String lbexemethod = ParameterParserUtil.parseStringParam(rs.getString("lbexemethod"), "");
         String description = ParameterParserUtil.parseStringParam(rs.getString("description"), "");
         String userAgent = ParameterParserUtil.parseStringParam(rs.getString("useragent"), "");
@@ -557,12 +558,13 @@ public class RobotDAO implements IRobotDAO {
         String profileFolder = ParameterParserUtil.parseStringParam(rs.getString("ProfileFolder"), "");
         String robotDecli = ParameterParserUtil.parseStringParam(rs.getString("robotdecli"), "");
         String type = ParameterParserUtil.parseStringParam(rs.getString("type"), "");
+        Integer acceptNotifications = ParameterParserUtil.parseIntegerParam(rs.getString("AcceptNotifications"), 0);
         String extraParam = ParameterParserUtil.parseStringParam(rs.getString("ExtraParam"), "");
         boolean isAcceptInsecureCerts = rs.getBoolean("isAcceptInsecureCerts");
 
         //TODO remove when working in test with mockito and autowired
         factoryRobot = new FactoryRobot();
-        return factoryRobot.create(robotID, robot, platform, browser, version, active, lbexemethod, description, userAgent, screenSize, profileFolder, extraParam, isAcceptInsecureCerts, robotDecli, type);
+        return factoryRobot.create(robotID, robot, platform, browser, version, isActive, lbexemethod, description, userAgent, screenSize, profileFolder, acceptNotifications, extraParam, isAcceptInsecureCerts, robotDecli, type);
     }
 
     @Override
@@ -587,7 +589,7 @@ public class RobotDAO implements IRobotDAO {
             searchSQL.append(" and 1=0 ");
         }
 
-        if (!StringUtil.isEmpty(searchTerm)) {
+        if (!StringUtil.isEmptyOrNull(searchTerm)) {
             searchSQL.append(" and (`platform` like ?");
             searchSQL.append(" or `description` like ?");
             searchSQL.append(" or `robot` like ?");
@@ -619,7 +621,7 @@ public class RobotDAO implements IRobotDAO {
              Statement stm = connection.createStatement();) {
 
             int i = 1;
-            if (!Strings.isNullOrEmpty(searchTerm)) {
+            if (!StringUtil.isEmptyOrNull(searchTerm)) {
                 preStat.setString(i++, "%" + searchTerm + "%");
                 preStat.setString(i++, "%" + searchTerm + "%");
                 preStat.setString(i++, "%" + searchTerm + "%");

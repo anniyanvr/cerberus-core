@@ -1,5 +1,5 @@
 /**
- * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * Cerberus Copyright (C) 2013 - 2025 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -19,6 +19,13 @@
  */
 package org.cerberus.core.crud.dao.impl;
 
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Timestamp;
+import java.util.ArrayList;
+import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.cerberus.core.crud.dao.ICountryEnvironmentParametersDAO;
@@ -38,13 +45,6 @@ import org.cerberus.core.util.answer.AnswerItem;
 import org.cerberus.core.util.answer.AnswerList;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
-
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * {Insert class description here}
@@ -136,6 +136,58 @@ public class CountryEnvironmentParametersDAO implements ICountryEnvironmentParam
         //sets the message
         ans.setResultMessage(msg);
         return ans;
+    }
+
+    @Override
+    public List<CountryEnvironmentParameters> readByKeyByApplication(String application) throws CerberusException {
+        List<CountryEnvironmentParameters> result = new ArrayList<>();
+        boolean throwex = false;
+        StringBuilder query = new StringBuilder();
+        query.append("SELECT * FROM countryenvironmentparameters cea ");
+        query.append(" WHERE cea.Application = ? ");
+
+        // Debug message on SQL.
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("SQL : " + query);
+            LOG.debug("SQL.param.application : " + application);
+        }
+
+        Connection connection = this.databaseSpring.connect();
+        try {
+            PreparedStatement preStat = connection.prepareStatement(query.toString());
+            try {
+                preStat.setString(1, application);
+
+                ResultSet resultSet = preStat.executeQuery();
+                try {
+                    while (resultSet.next()) {
+                        result.add(loadFromResultSet(resultSet));
+                    }
+                } catch (SQLException exception) {
+                    LOG.warn("Unable to execute query : " + exception.toString());
+                } finally {
+                    resultSet.close();
+                }
+            } catch (SQLException exception) {
+                LOG.warn("Unable to execute query : " + exception.toString());
+            } finally {
+                preStat.close();
+            }
+        } catch (SQLException exception) {
+            LOG.warn("Unable to execute query : " + exception.toString());
+        } finally {
+            try {
+                if (connection != null) {
+                    connection.close();
+                }
+            } catch (SQLException e) {
+                LOG.warn(e.toString());
+            }
+        }
+        if (throwex) {
+            throw new CerberusException(new MessageGeneral(MessageGeneralEnum.NO_DATA_FOUND));
+        }
+        return result;
     }
 
     @Override
@@ -272,11 +324,12 @@ public class CountryEnvironmentParametersDAO implements ICountryEnvironmentParam
         StringBuilder query = new StringBuilder();
         //SQL_CALC_FOUND_ROWS allows to retrieve the total number of columns by disrearding the limit clauses that 
         //were applied -- used for pagination p
-        query.append("SELECT SQL_CALC_FOUND_ROWS * FROM countryenvironmentparameters cea");
+        query.append("SELECT SQL_CALC_FOUND_ROWS cea.* FROM countryenvironmentparameters cea");
+        query.append(" JOIN application app on app.Application = cea.Application and app.`System` = cea.`System` ");
 
         searchSQL.append(" where 1=1 ");
 
-        if (!StringUtil.isEmpty(searchTerm)) {
+        if (!StringUtil.isEmptyOrNull(searchTerm)) {
             searchSQL.append(" and (cea.`system` like ?");
             searchSQL.append(" or cea.`country` like ?");
             searchSQL.append(" or cea.`environment` like ?");
@@ -286,25 +339,25 @@ public class CountryEnvironmentParametersDAO implements ICountryEnvironmentParam
             searchSQL.append(" or cea.`URL` like ?");
             searchSQL.append(" or cea.`URLLOGIN` like ?)");
         }
-        if (!StringUtil.isEmpty(individualSearch)) {
+        if (!StringUtil.isEmptyOrNull(individualSearch)) {
             searchSQL.append(" and (`?`)");
         }
-        if (!StringUtil.isEmpty(system)) {
+        if (!StringUtil.isEmptyOrNull(system)) {
             searchSQL.append(" and (cea.`System` = ? )");
         }
-        if (!StringUtil.isEmpty(country)) {
+        if (!StringUtil.isEmptyOrNull(country)) {
             searchSQL.append(" and (cea.`country` = ? )");
         }
-        if (!StringUtil.isEmpty(environment)) {
+        if (!StringUtil.isEmptyOrNull(environment)) {
             searchSQL.append(" and (cea.`environment` = ? )");
         }
-        if (!StringUtil.isEmpty(application)) {
+        if (!StringUtil.isEmptyOrNull(application)) {
             searchSQL.append(" and (cea.`application` = ? )");
         }
         query.append(searchSQL);
 
-        if (!StringUtil.isEmpty(column)) {
-            query.append(" order by `").append(column).append("` ").append(dir);
+        if (!StringUtil.isEmptyOrNull(column)) {
+            query.append(" order by ").append(column).append(" ").append(dir);
         }
 
         if ((amount <= 0) || (amount >= MAX_ROW_SELECTED)) {
@@ -327,7 +380,7 @@ public class CountryEnvironmentParametersDAO implements ICountryEnvironmentParam
             PreparedStatement preStat = connection.prepareStatement(query.toString());
             try {
                 int i = 1;
-                if (!StringUtil.isEmpty(searchTerm)) {
+                if (!StringUtil.isEmptyOrNull(searchTerm)) {
                     preStat.setString(i++, "%" + searchTerm + "%");
                     preStat.setString(i++, "%" + searchTerm + "%");
                     preStat.setString(i++, "%" + searchTerm + "%");
@@ -337,20 +390,128 @@ public class CountryEnvironmentParametersDAO implements ICountryEnvironmentParam
                     preStat.setString(i++, "%" + searchTerm + "%");
                     preStat.setString(i++, "%" + searchTerm + "%");
                 }
-                if (!StringUtil.isEmpty(individualSearch)) {
+                if (!StringUtil.isEmptyOrNull(individualSearch)) {
                     preStat.setString(i++, individualSearch);
                 }
-                if (!StringUtil.isEmpty(system)) {
+                if (!StringUtil.isEmptyOrNull(system)) {
                     preStat.setString(i++, system);
                 }
-                if (!StringUtil.isEmpty(country)) {
+                if (!StringUtil.isEmptyOrNull(country)) {
                     preStat.setString(i++, country);
                 }
-                if (!StringUtil.isEmpty(environment)) {
+                if (!StringUtil.isEmptyOrNull(environment)) {
                     preStat.setString(i++, environment);
                 }
-                if (!StringUtil.isEmpty(application)) {
+                if (!StringUtil.isEmptyOrNull(application)) {
                     preStat.setString(i++, application);
+                }
+                ResultSet resultSet = preStat.executeQuery();
+                try {
+                    //gets the data
+                    while (resultSet.next()) {
+                        objectList.add(this.loadFromResultSet(resultSet));
+                    }
+
+                    //get the total number of rows
+                    resultSet = preStat.executeQuery("SELECT FOUND_ROWS()");
+                    int nrTotalRows = 0;
+
+                    if (resultSet != null && resultSet.next()) {
+                        nrTotalRows = resultSet.getInt(1);
+                    }
+
+                    if (objectList.size() >= MAX_ROW_SELECTED) { // Result of SQl was limited by MAX_ROW_SELECTED constrain. That means that we may miss some lines in the resultList.
+                        LOG.error("Partial Result in the query.");
+                        msg = new MessageEvent(MessageEventEnum.DATA_OPERATION_WARNING_PARTIAL_RESULT);
+                        msg.setDescription(msg.getDescription().replace("%DESCRIPTION%", "Maximum row reached : " + MAX_ROW_SELECTED));
+                        response = new AnswerList<>(objectList, nrTotalRows);
+                    } else if (objectList.size() <= 0) {
+                        msg = new MessageEvent(MessageEventEnum.DATA_OPERATION_NO_DATA_FOUND);
+                        response = new AnswerList<>(objectList, nrTotalRows);
+                    } else {
+                        msg = new MessageEvent(MessageEventEnum.DATA_OPERATION_OK);
+                        msg.setDescription(msg.getDescription().replace("%ITEM%", OBJECT_NAME).replace("%OPERATION%", "SELECT"));
+                        response = new AnswerList<>(objectList, nrTotalRows);
+                    }
+
+                } catch (SQLException exception) {
+                    LOG.error("Unable to execute query : " + exception.toString());
+                    msg = new MessageEvent(MessageEventEnum.DATA_OPERATION_ERROR_UNEXPECTED);
+                    msg.setDescription(msg.getDescription().replace("%DESCRIPTION%", exception.toString()));
+
+                } finally {
+                    if (resultSet != null) {
+                        resultSet.close();
+                    }
+                }
+
+            } catch (SQLException exception) {
+                LOG.error("Unable to execute query : " + exception.toString());
+                msg = new MessageEvent(MessageEventEnum.DATA_OPERATION_ERROR_UNEXPECTED);
+                msg.setDescription(msg.getDescription().replace("%DESCRIPTION%", exception.toString()));
+            } finally {
+                if (preStat != null) {
+                    preStat.close();
+                }
+            }
+
+        } catch (SQLException exception) {
+            LOG.error("Unable to execute query : " + exception.toString());
+            msg = new MessageEvent(MessageEventEnum.DATA_OPERATION_ERROR_UNEXPECTED);
+            msg.setDescription(msg.getDescription().replace("%DESCRIPTION%", exception.toString()));
+        } finally {
+            try {
+                if (!this.databaseSpring.isOnTransaction()) {
+                    if (connection != null) {
+                        connection.close();
+                    }
+                }
+            } catch (SQLException exception) {
+                LOG.warn("Unable to close connection : " + exception.toString());
+            }
+        }
+
+        response.setResultMessage(msg);
+        response.setDataList(objectList);
+        return response;
+    }
+
+    @Override
+    public AnswerList<CountryEnvironmentParameters> readDependenciesByVarious(String system, String country, String environment) {
+        AnswerList<CountryEnvironmentParameters> response = new AnswerList<>();
+        MessageEvent msg = new MessageEvent(MessageEventEnum.DATA_OPERATION_ERROR_UNEXPECTED);
+        msg.setDescription(msg.getDescription().replace("%DESCRIPTION%", ""));
+        List<CountryEnvironmentParameters> objectList = new ArrayList<>();
+
+        StringBuilder query = new StringBuilder();
+        //SQL_CALC_FOUND_ROWS allows to retrieve the total number of columns by disrearding the limit clauses that 
+        //were applied -- used for pagination p
+        query.append("SELECT SQL_CALC_FOUND_ROWS cea.* FROM countryenvironmentparameters cea");
+        query.append(" JOIN application app on app.Application = cea.Application and app.`System` = cea.`System` ");
+        query.append(" JOIN (SELECT systemLink , CountryLink , EnvironmentLink  from countryenvlink where `system` = ? and Country = ? and Environment = ? ) as lnk ");
+        query.append("   where cea.`system` = lnk.systemLink and cea.`Country` = lnk.CountryLink and cea.`Environment` = lnk.EnvironmentLink ;  ");
+
+        // Debug message on SQL.
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("SQL : " + query.toString());
+            LOG.debug("SQL.param.system : " + system);
+            LOG.debug("SQL.param.country : " + country);
+            LOG.debug("SQL.param.environment : " + environment);
+        }
+
+        Connection connection = this.databaseSpring.connect();
+        try {
+            PreparedStatement preStat = connection.prepareStatement(query.toString());
+            try {
+                int i = 1;
+                if (!StringUtil.isEmptyOrNull(system)) {
+                    preStat.setString(i++, system);
+                }
+                if (!StringUtil.isEmptyOrNull(country)) {
+                    preStat.setString(i++, country);
+                }
+                if (!StringUtil.isEmptyOrNull(environment)) {
+                    preStat.setString(i++, environment);
                 }
                 ResultSet resultSet = preStat.executeQuery();
                 try {
@@ -427,32 +588,38 @@ public class CountryEnvironmentParametersDAO implements ICountryEnvironmentParam
     public Answer create(CountryEnvironmentParameters object) {
         MessageEvent msg = null;
         StringBuilder query = new StringBuilder();
-        query.append("INSERT INTO `countryenvironmentparameters` (`system`, `country`, `environment`, `application`, `ip`, `domain`, `url`, `urllogin`, `Var1`, `Var2`, `Var3`, `Var4`, `poolSize`, `mobileActivity`, `mobilePackage`) ");
-        query.append("VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
+        query.append("INSERT INTO `countryenvironmentparameters` (`system`, `country`, `environment`, `application`, `isActive`, `ip`, `domain`, `url`, `urllogin`, `Var1`, `Var2`, `Var3`, `Var4`, `Secret1`, `Secret2`, `poolSize`, `mobileActivity`, `mobilePackage`, `UsrCreated`) ");
+        query.append("VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
 
         // Debug message on SQL.
         if (LOG.isDebugEnabled()) {
             LOG.debug("SQL : " + query.toString());
+            LOG.debug("SQL.param.usrCreated : " + object.getUsrCreated());
         }
         Connection connection = this.databaseSpring.connect();
         try {
             PreparedStatement preStat = connection.prepareStatement(query.toString());
             try {
-                preStat.setString(1, object.getSystem());
-                preStat.setString(2, object.getCountry());
-                preStat.setString(3, object.getEnvironment());
-                preStat.setString(4, object.getApplication());
-                preStat.setString(5, object.getIp());
-                preStat.setString(6, object.getDomain());
-                preStat.setString(7, object.getUrl());
-                preStat.setString(8, object.getUrlLogin());
-                preStat.setString(9, object.getVar1());
-                preStat.setString(10, object.getVar2());
-                preStat.setString(11, object.getVar3());
-                preStat.setString(12, object.getVar4());
-                preStat.setInt(13, object.getPoolSize());
-                preStat.setString(14, object.getMobileActivity());
-                preStat.setString(15, object.getMobilePackage());
+                int i=1;
+                preStat.setString(i++, object.getSystem());
+                preStat.setString(i++, object.getCountry());
+                preStat.setString(i++, object.getEnvironment());
+                preStat.setString(i++, object.getApplication());
+                preStat.setBoolean(i++, object.isActive());
+                preStat.setString(i++, object.getIp());
+                preStat.setString(i++, object.getDomain());
+                preStat.setString(i++, object.getUrl());
+                preStat.setString(i++, object.getUrlLogin());
+                preStat.setString(i++, object.getVar1());
+                preStat.setString(i++, object.getVar2());
+                preStat.setString(i++, object.getVar3());
+                preStat.setString(i++, object.getVar4());
+                preStat.setString(i++, object.getSecret1());
+                preStat.setString(i++, object.getSecret2());
+                preStat.setInt(i++, object.getPoolSize());
+                preStat.setString(i++, object.getMobileActivity());
+                preStat.setString(i++, object.getMobilePackage());
+                preStat.setString(i++, object.getUsrCreated());
 
                 preStat.executeUpdate();
                 msg = new MessageEvent(MessageEventEnum.DATA_OPERATION_OK);
@@ -534,7 +701,8 @@ public class CountryEnvironmentParametersDAO implements ICountryEnvironmentParam
     @Override
     public Answer update(CountryEnvironmentParameters object) {
         MessageEvent msg = null;
-        final String query = "UPDATE `countryenvironmentparameters` SET `IP`=?, `URL`=?, `URLLOGIN`=?, `domain`=?, Var1=?, Var2=?, Var3=?, Var4=?, poolSize=?, mobileActivity=?, mobilePackage=?  where `system`=? and `country`=? and `environment`=? and `application`=? ";
+        final String query = "UPDATE `countryenvironmentparameters` SET `IsActive`=?, `IP`=?, `URL`=?, `URLLOGIN`=?, `domain`=?, Var1=?, Var2=?, Var3=?, Var4=?, Secret1=?, Secret2=?, poolSize=?, mobileActivity=?, mobilePackage=?, `UsrModif`= ?, `DateModif` = NOW()"
+                + " where `system`=? and `country`=? and `environment`=? and `application`=? ";
 
         // Debug message on SQL.
         if (LOG.isDebugEnabled()) {
@@ -545,6 +713,7 @@ public class CountryEnvironmentParametersDAO implements ICountryEnvironmentParam
             PreparedStatement preStat = connection.prepareStatement(query);
             try {
                 int i = 1;
+                preStat.setBoolean(i++, object.isActive());
                 preStat.setString(i++, object.getIp());
                 preStat.setString(i++, object.getUrl());
                 preStat.setString(i++, object.getUrlLogin());
@@ -553,14 +722,16 @@ public class CountryEnvironmentParametersDAO implements ICountryEnvironmentParam
                 preStat.setString(i++, object.getVar2());
                 preStat.setString(i++, object.getVar3());
                 preStat.setString(i++, object.getVar4());
+                preStat.setString(i++, object.getSecret1());
+                preStat.setString(i++, object.getSecret2());
                 preStat.setInt(i++, object.getPoolSize());
                 preStat.setString(i++, object.getMobileActivity());
                 preStat.setString(i++, object.getMobilePackage());
+                preStat.setString(i++, object.getUsrModif());
                 preStat.setString(i++, object.getSystem());
                 preStat.setString(i++, object.getCountry());
                 preStat.setString(i++, object.getEnvironment());
                 preStat.setString(i++, object.getApplication());
-
 
                 preStat.executeUpdate();
                 msg = new MessageEvent(MessageEventEnum.DATA_OPERATION_OK);
@@ -568,7 +739,7 @@ public class CountryEnvironmentParametersDAO implements ICountryEnvironmentParam
             } catch (SQLException exception) {
                 LOG.error("Unable to execute query : " + exception.toString());
                 msg = new MessageEvent(MessageEventEnum.DATA_OPERATION_ERROR_UNEXPECTED);
-                msg.setDescription(msg.getDescription().replace("%DESCRIPTION%", exception.toString()));
+                msg.setDescription(msg.getDescription().replace("%DESCRIPTION%", "Unable to execute query : " + exception.toString()));
             } finally {
                 preStat.close();
             }
@@ -593,6 +764,7 @@ public class CountryEnvironmentParametersDAO implements ICountryEnvironmentParam
         String count = resultSet.getString("cea.Country");
         String env = resultSet.getString("cea.Environment");
         String application = resultSet.getString("cea.application");
+        boolean isActive = resultSet.getBoolean("cea.isActive");
         String ip = resultSet.getString("cea.ip");
         String domain = resultSet.getString("cea.domain");
         String url = resultSet.getString("cea.url");
@@ -601,6 +773,8 @@ public class CountryEnvironmentParametersDAO implements ICountryEnvironmentParam
         String var2 = resultSet.getString("cea.Var2");
         String var3 = resultSet.getString("cea.Var3");
         String var4 = resultSet.getString("cea.Var4");
+        String secret1 = resultSet.getString("cea.Secret1");
+        String secret2 = resultSet.getString("cea.Secret2");
         String mobileActivity = resultSet.getString("cea.mobileActivity");
         if (mobileActivity == null) {
             mobileActivity = "";
@@ -609,9 +783,14 @@ public class CountryEnvironmentParametersDAO implements ICountryEnvironmentParam
         if (mobilePackage == null) {
             mobilePackage = "";
         }
-
         int poolSize = resultSet.getInt("cea.poolSize");
-        return factoryCountryEnvironmentParameters.create(system, count, env, application, ip, domain, url, urllogin, var1, var2, var3, var4, poolSize, mobileActivity, mobilePackage);
+        String usrModif = resultSet.getString("cea.UsrModif");
+        String usrCreated = resultSet.getString("cea.UsrCreated");
+        Timestamp dateCreated = resultSet.getTimestamp("cea.DateCreated");
+        Timestamp dateModif = resultSet.getTimestamp("cea.DateModif");
+
+        return factoryCountryEnvironmentParameters.create(system, count, env, application, isActive, ip, domain, url, urllogin, var1, var2, var3, var4, secret1, secret2,
+                poolSize, mobileActivity, mobilePackage, usrCreated, dateCreated, usrModif, dateModif);
     }
 
 }

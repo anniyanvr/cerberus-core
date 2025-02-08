@@ -1,5 +1,5 @@
 /**
- * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * Cerberus Copyright (C) 2013 - 2025 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -44,6 +44,7 @@ import org.apache.http.ssl.SSLContextBuilder;
 import org.apache.http.util.EntityUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.cerberus.core.crud.entity.LogEvent;
 import org.cerberus.core.crud.entity.Parameter;
 import org.cerberus.core.crud.entity.Tag;
 import org.cerberus.core.crud.entity.TestCase;
@@ -157,9 +158,9 @@ public class XRayService implements IXRayService {
 
                 JSONObject xRayRequest = new JSONObject();
 
-                LOG.debug("Calling JIRA XRay TestExecution creation. {}", execution.getId());
+                LOG.debug("Checking call JIRA XRay TestExecution creation. {}", execution.getId());
 
-                if (!StringUtil.isEmpty(execution.getTag())) {
+                if (!StringUtil.isEmptyOrNull(execution.getTag())) {
                     currentTag = tagService.convert(tagService.readByKey(execution.getTag()));
 
                     if ((currentTag != null)) {
@@ -167,13 +168,13 @@ public class XRayService implements IXRayService {
                         int lock = 0;
 
                         // We lock the tag updating it to PENDING when empty.
-                        if (StringUtil.isEmpty(currentTag.getXRayTestExecution())) {
+                        if (StringUtil.isEmptyOrNull(currentTag.getXRayTestExecution())) {
                             lock = tagService.lockXRayTestExecution(currentTag.getTag(), currentTag);
-                            LOG.debug("Lock attempt : {}", lock);
+                            LOG.debug("Lock attempt : {} on {}", lock, execution.getId());
                         }
 
                         if (lock == 0) {
-
+                            currentTag.setXRayTestExecution("PENDING");
                             int maxIteration = 0;
                             // We wait that JIRA provide the Epic and Cerberus update it.
                             while ("PENDING".equals(currentTag.getXRayTestExecution()) && maxIteration++ < 20) {
@@ -259,7 +260,7 @@ public class XRayService implements IXRayService {
                                 LOG.debug("XRay Test Execution request http return code : " + rc);
                                 String responseString = EntityUtils.toString(response.getEntity());
                                 LOG.debug("Response : {}", responseString);
-                                JSONObject xRayResponse = new JSONObject(responseString);
+                                JSONObject xRayResponse = getXRayResponseJSON(execution, responseString);
                                 String xrayURL = "";
                                 String xrayTestExecution = "";
                                 if (xRayResponse.has("key")) {
@@ -277,22 +278,21 @@ public class XRayService implements IXRayService {
                                     LOG.debug("Setting new XRay TestExecution '{}' to tag '{}'", xRayResponse.getString("key"), currentTag.getTag());
                                 } else {
                                     LOG.warn("XRay Test Execution request http return code : {} is missing 'key' entry.", rc);
-                                    String responseString1 = EntityUtils.toString(response.getEntity());
-                                    String message = "Xray Execution creation request to '" + xRayUrl + "' failed with http return code : " + rc + ". and no 'key' entry. " + responseString1;
-                                    logEventService.createForPrivateCalls("XRAY", "APICALL", message);
+                                    String message = "Xray Execution creation request to '" + xRayUrl + "' failed with http return code : " + rc + ". and no 'key' entry. " + responseString;
+                                    logEventService.createForPrivateCalls("XRAY", "APICALL", LogEvent.STATUS_WARN, message);
                                     currentTag.setXRayURL("");
                                     currentTag.setXRayTestExecution("ERROR");
                                     currentTag.setXRayMessage(message);
                                     tagService.updateXRayTestExecution(currentTag.getTag(), currentTag);
                                     LOG.warn("Message sent to " + xRayUrl + " :");
                                     LOG.warn(xRayRequest.toString(1));
-                                    LOG.warn("Response : {}", responseString1);
+                                    LOG.warn("Response : {}", responseString);
                                 }
                             } else {
                                 LOG.warn("XRay Test Execution request http return code : " + rc);
                                 String responseString = EntityUtils.toString(response.getEntity());
                                 String message = "Xray Execution creation request to '" + xRayUrl + "' failed with http return code : " + rc + ". " + responseString;
-                                logEventService.createForPrivateCalls("XRAY", "APICALL", message);
+                                logEventService.createForPrivateCalls("XRAY", "APICALL", LogEvent.STATUS_WARN, message);
                                 currentTag.setXRayURL("");
                                 currentTag.setXRayTestExecution("ERROR");
                                 currentTag.setXRayMessage(message);
@@ -303,7 +303,8 @@ public class XRayService implements IXRayService {
                             }
 
                         } catch (IOException e) {
-                            logEventService.createForPrivateCalls("XRAY", "APICALL", "Xray Execution creation request to '" + xRayUrl + "' failed : " + e.toString() + ".");
+                            LOG.warn("XRay Test Execution request Exception : " + e, e);
+                            logEventService.createForPrivateCalls("XRAY", "APICALL", LogEvent.STATUS_WARN, "Xray Execution creation request to '" + xRayUrl + "' failed : " + e.toString() + ".");
                         }
 
                     }
@@ -314,6 +315,14 @@ public class XRayService implements IXRayService {
             LOG.error(ex, ex);
         }
 
+    }
+
+    private JSONObject getXRayResponseJSON(TestCaseExecution execution, String responseString) throws JSONException {
+        if (TestCase.TESTCASE_ORIGIN_JIRAXRAYDC.equalsIgnoreCase(execution.getTestCaseObj().getOrigine())) {
+            return new JSONObject(responseString).getJSONObject("testExecIssue");
+        } else {
+            return new JSONObject(responseString);
+        }
     }
 
     private void getXRayAuthenticationToken(String origin, String system) throws Exception {
@@ -327,7 +336,7 @@ public class XRayService implements IXRayService {
                 String clientID = parameterService.getParameterStringByKey(Parameter.VALUE_cerberus_xraycloud_clientid, system, "");
                 String clientSecret = parameterService.getParameterStringByKey(Parameter.VALUE_cerberus_xraycloud_clientsecret, system, "");
 
-                if (StringUtil.isEmpty(clientID) || StringUtil.isEmpty(clientSecret)) {
+                if (StringUtil.isEmptyOrNull(clientID) || StringUtil.isEmptyOrNull(clientSecret)) {
                     throw new CerberusException(new MessageGeneral(MessageGeneralEnum.NO_DATA_FOUND));
                 }
 
@@ -404,14 +413,15 @@ public class XRayService implements IXRayService {
                         putToken(system, origin, responseString.substring(0, responseString.length() - 1).substring(1));
                         LOG.debug("Setting new XRay Cloud Token : {}", getToken(system, origin));
                     } else {
-                        logEventService.createForPrivateCalls("XRAY", "APICALL", "Xray Authent request to '" + xRayUrl + "' failed with http return code : " + rc + ".");
+                        logEventService.createForPrivateCalls("XRAY", "APICALL", LogEvent.STATUS_WARN, "Xray Authent request to '" + xRayUrl + "' failed with http return code : " + rc + ".");
                         LOG.warn("XRay Authent request http return code : " + rc);
                         LOG.warn("Message sent to " + xRayUrl + ":");
                         LOG.debug(authenMessage.toString(1));
                     }
 
                 } catch (Exception e) {
-                    logEventService.createForPrivateCalls("XRAY", "APICALL", "Xray Authent request to '" + xRayUrl + "' failed : " + e.toString() + ".");
+                    LOG.warn("XRay Authent request http Exception : " + e, e);
+                    logEventService.createForPrivateCalls("XRAY", "APICALL", LogEvent.STATUS_WARN, "Xray Authent request to '" + xRayUrl + "' failed : " + e.toString() + ".");
                 }
 
             } else if (TestCase.TESTCASE_ORIGIN_JIRAXRAYDC.equals(origin)) {

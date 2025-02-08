@@ -1,5 +1,5 @@
 /*
- * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * Cerberus Copyright (C) 2013 - 2025 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -23,15 +23,26 @@ import com.fasterxml.jackson.annotation.JsonView;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiResponse;
+import java.security.Principal;
+import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
+import javax.servlet.http.HttpServletRequest;
 import lombok.AllArgsConstructor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.cerberus.core.api.controllers.wrappers.ResponseWrapper;
-import org.cerberus.core.api.dto.v001.AppServiceDTOV001;
+import org.cerberus.core.api.dto.appservice.AppServiceDTOV001;
+import org.cerberus.core.api.dto.user.UserDTOV001;
+import org.cerberus.core.api.dto.user.UserMapperV001;
 import org.cerberus.core.api.dto.views.View;
 import org.cerberus.core.api.exceptions.EntityNotFoundException;
-import org.cerberus.core.api.mappers.v001.UserMapperV001;
 import org.cerberus.core.api.services.PublicApiAuthenticationService;
+import org.cerberus.core.crud.entity.LogEvent;
+import org.cerberus.core.crud.entity.User;
+import org.cerberus.core.crud.service.ILogEventService;
+import org.cerberus.core.crud.service.IUserService;
+import org.cerberus.core.exception.CerberusException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -40,15 +51,6 @@ import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
-
-import java.security.Principal;
-import java.util.List;
-import java.util.Optional;
-import java.util.stream.Collectors;
-import org.cerberus.core.api.dto.v001.UserDTOV001;
-import org.cerberus.core.crud.entity.User;
-import org.cerberus.core.crud.service.IUserService;
-import org.cerberus.core.exception.CerberusException;
 
 @AllArgsConstructor
 @Api(tags = "User")
@@ -62,6 +64,7 @@ public class UserController {
     private static final Logger LOG = LogManager.getLogger(UserController.class);
     private final UserMapperV001 userMapper;
     private final IUserService userService;
+    private final ILogEventService logEventService;
 
     @ApiOperation("Get a user by its login name")
     @ApiResponse(code = 200, message = "ok", response = AppServiceDTOV001.class)
@@ -71,9 +74,12 @@ public class UserController {
     public ResponseWrapper<UserDTOV001> findByKey(
             @PathVariable("user") String user,
             @RequestHeader(name = API_KEY, required = false) String apiKey,
-            Principal principal
-    ) {
-        this.apiAuthenticationService.authenticate(principal, apiKey);
+            HttpServletRequest request,
+            Principal principal) {
+        
+        String login = this.apiAuthenticationService.authenticateLogin(principal, apiKey);
+        logEventService.createForPublicCalls("/public/users", "CALL-GET", LogEvent.STATUS_INFO, String.format("API /users called with URL: %s", request.getRequestURL()), request, login);
+        
         Optional<User> userOptional = Optional.ofNullable(this.userService.readByKey(user).getItem());
         if (userOptional.isPresent()) {
             return ResponseWrapper.wrap(
@@ -93,9 +99,12 @@ public class UserController {
     @GetMapping(path = "/", headers = {API_VERSION_1}, produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseWrapper<List<UserDTOV001>> findAll(
             @RequestHeader(name = API_KEY, required = false) String apiKey,
-            Principal principal
-    ) throws CerberusException {
-        this.apiAuthenticationService.authenticate(principal, apiKey);
+            HttpServletRequest request,
+            Principal principal) throws CerberusException {
+        
+        String login = this.apiAuthenticationService.authenticateLogin(principal, apiKey);
+        logEventService.createForPublicCalls("/public/users", "CALL-GET", LogEvent.STATUS_INFO, String.format("API /users called with URL: %s", request.getRequestURL()), request, login);
+
         return ResponseWrapper.wrap(
                 this.userService.findallUser()
                         .stream()

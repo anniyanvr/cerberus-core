@@ -1,5 +1,5 @@
 /*
- * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * Cerberus Copyright (C) 2013 - 2025 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -219,7 +219,7 @@ function viewEntryClick(param) {
     showLoader("#testcampaignList");
 
 
-    var jqxhr = $.getJSON("ReadCampaign?testcases=true&", "campaign=" + param);
+    var jqxhr = $.getJSON("ReadCampaign?testcases=true&", "campaign=" + encodeURIComponent(param));
     $.when(jqxhr).then(function (data) {
         var obj = data["contentTable"];
 
@@ -264,7 +264,7 @@ function viewStatEntryClick(param) {
     showLoader("#testcampaignList");
 
 
-    var jqxhr = $.getJSON("ReadCampaign?tags=true&", "campaign=" + param);
+    var jqxhr = $.getJSON("ReadCampaign?tags=true&", "campaign=" + encodeURIComponent(param));
     $.when(jqxhr).then(function (data) {
         var obj = data["contentTable"];
 
@@ -316,11 +316,20 @@ function editEntryClick(param) {
     $('#editTestcampaignButton').attr('class', 'btn btn-primary');
     $('#editTestcampaignButton').removeAttr('hidden');
 
+    // handle the click for specific action buttons
+    $("#editTestcampaignButton").click(editEntryModalSaveHandler);
+    $("#addTestcampaignButton").click(addEntryModalSaveHandler);
+
+    //clear the modals fields when closed
+    $('#editTestcampaignModal').on('hidden.bs.modal', editEntryModalCloseHandler);
+    $('#addTestcampaignModal').on('hidden.bs.modal', addEntryModalCloseHandler);
+    $('#viewTestcampaignModal').on('hidden.bs.modal', viewEntryModalCloseHandler);
+
     var formEdit = $('#editTestcampaignModal');
 
     showLoader("#testcampaignList");
 
-    var jqxhr = $.getJSON("ReadCampaign?parameters=true&labels=true&eventHooks=true&scheduledEntries=true", "campaign=" + param);
+    var jqxhr = $.getJSON("ReadCampaign?parameters=true&labels=true&eventHooks=true&scheduledEntries=true", "campaign=" + encodeURIComponent(param));
     $.when(jqxhr).then(function (data) {
         var obj = data["contentTable"];
         var parameters = [];
@@ -602,6 +611,15 @@ function addEntryClick() {
     $('#addTestcampaignButton').attr('class', 'btn btn-primary');
     $('#addTestcampaignButton').removeAttr('hidden');
 
+    // handle the click for specific action buttons
+    $("#editTestcampaignButton").click(editEntryModalSaveHandler);
+    $("#addTestcampaignButton").click(addEntryModalSaveHandler);
+
+    //clear the modals fields when closed
+    $('#editTestcampaignModal').on('hidden.bs.modal', editEntryModalCloseHandler);
+    $('#addTestcampaignModal').on('hidden.bs.modal', addEntryModalCloseHandler);
+    $('#viewTestcampaignModal').on('hidden.bs.modal', viewEntryModalCloseHandler);
+
     $("#editTestcampaignModal #campaign").empty();
     $("#editTestcampaignModal #originalCampaign").empty();
 
@@ -873,6 +891,8 @@ function updateSelectCriteria(id) {
         data = getSelectInvariant("TESTCASE_TYPE", false, false);
     } else if (val === "APPLICATION") {
         data = getSelectApplicationWithoutSystem();
+    } else if (val === "TESTFOLDER") {
+        data = getSelectFolder();
     } else {
         data = getSelectInvariant(val, false, false);
     }
@@ -994,7 +1014,15 @@ function aoColumnsFunc_Tag() {
     var doc = new Doc();
     var aoColumns = [
         {"data": "1", "sName": "Tag", "sWidth": "250px", "title": doc.getDocOnline("tag", "tag")},
-        {"data": "4", "sName": "DateCreated", "sWidth": "150px", "title": doc.getDocLabel("page_tag", "datecreated")},
+        {
+            "data": "4",
+            "sName": "DateCreated",
+            "sWidth": "150px",
+            "title": doc.getDocLabel("page_tag", "datecreated"),
+            "mRender": function (data, type, oObj) {
+                return getDate(oObj["4"]);
+            }
+        },
         {
             "data": "6",
             "sName": "ciresult",
@@ -1150,7 +1178,7 @@ function appendSchedulerRow(scheduler) {
     loadCronList(cronInput);
     var descInput = $("<input name=\"cronDescription\" maxlength=\"200\">").addClass("form-control input-sm").val(scheduler.description);
     var activeInput = $("<input name=\"cronActive\" type='checkbox'>").addClass("form-control").prop("checked", activebool);
-    var lastExecInput = $("<input name=\"cronLastExecInput\" readonly>").addClass("form-control input-sm").val(scheduler.lastExecution);
+    var lastExecInput = $("<input name=\"cronLastExecInput\" readonly>").addClass("form-control input-sm").val(getDate(scheduler.lastExecution));
     var userCreateInput = $("<input name=\"cronUserCreateInput\" readonly>").addClass("form-control input-sm").val(scheduler.usrCreated);
     var userModifInput = $("<input name=\"cronUserModifInput\" readonly>").addClass("form-control input-sm").val(scheduler.usrModif);
 

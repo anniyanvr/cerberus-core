@@ -1,5 +1,5 @@
 /**
- * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * Cerberus Copyright (C) 2013 - 2025 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -29,6 +29,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.cerberus.core.crud.entity.LogEvent;
 import org.cerberus.core.crud.entity.Parameter;
 import org.cerberus.core.crud.service.ILogEventService;
 import org.cerberus.core.crud.service.IMyVersionService;
@@ -124,7 +125,7 @@ public class ManageV001 extends HttpServlet {
 
                 if (request.getParameter("action") != null && request.getParameter("action").equals(ACTIONCLEANMEMORY)) {
                     if (request.getParameter("scope") != null && request.getParameter("scope").equals("instance")) {
-                        logEventService.createForPrivateCalls(SERVLETNAME, "CLEANMEMORY", "Cerberus Instance requested to Garbage collection.", request);
+                        logEventService.createForPublicCalls(SERVLETNAME, "CLEANMEMORY", LogEvent.STATUS_INFO, "Cerberus Instance requested to Garbage collection.", request);
                         System.gc();
                         message = "Memory Cleaned.";
                         returnCode = "OK";
@@ -132,7 +133,7 @@ public class ManageV001 extends HttpServlet {
                 }
 
                 if (request.getParameter("action") != null && request.getParameter("action").equals(ACTIONPURGECACHE)) {
-                    logEventService.createForPrivateCalls(SERVLETNAME, "PURGECACHE", "Cerberus Instance requested to Purge Cache.", request);
+                    logEventService.createForPublicCalls(SERVLETNAME, "PURGECACHE", LogEvent.STATUS_INFO, "Cerberus Instance requested to Purge Cache.", request);
 
                     //XRay
                     xrayService.purgeAllCacheEntries();
@@ -146,7 +147,7 @@ public class ManageV001 extends HttpServlet {
                 }
 
                 if (request.getParameter("action") != null && request.getParameter("action").equals("runQueueJob")) {
-                    logEventService.createForPrivateCalls(SERVLETNAME, "RUN", "Queue job requested to run.", request);
+                    logEventService.createForPublicCalls(SERVLETNAME, "RUN", LogEvent.STATUS_INFO, "Queue job requested to run.", request);
                     try {
                         // Run the Execution pool Job.
                         executionThreadPoolService.executeNextInQueueAsynchroneously(false);
@@ -159,7 +160,7 @@ public class ManageV001 extends HttpServlet {
 
                 if (request.getParameter("action") != null && request.getParameter("action").equals("stop")) {
                     if (request.getParameter("scope") != null && request.getParameter("scope").equals("instance")) {
-                        logEventService.createForPrivateCalls(SERVLETNAME, "STOP", "Cerberus Instance requested to stop.", request);
+                        logEventService.createForPublicCalls(SERVLETNAME, "STOP", LogEvent.STATUS_INFO, "Cerberus Instance requested to stop.", request);
 
                         // ajouter boolean setSplashPageActive
                         executionThreadPoolService.setSplashPageActive(true);
@@ -197,7 +198,7 @@ public class ManageV001 extends HttpServlet {
                         returnCode = "OK";
 
                     } else if (request.getParameter("scope") != null && request.getParameter("scope").equals("global")) {
-                        logEventService.createForPrivateCalls(SERVLETNAME, "STOP", "Cerberus (global system) requested to stop.", request);
+                        logEventService.createForPublicCalls(SERVLETNAME, "STOP", LogEvent.STATUS_INFO, "Cerberus (global system) requested to stop.", request);
 
                         // global splashpage : true => ATTENTION CACHE 60s utiliser short_cache
                         parameterService.setParameter("cerberus_splashpage_enable", "", "true");
@@ -229,8 +230,9 @@ public class ManageV001 extends HttpServlet {
                 }
 
                 if (request.getParameter("action") != null && request.getParameter("action").equals("start")) {
+                    
                     if (request.getParameter("scope") != null && request.getParameter("scope").equals("instance")) {
-                        logEventService.createForPrivateCalls(SERVLETNAME, "START", "Instance requested to start.", request);
+                        logEventService.createForPublicCalls(SERVLETNAME, "START", LogEvent.STATUS_INFO, "Instance requested to start.", request);
 
                         executionThreadPoolService.setSplashPageActive(false);
 
@@ -256,7 +258,7 @@ public class ManageV001 extends HttpServlet {
                         returnCode = "OK";
 
                     } else if (request.getParameter("scope") != null && request.getParameter("scope").equals("global")) {
-                        logEventService.createForPrivateCalls(SERVLETNAME, "START", "Cerberus (global system)  requested to start.", request);
+                        logEventService.createForPublicCalls(SERVLETNAME, "START", LogEvent.STATUS_INFO, "Cerberus (global system)  requested to start.", request);
 
                         // global splashpage : false
                         parameterService.setParameter("cerberus_splashpage_enable", "", "false");
@@ -318,7 +320,7 @@ public class ManageV001 extends HttpServlet {
                 fsSize.put("cerberus_applicationobject_path", getFSSize(parameterService.getParameterStringByKey("cerberus_applicationobject_path", "", "/")));
                 fsSize.put("cerberus_exemanualmedia_path", getFSSize(parameterService.getParameterStringByKey("cerberus_exemanualmedia_path", "", "/")));
                 fsSize.put("cerberus_ftpfile_path", getFSSize(parameterService.getParameterStringByKey("cerberus_ftpfile_path", "", "/")));
-                fsSize.put("cerberus_testdatalibcsv_path", getFSSize(parameterService.getParameterStringByKey("cerberus_testdatalibcsv_path", "", "/")));
+                fsSize.put(Parameter.VALUE_cerberus_testdatalibfile_path, getFSSize(parameterService.getParameterStringByKey(Parameter.VALUE_cerberus_testdatalibfile_path, "", "/")));
 
                 data.put("fileSystemSize", fsSize);
 

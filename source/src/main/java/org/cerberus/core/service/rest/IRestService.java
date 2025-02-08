@@ -1,5 +1,5 @@
 /**
- * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * Cerberus Copyright (C) 2013 - 2025 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -38,16 +38,25 @@ public interface IRestService {
      * @param servicePath
      * @param queryString
      * @param method
+     * @param bodyType
      * @param headerList
      * @param contentList
-     * @param token if != null the token will be added to http header 'cerberus-token'
+     * @param token if != null the token will be added to http header
+     * 'cerberus-token'
      * @param timeOutMs
      * @param system
      * @param isFollowRedir
      * @param tcexecution
+     * @param description
+     * @param authType
+     * @param authUser
+     * @param authPassword
+     * @param authAddTo
      * @return
      */
-    AnswerItem<AppService> callREST(String servicePath, String queryString, String method,
-                                    List<AppServiceHeader> headerList, List<AppServiceContent> contentList, String token, int timeOutMs, String system, boolean isFollowRedir, TestCaseExecution tcexecution);
+    AnswerItem<AppService> callREST(String servicePath, String queryString, String method, String bodyType,
+            List<AppServiceHeader> headerList, List<AppServiceContent> contentList, String token, int timeOutMs,
+            String system, boolean isFollowRedir, TestCaseExecution tcexecution, String description,
+            String authType, String authUser, String authPassword, String authAddTo);
 
 }

@@ -1,5 +1,5 @@
 /**
- * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * Cerberus Copyright (C) 2013 - 2025 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -179,7 +179,7 @@ public class FilemanagementService implements IFilemanagementService {
                                 break;
                         }
                     }
-                    if (objReceived.has("message") && !StringUtil.isEmpty(objReceived.getString("message"))) {
+                    if (objReceived.has("message") && !StringUtil.isEmptyOrNull(objReceived.getString("message"))) {
                         msg.resolveDescription("DETAIL", objReceived.getString("message"));
                     } else {
                         msg.resolveDescription("DETAIL", "");

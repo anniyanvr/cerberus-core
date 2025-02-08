@@ -1,5 +1,5 @@
 /*
- * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * Cerberus Copyright (C) 2013 - 2025 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -17,6 +17,10 @@
  * You should have received a copy of the GNU General Public License
  * along with Cerberus.  If not, see <http://www.gnu.org/licenses/>.
  */
+
+
+var tabClicked = false;
+
 $.when($.getScript("js/global/global.js")).then(function () {
     $(document).ready(function () {
         initPage();
@@ -35,9 +39,6 @@ function initPage() {
 
     displayPageLabel();
     initGraph();
-
-    //Queue History tab
-    moment.locale("fr");
 
     $('#frompicker').datetimepicker();
     $('#topicker').datetimepicker({
@@ -74,7 +75,7 @@ function initPage() {
 
 
     // Display table
-    var configurations = new TableConfigurationsServerSide("executionsTable", "ReadTestCaseExecutionQueue", "contentTable", aoColumnsFunc("executionsTable"), [2, 'desc'], [10, 25, 50, 100, 200, 500, 1000]);
+    var configurations = new TableConfigurationsServerSide("executionsTable", "ReadTestCaseExecutionQueue", "contentTable", aoColumnsFunc("executionsTable"), [2, 'desc'], [10, 15, 20, 30, 50, 100, 200, 500, 1000]);
     var table = createDataTableWithPermissions(configurations, renderOptionsForExeQueue, "#executionList", undefined, true);
 
     if (searchS !== null) {
@@ -121,16 +122,22 @@ function initPage() {
 
         switch ($(e.target).attr("href")) {
             case "#tabDetails":
-                refreshTable();
+                if (tabClicked) {
+                    refreshTable();
+                    tabClicked = true;
+                }
                 break;
             case "#tabFollowUp":
                 displayAndRefresh_followup();
+                tabClicked = true;
                 break;
             case "#tabJobStatus":
                 displayAndRefresh_jobStatus();
+                tabClicked = true;
                 break;
             case "#tabQueueHistory":
                 loadStatGraph();
+                tabClicked = true;
                 break;
         }
     });
@@ -223,7 +230,6 @@ function renderOptionsForExeQueue(data) {
         var doc = new Doc();
         var contentToAdd = "<div class='marginBottom10' id='blankSpace'>";
         contentToAdd += "<button id='createBrpMassButton' type='button' class='btn btn-default margin-right5'><span class='glyphicon glyphicon-th-list'></span> " + doc.getDocLabel("page_global", "button_massAction") + "</button>";
-        contentToAdd += "<button id='refreshExecutionButton' type='button' class='btn btn-default margin-right5'><span class='glyphicon glyphicon-refresh'></span> " + doc.getDocLabel("page_global", "refresh") + "</button>";
         contentToAdd += "<button id='selectDepButton' type='button' class='btn btn-default margin-right5'>" + doc.getDocLabel("page_testcaseexecutionqueue", "button_filterPendingWithDep") + "</button>";
         contentToAdd += "<button id='selectPendingButton' type='button' class='btn btn-default margin-right5'>" + doc.getDocLabel("page_testcaseexecutionqueue", "button_filterPending") + "</button>";
         contentToAdd += "<button id='selectRunningButton' type='button' class='btn btn-default margin-right5'>" + doc.getDocLabel("page_testcaseexecutionqueue", "button_filterExecuting") + "</button>";
@@ -580,7 +586,7 @@ function aoColumnsFunc(tableId) {
                 if (isEmpty(obj["tag"])) {
                     return "";
                 } else {
-                    return '<a href="ReportingExecutionByTag.jsp?Tag=' + obj["tag"] + '">' + obj["tag"] + '</a>';
+                    return '<a href="ReportingExecutionByTag.jsp?Tag=' + encodeURIComponent(obj["tag"]) + '">' + obj["tag"] + '</a>';
                 }
             }
         },
@@ -589,7 +595,10 @@ function aoColumnsFunc(tableId) {
             "like": true,
             "sName": "requestDate",
             "title": doc.getDocLabel("page_testcaseexecutionqueue", "requestDate_col"),
-            "sWidth": "110px"
+            "sWidth": "110px",
+            "mRender": function (data, type, oObj) {
+                return getDate(oObj["requestDate"]);
+            }
         },
         {
             "data": "state",
@@ -642,7 +651,10 @@ function aoColumnsFunc(tableId) {
             "sName": "DateCreated",
             "sWidth": "110px",
             "defaultContent": "",
-            "title": doc.getDocOnline("transversal", "DateCreated")
+            "title": doc.getDocOnline("transversal", "DateCreated"),
+            "mRender": function (data, type, oObj) {
+                return getDate(oObj["DateCreated"]);
+            }
         },
         {
             "data": "robotIP",

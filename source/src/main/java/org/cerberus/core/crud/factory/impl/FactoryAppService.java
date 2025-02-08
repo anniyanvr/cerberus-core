@@ -1,5 +1,5 @@
 /**
- * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * Cerberus Copyright (C) 2013 - 2025 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -36,7 +36,7 @@ import org.cerberus.core.crud.factory.IFactoryAppService;
 public class FactoryAppService implements IFactoryAppService {
 
     @Override
-    public AppService create(String service, String type, String method, String application, String group, String serviceRequest, String kafkaTopic, String kafkaKey,
+    public AppService create(String service, String type, String method, String application, String collection, String bodyType, String serviceRequest, String kafkaTopic, String kafkaKey,
             String kafkaFilterPath, String kafkaFilterValue, String kafkaFilterHeaderPath, String kafkaFilterHeaderValue,
             String description,
             String servicePath, boolean isFollowRedir, String attachementURL, String operation,
@@ -45,8 +45,9 @@ public class FactoryAppService implements IFactoryAppService {
             String usrCreated, Timestamp dateCreated, String usrModif, Timestamp dateModif, String fileName) {
         AppService s = new AppService();
         s.setService(service);
+        s.setBodyType(bodyType);
         s.setServiceRequest(serviceRequest);
-        s.setGroup(group);
+        s.setCollection(collection);
         s.setDescription(description);
         s.setServicePath(servicePath);
         s.setAttachementURL(attachementURL);

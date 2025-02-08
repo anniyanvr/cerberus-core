@@ -1,5 +1,5 @@
 /**
- * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * Cerberus Copyright (C) 2013 - 2025 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -19,6 +19,8 @@
  */
 package org.cerberus.core.util.servlet;
 
+import java.util.Enumeration;
+import java.util.Iterator;
 import javax.servlet.http.HttpServletRequest;
 
 import org.apache.logging.log4j.Logger;
@@ -56,16 +58,35 @@ public final class ServletUtil {
                     case "/ReadCampaign":
                         timeToWait = 10;
                         break;
+                    case "/ReadAppService":
+                        timeToWait = 50;
+                        break;
                     case "/ReadTestCaseExecutionByTag":
                         timeToWait = 30;
                         break;
                     case "/ReadExecutionStat":
                         timeToWait = 30;
                         break;
+                    case "/ReadApplication":
+                        timeToWait = 30;
+                        break;
+                    case "/UpdateAppService":
+                        timeToWait = 1000;
+                        break;
+                    case "/api":
+                        timeToWait = 30;
+                        break;
                     default:
                 }
-                LOG.debug("Servlet " + request.getServletPath() + " - Waiting : " + timeToWait);
+                LOG.debug("Servlet [" + request.getMethod() + "]" + request.getRequestURI() + " - Waiting : " + timeToWait);
                 LOG.debug("Servlet Query String " + request.getQueryString());
+                final Enumeration<String> headerS = request.getHeaderNames();
+                if (headerS != null) {
+                    while (headerS.hasMoreElements()) {
+                        String h = headerS.nextElement();
+                        LOG.debug("Header : {} - {}", h, request.getHeader(h));
+                    }
+                }
                 Thread.sleep(timeToWait);
 
             } catch (InterruptedException ex) {

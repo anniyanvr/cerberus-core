@@ -1,5 +1,5 @@
 /**
- * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * Cerberus Copyright (C) 2013 - 2025 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -34,7 +34,8 @@ public interface IFactoryAppService {
      * @param type
      * @param method
      * @param application
-     * @param group
+     * @param collection
+     * @param bodyType
      * @param serviceRequest
      * @param kafkaTopic
      * @param kafkaKey
@@ -61,8 +62,8 @@ public interface IFactoryAppService {
      * @param fileName
      * @return
      */
-    AppService create(String service, String type, String method, String application, String group, String serviceRequest,
-            String kafkaTopic, String kafkaKey, String kafkaFilterPath, String kafkaFilterValue, String kafkaFilterHeaderPath, String kafkaFilterHeaderValue, 
+    AppService create(String service, String type, String method, String application, String collection, String bodyType, String serviceRequest,
+            String kafkaTopic, String kafkaKey, String kafkaFilterPath, String kafkaFilterValue, String kafkaFilterHeaderPath, String kafkaFilterHeaderValue,
             String description, String servicePath, boolean isFollowRedir, String attachementURL, String operation, boolean isAvroEnable, String schemaRegistryUrl, boolean isAvroEnableKey, String avroSchemaKey, boolean isAvroEnableValue, String avroSchemaValue, String parentContentService,
             String usrCreated, Timestamp dateCreated, String usrModif, Timestamp dateModif, String fileName);
 }

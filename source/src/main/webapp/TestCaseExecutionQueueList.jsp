@@ -1,6 +1,6 @@
 <%--
 
-    Cerberus Copyright (C) 2013 - 2017 cerberustesting
+    Cerberus Copyright (C) 2013 - 2025 cerberustesting
     DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 
     This file is part of Cerberus.
@@ -25,8 +25,7 @@
     <head>
         <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
         <%@ include file="include/global/dependenciesInclusions.html" %>
-        <script type="text/javascript" src="dependencies/Moment-2.24.0/moment.min.js"></script>
-        <script type="text/javascript" src="dependencies/Moment-2.24.0/locale/fr.js"></script>
+        <script type="text/javascript" src="dependencies/Moment-2.30.1/moment-with-locales.min.js"></script>
         <script type="text/javascript" src="dependencies/Chart.js-2.9.3/Chart.min.js"></script>
         <script type="text/javascript" src="dependencies/Bootstrap-datetimepicker-4.17.47/bootstrap-datetimepicker.min.js"></script>
         <script type="text/javascript" src="js/pages/TestCaseExecutionQueueList.js"></script>
@@ -60,12 +59,12 @@
 
                 <div class="center tab-pane fade" id="tabDetails">
                     <div class="panel panel-default">
-                        <div class="panel-body" id="executionList">
-                            <form id="massActionForm" name="massActionForm"  title="" role="form">
+                        <form id="massActionForm" name="massActionForm"  title="" role="form">
+                            <div class="panel-body" id="executionList">
                                 <table id="executionsTable" class="table table-bordered table-hover display" name="executionsTable"></table>
-                            </form>
-                            <div class="marginBottom20"></div>
-                        </div>
+                                <div class="marginBottom20"></div>
+                            </div>
+                        </form>
                     </div>
                 </div>
 

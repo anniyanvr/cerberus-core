@@ -1,5 +1,5 @@
 /**
- * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * Cerberus Copyright (C) 2013 - 2025 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -131,7 +131,7 @@ public class CalculatePropertyForTestCase extends HttpServlet {
                         SqlLibrary sl = sqlLibraryService.findSqlLibraryByKey(policy.sanitize(property));
                         property = sl.getScript();
 
-                        if (!(StringUtil.isEmpty(connectionName)) && !(StringUtil.isEmpty(policy.sanitize(property)))) {
+                        if (!(StringUtil.isEmptyOrNull(connectionName)) && !(StringUtil.isEmptyOrNull(policy.sanitize(property)))) {
                             ISQLService sqlService = appContext.getBean(ISQLService.class);
                             IParameterService parameterService = appContext.getBean(IParameterService.class);
                             Integer sqlTimeout = parameterService.getParameterIntegerByKey("cerberus_propertyexternalsql_timeout", system, 60);

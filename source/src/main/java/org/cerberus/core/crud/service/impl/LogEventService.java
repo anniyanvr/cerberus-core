@@ -1,5 +1,5 @@
 /**
- * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * Cerberus Copyright (C) 2013 - 2025 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -64,7 +64,7 @@ public class LogEventService implements ILogEventService {
     }
 
     @Override
-    public void createForPrivateCalls(String page, String action, String log, HttpServletRequest request) {
+    public void createForPrivateCalls(String page, String action, String status, String log, HttpServletRequest request) {
         // Only log if cerberus_log_publiccalls parameter is equal to Y.
         String myUser = "";
         String remoteIP = "";
@@ -79,17 +79,17 @@ public class LogEventService implements ILogEventService {
             }
             localIP = request.getLocalAddr();
         }
-        this.create(factoryLogEvent.create(0, 0, myUser, null, page, action, log, remoteIP, localIP));
+        this.create(factoryLogEvent.create(0, 0, myUser, null, page, action, status, log, remoteIP, localIP));
     }
 
     @Override
-    public void createForPrivateCalls(String page, String action, String log) {
+    public void createForPrivateCalls(String page, String action, String status, String log) {
         // Only log if cerberus_log_publiccalls parameter is equal to Y.
-        this.create(factoryLogEvent.create(0, 0, "", null, page, action, log, null, null));
+        this.create(factoryLogEvent.create(0, 0, "", null, page, action, status, log, null, null));
     }
 
     @Override
-    public void createForPublicCalls(String page, String action, String log, HttpServletRequest request) {
+    public void createForPublicCalls(String page, String action, String status, String log, HttpServletRequest request) {
         // Only log if cerberus_log_publiccalls parameter is equal to Y.
 
         if (parameterService.getParameterBooleanByKey("cerberus_log_publiccalls", "", false)) { // The parameter cerberus_log_publiccalls is activated so we log all Public API calls.
@@ -97,10 +97,22 @@ public class LogEventService implements ILogEventService {
             if (!(request.getUserPrincipal() == null)) {
                 myUser = ParameterParserUtil.parseStringParam(request.getUserPrincipal().getName(), "");
             }
-            this.create(factoryLogEvent.create(0, 0, myUser, null, page, action, log, request.getRemoteAddr(), request.getLocalAddr()));
+            this.create(factoryLogEvent.create(0, 0, myUser, null, page, action, status, log, request.getRemoteAddr(), request.getLocalAddr()));
         }
     }
 
+    @Override
+    public void createForPublicCalls(String page, String action, String status, String log, HttpServletRequest request, String login) {
+        // Only log if cerberus_log_publiccalls parameter is equal to Y.
+
+        if (parameterService.getParameterBooleanByKey("cerberus_log_publiccalls", "", false)) { // The parameter cerberus_log_publiccalls is activated so we log all Public API calls.
+            if (!(request.getUserPrincipal() == null)) {
+                login = ParameterParserUtil.parseStringParam(request.getUserPrincipal().getName(), "");
+            }
+            this.create(factoryLogEvent.create(0, 0, login, null, page, action, status, log, request.getRemoteAddr(), request.getLocalAddr()));
+        }
+    }
+    
     @Override
     public AnswerList<String> readDistinctValuesByCriteria(String searchParameter, Map<String, List<String>> individualSearch, String columnName) {
         return logEventDAO.readDistinctValuesByCriteria(searchParameter, individualSearch, columnName);

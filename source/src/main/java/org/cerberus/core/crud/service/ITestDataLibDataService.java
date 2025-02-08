@@ -1,5 +1,5 @@
 /**
- * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * Cerberus Copyright (C) 2013 - 2025 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -53,15 +53,15 @@ public interface ITestDataLibDataService {
      * Reads a list with basis on the test data library id
      *
      * @param testDataLibID
-     * @param columnEmpty Y will filter with empty string. N will filter not
+     * @param columnNameSQLEmpty Y will filter with empty string. N will filter not
      * empty, null disable the filter.
-     * @param parsingAnswerEmpty Y will filter with empty string. N will filter
+     * @param columnParsingAnswerJSONXMLEmpty Y will filter with empty string. N will filter
      * not empty, null disable the filter.
-     * @param columnPositionEmpty Y will filter with empty string. N will filter
+     * @param columnPositionCSVEmpty Y will filter with empty string. N will filter
      * not empty, null disable the filter.
      * @return
      */
-    AnswerList<TestDataLibData> readByVarious(Integer testDataLibID, String columnEmpty, String parsingAnswerEmpty, String columnPositionEmpty);
+    AnswerList<TestDataLibData> readByVarious(Integer testDataLibID, String columnNameSQLEmpty, String columnParsingAnswerJSONXMLEmpty, String columnPositionCSVEmpty);
 
     /**
      *

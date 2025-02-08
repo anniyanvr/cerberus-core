@@ -1,5 +1,5 @@
 /**
- * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * Cerberus Copyright (C) 2013 - 2025 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -61,14 +61,14 @@ public class APIKeyService implements IAPIKeyService {
 
                 // If already aauthorised, we don't need to check the api key.
                 LOG.debug(request.getUserPrincipal());
-                if ((request.getUserPrincipal() != null) && (!StringUtil.isEmpty(request.getUserPrincipal().getName()))) {
+                if ((request.getUserPrincipal() != null) && (!StringUtil.isEmptyOrNull(request.getUserPrincipal().getName()))) {
                     LOG.debug("User connected with : '" + request.getUserPrincipal().getName() + "'");
                     return true;
                 }
 
                 String apiKey = request.getHeader("apikey");
 
-                if (isApiKeyValid(apiKey)) {
+                if (apiKeyValidLogin(apiKey) != null) {
                     return true;
                 } else {
                     JSONObject data = new JSONObject();
@@ -92,14 +92,25 @@ public class APIKeyService implements IAPIKeyService {
 
     @Override
     public boolean authenticate(String apiKey) {
-        return isApiKeyAuthEnabled() && isApiKeyValid(apiKey);
+        return isApiKeyAuthEnabled() && apiKeyValidLogin(apiKey) != null;
     }
 
     @Override
     public boolean authenticate(Principal principal, String apiKey) {
-        return (principal != null && !StringUtil.isEmpty(principal.getName())) || this.authenticate(apiKey);
+        return (principal != null && !StringUtil.isEmptyOrNull(principal.getName())) || this.authenticate(apiKey);
     }
 
+    @Override
+    public String authenticateLogin(Principal principal, String apiKey) {
+        if (principal != null && !StringUtil.isEmptyOrNull(principal.getName())) {
+            return principal.getName();
+        }
+        if  (isApiKeyAuthEnabled()) {
+            return apiKeyValidLogin(apiKey);
+        }
+        return null;
+    }
+    
     private boolean isApiKeyAuthEnabled() {
         return parameterService.getParameterBooleanByKey(Parameter.VALUE_cerberus_apikey_enable, "", true);
     }
@@ -114,9 +125,13 @@ public class APIKeyService implements IAPIKeyService {
         return null;
     }
 
-    private boolean isApiKeyValid(String apiKey) {
-        return (!StringUtil.isEmpty(apiKey))
-                && (userService.verifyAPIKey(apiKey));
+    private String apiKeyValidLogin(String apiKey) {
+        String login = null;
+        if (!StringUtil.isEmptyOrNull(apiKey)) {
+            login = userService.verifyAPIKey(apiKey);
+        }
+        return login;
+
     }
 
 }

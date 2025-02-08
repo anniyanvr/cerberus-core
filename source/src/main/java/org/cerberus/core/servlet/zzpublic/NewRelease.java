@@ -1,5 +1,5 @@
 /**
- * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * Cerberus Copyright (C) 2013 - 2025 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -31,6 +31,7 @@ import javax.servlet.http.HttpServletResponse;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.cerberus.core.crud.entity.BuildRevisionParameters;
+import org.cerberus.core.crud.entity.LogEvent;
 import org.cerberus.core.engine.entity.MessageEvent;
 import org.cerberus.core.crud.factory.IFactoryBuildRevisionParameters;
 import org.cerberus.core.crud.service.IApplicationService;
@@ -81,7 +82,7 @@ public class NewRelease extends HttpServlet {
          * Adding Log entry.
          */
         ILogEventService logEventService = appContext.getBean(LogEventService.class);
-        logEventService.createForPublicCalls("/NewRelease", "CALL", "NewRelease called : " + request.getRequestURL(), request);
+        logEventService.createForPublicCalls("/NewRelease", "CALL", LogEvent.STATUS_INFO, "NewRelease called : " + request.getRequestURL(), request);
 
         if (apiKeyService.authenticate(request, response)) {
             
@@ -153,7 +154,7 @@ public class NewRelease extends HttpServlet {
             if (error == false) {
 
                 // In case the bugID is not defined, we try to guess it from the subject. should be between # and a space or CR.
-                if (StringUtil.isEmpty(bug)) {
+                if (StringUtil.isEmptyOrNull(bug)) {
                     String[] columns = subject.split("#");
                     if (columns.length >= 2) {
                         for (int i = 1; i < columns.length; i++) {

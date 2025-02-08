@@ -1,5 +1,5 @@
 /**
- * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * Cerberus Copyright (C) 2013 - 2025 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -45,9 +45,10 @@ public interface IBrowserstackService {
      * @param tag Tag value.
      * @param user
      * @param pass
+     * @param endPoint
      * @return 
      */
-    public String getBrowserStackBuildHash(String system, String tag, String user, String pass);
+    public String getBrowserStackBuildHashFromEndpoint(String system, String tag, String user, String pass, String endPoint);
 
     /**
      *

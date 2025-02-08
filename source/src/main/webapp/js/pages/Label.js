@@ -1,5 +1,5 @@
 /*
- * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * Cerberus Copyright (C) 2013 - 2025 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -138,7 +138,8 @@ function displayPageLabel() {
     $("[name='tabsEdit2']").html(doc.getDocOnline("page_label", "tabEnv"));
 
     displayInvariantList("system", "SYSTEM", false, '', '');
-    displayInvariantList("type", "LABELTYPE", false);
+    displayInvariantList("type", "LABELTYPE", false, undefined, undefined, undefined, undefined, "editLabelModal");
+    displayInvariantList("type", "LABELTYPE", false, undefined, undefined, undefined, undefined, "addLabelModal");
     displayInvariantList("reqtype", "REQUIREMENTTYPE", false);
     displayInvariantList("reqstatus", "REQUIREMENTSTATUS", false);
     displayInvariantList("reqcriticity", "REQUIREMENTCRITICITY", false);
@@ -596,7 +597,10 @@ function aoColumnsFunc(tableId) {
             "like": true,
             "sWidth": "80px",
             "sName": "dateCreated",
-            "title": doc.getDocOnline("transversal", "DateCreated")},
+            "title": doc.getDocOnline("transversal", "DateCreated"),
+            "mRender": function (data, type, oObj) {
+                return getDate(oObj["dateCreated"]);
+            }},
         {"data": "usrModif",
             "visible": false,
             "sWidth": "30px",
@@ -608,7 +612,10 @@ function aoColumnsFunc(tableId) {
             "like": true,
             "sWidth": "80px",
             "sName": "dateModif",
-            "title": doc.getDocOnline("transversal", "DateModif")
+            "title": doc.getDocOnline("transversal", "DateModif"),
+            "mRender": function (data, type, oObj) {
+                return getDate(oObj["dateModif"]);
+            }
         }
 
     ];

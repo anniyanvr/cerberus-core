@@ -1,5 +1,5 @@
 /**
- * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * Cerberus Copyright (C) 2013 - 2025 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -61,6 +61,8 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import org.cerberus.core.crud.entity.LogEvent;
+import org.cerberus.core.util.servlet.ServletUtil;
 
 /**
  * @author cte
@@ -95,6 +97,8 @@ public class UpdateAppService extends HttpServlet {
         msg.setDescription(msg.getDescription().replace("%DESCRIPTION%", ""));
         ans.setResultMessage(msg);
 
+        ServletUtil.servletStart(request);
+
         response.setContentType("text/html;charset=UTF-8");
         String charset = request.getCharacterEncoding() == null ? "UTF-8" : request.getCharacterEncoding();
 
@@ -126,13 +130,14 @@ public class UpdateAppService extends HttpServlet {
         // Parameter that needs to be secured --> We SECURE+DECODE them
         String service = ParameterParserUtil.parseStringParamAndDecodeAndSanitize(fileData.get("service"), null, charset);
         String originalService = ParameterParserUtil.parseStringParamAndDecodeAndSanitize(fileData.get("originalService"), null, charset);
-        String group = ParameterParserUtil.parseStringParamAndDecodeAndSanitize(fileData.get("group"), null, charset);
+        String collection = ParameterParserUtil.parseStringParamAndDecodeAndSanitize(fileData.get("collection"), null, charset);
         String description = ParameterParserUtil.parseStringParamAndDecodeAndSanitize(fileData.get("description"), null, charset);
         String attachementurl = ParameterParserUtil.parseStringParamAndDecodeAndSanitize(fileData.get("attachementurl"), null, charset);
         String operation = ParameterParserUtil.parseStringParamAndDecodeAndSanitize(fileData.get("operation"), null, charset);
         String application = ParameterParserUtil.parseStringParamAndDecodeAndSanitize(fileData.get("application"), null, charset);
         String type = ParameterParserUtil.parseStringParamAndDecodeAndSanitize(fileData.get("type"), null, charset);
         String method = ParameterParserUtil.parseStringParamAndDecodeAndSanitize(fileData.get("method"), "", charset);
+        String bodyType = ParameterParserUtil.parseStringParamAndDecodeAndSanitize(fileData.get("bodyType"), "", charset);
         // Parameter that we cannot secure as we need the html --> We DECODE them
         String servicePath = ParameterParserUtil.parseStringParamAndDecode(fileData.get("servicePath"), null, charset);
         boolean isFollowRedir = ParameterParserUtil.parseBooleanParam(fileData.get("isFollowRedir"), true);
@@ -150,6 +155,10 @@ public class UpdateAppService extends HttpServlet {
         String kafkaFilterValue = ParameterParserUtil.parseStringParamAndDecode(fileData.get("kafkaFilterValue"), "", charset);
         String kafkaFilterHeaderPath = ParameterParserUtil.parseStringParamAndDecode(fileData.get("kafkaFilterHeaderPath"), "", charset);
         String kafkaFilterHeaderValue = ParameterParserUtil.parseStringParamAndDecode(fileData.get("kafkaFilterHeaderValue"), "", charset);
+        String authType = ParameterParserUtil.parseStringParamAndDecode(fileData.get("authType"), "", charset);
+        String authUser = ParameterParserUtil.parseStringParamAndDecode(fileData.get("authKey"), "", charset);
+        String authPass = ParameterParserUtil.parseStringParamAndDecode(fileData.get("authVal"), "", charset);
+        String authAddTo = ParameterParserUtil.parseStringParamAndDecode(fileData.get("authAddTo"), "", charset);
         String fileName = null;
         if (file != null) {
             fileName = file.getName();
@@ -162,7 +171,13 @@ public class UpdateAppService extends HttpServlet {
         /**
          * Checking all constrains before calling the services.
          */
-        if (StringUtil.isEmpty(originalService)) {
+        if (StringUtil.isEmptyOrNull(originalService)) {
+            msg = new MessageEvent(MessageEventEnum.DATA_OPERATION_ERROR_EXPECTED);
+            msg.setDescription(msg.getDescription().replace("%ITEM%", "AppService")
+                    .replace("%OPERATION%", "Update")
+                    .replace("%REASON%", "AppService ID (originalService) is missing."));
+            finalAnswer.setResultMessage(msg);
+        } else if (StringUtil.isEmptyOrNull(service)) {
             msg = new MessageEvent(MessageEventEnum.DATA_OPERATION_ERROR_EXPECTED);
             msg.setDescription(msg.getDescription().replace("%ITEM%", "AppService")
                     .replace("%OPERATION%", "Update")
@@ -199,8 +214,14 @@ public class UpdateAppService extends HttpServlet {
                     }
                 }
 
+                if (fileData.get("callInfo") != null) {
+                    JSONObject objCall = new JSONObject(fileData.get("callInfo"));
+                    LOG.debug(objCall.toString(1));
+                    appService.setSimulationParameters(objCall);
+                }
+
                 appService.setService(service);
-                appService.setGroup(group);
+                appService.setCollection(collection);
                 appService.setAttachementURL(attachementurl);
                 appService.setDescription(description);
                 appService.setServiceRequest(serviceRequest);
@@ -208,7 +229,12 @@ public class UpdateAppService extends HttpServlet {
                 appService.setType(type);
                 appService.setApplication(application);
                 appService.setMethod(method);
-                appService.setServicePath(servicePath);
+                appService.setBodyType(bodyType);
+                if (servicePath.contains(StringUtil.SECRET_STRING)) {
+                    appService.setServicePath(servicePath.replace(StringUtil.SECRET_STRING, StringUtil.getPasswordFromAnyUrl(appService.getServicePath())));
+                } else {
+                    appService.setServicePath(servicePath);
+                }
                 appService.setUsrModif(request.getRemoteUser());
                 appService.setKafkaKey(kafkaKey);
                 appService.setKafkaTopic(kafkaTopic);
@@ -224,6 +250,12 @@ public class UpdateAppService extends HttpServlet {
                 appService.setAvroSchemaKey(avrSchemaKey);
                 appService.setAvroSchemaValue(avrSchemaValue);
                 appService.setParentContentService(parentContentService);
+                appService.setAuthType(authType);
+                appService.setAuthUser(authUser);
+                if (!authPass.equals(StringUtil.SECRET_STRING)) {
+                    appService.setAuthPassword(authPass);
+                }
+                appService.setAuthAddTo(authAddTo);
 
                 ans = appServiceService.update(originalService, appService);
                 finalAnswer = AnswerUtil.agregateAnswer(finalAnswer, ans);
@@ -233,7 +265,7 @@ public class UpdateAppService extends HttpServlet {
                      * Update was successful. Adding Log entry.
                      */
                     logEventService = appContext.getBean(ILogEventService.class);
-                    logEventService.createForPrivateCalls("/UpdateAppService", "UPDATE", "Updated AppService : ['" + originalService + "']", request);
+                    logEventService.createForPrivateCalls("/UpdateAppService", "UPDATE", LogEvent.STATUS_INFO, "Updated AppService : ['" + originalService + "']", request);
                 }
 
                 // Update content

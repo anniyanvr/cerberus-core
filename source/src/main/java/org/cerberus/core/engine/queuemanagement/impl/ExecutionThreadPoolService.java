@@ -1,5 +1,5 @@
 /**
- * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * Cerberus Copyright (C) 2013 - 2025 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -43,6 +43,7 @@ import org.cerberus.core.crud.service.IRobotService;
 import org.cerberus.core.crud.service.ITagService;
 import org.cerberus.core.crud.service.ITestCaseExecutionQueueDepService;
 import org.cerberus.core.crud.service.ITestCaseExecutionQueueService;
+import org.cerberus.core.engine.entity.ExecutionUUID;
 import org.cerberus.core.engine.queuemanagement.IExecutionThreadPoolService;
 import org.cerberus.core.exception.CerberusException;
 import org.cerberus.core.service.authentification.impl.APIKeyService;
@@ -51,6 +52,8 @@ import org.cerberus.core.session.SessionCounter;
 import org.cerberus.core.util.ParameterParserUtil;
 import org.cerberus.core.util.StringUtil;
 import org.cerberus.core.util.answer.AnswerList;
+import org.cerberus.core.websocket.QueueStatus;
+import org.cerberus.core.websocket.QueueStatusEndPoint;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
@@ -81,6 +84,8 @@ public class ExecutionThreadPoolService implements IExecutionThreadPoolService {
     private IInvariantService invariantService;
     @Autowired
     private IMyVersionService myVersionService;
+    @Autowired
+    private ExecutionUUID executionUUIDObject;
     @Autowired
     ExecutionQueueThreadPool threadQueuePool;
     @Autowired
@@ -203,7 +208,7 @@ public class ExecutionThreadPoolService implements IExecutionThreadPoolService {
 
             // Getting Robot Host PoolSize from invariant hashmap.
             int robot_poolsize_final = 0;
-            if (!StringUtil.isEmpty(exe.getSelectedRobotHost())) {
+            if (!StringUtil.isEmptyOrNull(exe.getSelectedRobotHost())) {
                 if (robot_poolsize.containsKey(exe.getSelectedRobotHost())) {
                     robot_poolsize_final = ParameterParserUtil.parseIntegerParam(robot_poolsize.get(exe.getSelectedRobotHost()), poolSizeRobot);
                 } else {
@@ -214,7 +219,7 @@ public class ExecutionThreadPoolService implements IExecutionThreadPoolService {
 
             // Getting Robot Host PoolSize from invariant hashmap.
             int robotext_poolsize_final = 0;
-            if (!StringUtil.isEmpty(exe.getSelectedRobotExtensionHost())) {
+            if (!StringUtil.isEmptyOrNull(exe.getSelectedRobotExtensionHost())) {
                 if (robotext_poolsize.containsKey(exe.getSelectedRobotExtensionHost())) {
                     robotext_poolsize_final = ParameterParserUtil.parseIntegerParam(robotext_poolsize.get(exe.getSelectedRobotExtensionHost()), poolSizeExecutorExt);
                 } else {
@@ -364,7 +369,7 @@ public class ExecutionThreadPoolService implements IExecutionThreadPoolService {
                     // Getting the list of robot in scope of the queue entries. This is to avoid getting all robots from database.
                     LOG.debug("Getting List of Robot Executor.");
                     for (TestCaseExecutionQueueToTreat exe : executionsInQueue) {
-                        if (!StringUtil.isEmpty(exe.getQueueRobot())) {
+                        if (!StringUtil.isEmptyOrNull(exe.getQueueRobot())) {
                             robot_executor.put(exe.getQueueRobot(), new ArrayList<>());
                         }
                     }
@@ -406,28 +411,28 @@ public class ExecutionThreadPoolService implements IExecutionThreadPoolService {
                     appType = exe.getAppType();
                     if ((appType.equals(Application.TYPE_APK)) || (appType.equals(Application.TYPE_GUI)) || (appType.equals(Application.TYPE_FAT)) || (appType.equals(Application.TYPE_IPA))) {
                         // Application require a robot so we can get the list of executors.
-                        if (StringUtil.isEmpty(robot)) {
+                        if (StringUtil.isEmptyOrNull(robot)) {
                             robotExelist = new ArrayList<>();
-                            robotExelist.add(factoryRobotExecutor.create(0, "", "", "Y", 1, exe.getQueueRobotHost(), exe.getQueueRobotPort(), "", "", 0, "", "", null, "", "", 0, "", 0, "", "", "", null, "", null));
+                            robotExelist.add(factoryRobotExecutor.create(0, "", "", true, 1, exe.getQueueRobotHost(), exe.getQueueRobotPort(), "", "", 0, "", "", null, false, "", 0, "", 0, "", "", "", null, "", null));
                         } else {
                             robotExelist = robot_executor.get(robot);
                             if (robotExelist == null || robotExelist.size() < 1) {
                                 robotExelist = new ArrayList<>();
-                                robotExelist.add(factoryRobotExecutor.create(0, "", "", "Y", 1, "", "", "", "", 0, "", "", null, "", "", 0, "", 0, "", "", "", null, "", null));
+                                robotExelist.add(factoryRobotExecutor.create(0, "", "", true, 1, "", "", "", "", 0, "", "", null, false, "", 0, "", 0, "", "", "", null, "", null));
                             }
                         }
                     } else {
                         // Application does not require a robot so we create a fake one with empty data.
                         robotExelist = new ArrayList<>();
-                        robotExelist.add(factoryRobotExecutor.create(0, "", "", "Y", 1, "", "", "", "", 0, "", "", null, "", "", 0, "", 0, "", "", "", null, "", null));
+                        robotExelist.add(factoryRobotExecutor.create(0, "", "", true, 1, "", "", "", "", 0, "", "", null, false, "", 0, "", 0, "", "", "", null, "", null));
                     }
 
-                    // Looping other every potential executor on the corresponding robot.
+                    // Looping over every potential executor on the corresponding robot.
                     for (RobotExecutor robotExecutor1 : robotExelist) {
 
-                        if ("Y".equalsIgnoreCase(robotExecutor1.getExecutorProxyActive())) {
+                        if (RobotExecutor.PROXY_TYPE_NETWORKTRAFFIC.equalsIgnoreCase(robotExecutor1.getExecutorProxyType())) {
                             robotExtHost = robotExecutor1.getExecutorExtensionHost();
-                            if (StringUtil.isEmpty(robotExtHost)) {
+                            if (StringUtil.isEmptyOrNull(robotExtHost)) {
                                 robotExtHost = robotExecutor1.getHost();
                             }
                         } else {
@@ -441,7 +446,7 @@ public class ExecutionThreadPoolService implements IExecutionThreadPoolService {
 
                         // RobotHost PoolSize if retreived from invariant hashmap.
                         int robothost_poolsize_final = 0;
-                        if (!StringUtil.isEmpty(robotHost)) {
+                        if (!StringUtil.isEmptyOrNull(robotHost)) {
                             if (robothost_poolsize.containsKey(robotHost)) {
                                 robothost_poolsize_final = ParameterParserUtil.parseIntegerParam(robothost_poolsize.get(robotHost), poolSizeRobot);
                             } else {
@@ -451,7 +456,7 @@ public class ExecutionThreadPoolService implements IExecutionThreadPoolService {
 
                         // RobotExtensionHost PoolSize if retreived from invariant hashmap.
                         int robotexthost_poolsize_final = 0;
-                        if (!StringUtil.isEmpty(robotExtHost)) {
+                        if (!StringUtil.isEmptyOrNull(robotExtHost)) {
                             if (executorexthost_poolsize.containsKey(robotExtHost)) {
                                 robotexthost_poolsize_final = ParameterParserUtil.parseIntegerParam(executorexthost_poolsize.get(robotExtHost), poolSizeExecutorExt);
                             } else {
@@ -661,6 +666,16 @@ public class ExecutionThreadPoolService implements IExecutionThreadPoolService {
                     const01_current = 0;
                 }
                 LOG.debug("Stats : GlobalContrain=" + poolSizeGeneral + " - nbRunning=" + const01_current + " - NbQueued=" + executionsInQueue.size());
+
+                if (nbqueuedexe == 0) { // Websocket of queue status is sent only if no new execution was submitted. In case a new execution is submitted, the websocket is refreshed only when execution has been created on database.
+                    executionUUIDObject.setQueueCounters(poolSizeGeneral, const01_current, executionsInQueue.size());
+                    QueueStatus queueS = QueueStatus.builder()
+                            .executionHashMap(executionUUIDObject.getExecutionUUIDList())
+                            .globalLimit(poolSizeGeneral)
+                            .running(const01_current)
+                            .queueSize(executionsInQueue.size()).build();
+                    QueueStatusEndPoint.getInstance().send(queueS, true);
+                }
 
                 queueStatService.create(factoryQueueStat.create(0, poolSizeGeneral, const01_current, executionsInQueue.size(), "", null, null, null));
 

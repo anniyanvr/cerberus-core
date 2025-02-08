@@ -1,5 +1,5 @@
 /*
- * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * Cerberus Copyright (C) 2013 - 2025 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -129,7 +129,8 @@ function loadTable(selectTest, sortColumn) {
     $.when(jqxhr).then(function (data) {
         sortColumn = 2;
 
-        var config = new TableConfigurationsServerSide("testCaseTable", contentUrl, "contentTable", aoColumnsFunc(data, "testCaseTable"), [2, 'asc']);
+        var lengthMenu = [10, 15, 20, 30, 50, 100, 500, 1000];
+        var config = new TableConfigurationsServerSide("testCaseTable", contentUrl, "contentTable", aoColumnsFunc(data, "testCaseTable"), [2, 'asc'], lengthMenu);
 
         var table = createDataTableWithPermissions(config, renderOptionsForTestCaseList, "#testCaseList", undefined, true);
 
@@ -179,6 +180,7 @@ function renderOptionsForTestCaseList(data) {
 //            contentToAdd += "<button id='exportTestCaseMenuButtonSingleFile' type='button' class='btn btn-default' name='buttonExport'><span class='glyphicon glyphicon-export'></span> " + doc.getDocLabel("page_testcaselist", "btn_export1file") + "</button>";
             contentToAdd += "<button id='importTestCaseButton' type='button' class='btn btn-default'><span class='glyphicon glyphicon-import'></span> " + doc.getDocLabel("page_testcaselist", "btn_import") + "</button>";
             contentToAdd += "<button id='importFromSIDETestCaseMenuButton' type='button' class='btn btn-default'><img height='20 px' src='./images/SeleniumIDE.jpg'></span> " + doc.getDocLabel("page_testcaselist", "btn_import_ide") + "</button>";
+            contentToAdd += "<button id='importFromTestLinkTestCaseMenuButton' type='button' style='display: none1;' class='btn btn-default'><img height='20 px' src='./images/TestLink.png'></span> " + doc.getDocLabel("page_testcaselist", "btn_import_testlink") + "</button>";
             contentToAdd += "</div>";
             contentToAdd += "</div>";
             contentToAdd += "<button id='createBrpMassButton' type='button' class='btn btn-default'><span class='glyphicon glyphicon-th-list'></span> " + doc.getDocLabel("page_global", "button_massAction") + "</button>";
@@ -202,6 +204,7 @@ function renderOptionsForTestCaseList(data) {
             $("#testCaseList #exportTestCaseMenuButtonSingleFile").click(exportTestCasesMenuClick);
             $('#testCaseList #importTestCaseButton').click(importTestCasesMenuClick);
             $('#testCaseList #importFromSIDETestCaseMenuButton').click(importTestCasesFromSIDEMenuClick);
+            $('#testCaseList #importFromTestLinkTestCaseMenuButton').click(importTestCasesFromTestLinkMenuClick);
             $('#testCaseList #createBrpMassButton').click(massActionClick);
         }
     }
@@ -602,7 +605,7 @@ function importTestCasesFromSIDEMenuClick() {
         for (var i = 0; i < fileInput.files.length; i++) {
             fileList.push(fileInput.files[i]);
         }
-        renderFileSIDEList(fileList, 'fileside-list-display');
+        renderFileList(fileList, 'fileside-list-display');
     });
 
     $("#importTestCaseFromSIDEButton").click(function () {
@@ -622,8 +625,36 @@ function importTestCasesFromSIDEMenuClick() {
     $('#importTestCaseFromSIDEModal').modal('show');
 }
 
-function renderFileSIDEList(fileList, elementId) {
-    console.log("render");
+function importTestCasesFromTestLinkMenuClick() {
+    $("#importTestCaseFromTestLinkButton").off("click");
+
+    var fileInput = document.getElementById('filesTestLink');
+    fileInput.addEventListener('change', function (evnt) {
+        fileList = [];
+        for (var i = 0; i < fileInput.files.length; i++) {
+            fileList.push(fileInput.files[i]);
+        }
+        renderFileList(fileList, 'filetestlink-list-display');
+    });
+
+    $("#importTestCaseFromTestLinkButton").click(function () {
+        confirmImportTestCaseFromTestLinkModalHandler();
+    });
+
+    var doc = new Doc();
+    var text = doc.getDocLabel("page_testcaselist", "import_testcase_msg");
+    $('#importTestCaseModalText').text(text);
+
+    $('#importTestCaseFromTestLinkModalForm #targetTest').empty();
+    $('#importTestCaseFromTestLinkModalForm #targetTest').select2(getComboConfigTest());
+
+    $('#importTestCaseFromTestLinkModalForm #targetApplication').empty();
+    $('#importTestCaseFromTestLinkModalForm #targetApplication').select2(getComboConfigApplication(false));
+
+    $('#importTestCaseFromTestLinkModal').modal('show');
+}
+
+function renderFileList(fileList, elementId) {
     var fileListDisplay = document.getElementById(elementId);
     fileListDisplay.innerHTML = '';
     fileList.forEach(function (file, index) {
@@ -632,7 +663,6 @@ function renderFileSIDEList(fileList, elementId) {
         fileListDisplay.appendChild(fileDisplayEl);
     });
 }
-
 
 function confirmImportTestCaseFromSIDEModalHandler() {
     clearResponseMessage($('#importTestCaseModal'));
@@ -675,6 +705,52 @@ function confirmImportTestCaseFromSIDEModalHandler() {
                 showMessage(data, $('#importTestCaseFromSIDEModal'));
             }
             hideLoaderInModal('#importTestCaseFromSIDEModal');
+        },
+        error: showUnexpectedError
+    });
+}
+
+function confirmImportTestCaseFromTestLinkModalHandler() {
+    clearResponseMessage($('#importTestCaseModal'));
+
+    var formEdit = $('#importTestCaseFromTestLinkModal #importTestCaseFromTestLinkModalForm');
+
+    var sa = formEdit.serializeArray();
+    var formData = new FormData();
+
+    for (var i in sa) {
+        formData.append(sa[i].name, sa[i].value);
+    }
+
+    var file = $("#importTestCaseFromTestLinkModal input[type=file]");
+    for (var i = 0; i < $($(file).get(0)).prop("files").length; i++) {
+        formData.append("file", file.prop("files")[i]);
+    }
+
+    // Calculate servlet name to call.
+    var myServlet = "ImportTestCaseFromTestLink";
+
+    // Get the header data from the form.
+    showLoaderInModal('#importTestCaseFromTestLinkModal');
+
+    $.ajax({
+        url: myServlet,
+        async: true,
+        method: "POST",
+        data: formData,
+        processData: false,
+        contentType: false,
+        success: function (data) {
+            data = JSON.parse(data);
+            if (getAlertType(data.messageType) === "success") {
+                var oTable = $("#testCaseTable").dataTable();
+                oTable.fnDraw(false);
+                $('#importTestCaseFromTestLinkModal').modal('hide');
+                showMessage(data);
+            } else {
+                showMessage(data, $('#importTestCaseFromTestLinkModal'));
+            }
+            hideLoaderInModal('#importTestCaseFromTestLinkModal');
         },
         error: showUnexpectedError
     });
@@ -814,7 +890,7 @@ function aoColumnsFunc(countries, tableId) {
                                     <span class="glyphicon glyphicon-new-window"></span>\n\
                                     </a>';
                 var runTest = '<button id="runTest" onclick="openModalExecutionSimple(\'' + data.application + '\',\'' + escapeHtml(obj["test"]) + '\',\'' + escapeHtml(obj["testcase"]) + '\',\'' + data.description + '\');"\n\
-                                        class="btn btn-primary btn-xs marginRight5 marginLeft20" \n\
+                                        class="btn btn-default btn-xs marginRight5 marginLeft20" \n\
                                         data-toggle="tooltip" title="' + doc.getDocLabel("page_testcaselist", "btn_runTest") + '" type="button">\n\
                                         <span class="glyphicon glyphicon-play"></span></button>';
 
@@ -1083,7 +1159,10 @@ function aoColumnsFunc(countries, tableId) {
             "like": true,
             "title": doc.getDocOnline("transversal", "DateCreated"),
             "sWidth": "150px",
-            "sDefaultContent": ""
+            "sDefaultContent": "",
+            "mRender": function (data, type, oObj) {
+                return getDate(oObj["dateCreated"]);
+            }
         },
         {
             "data": "usrCreated",

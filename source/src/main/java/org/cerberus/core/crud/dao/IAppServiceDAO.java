@@ -1,5 +1,5 @@
 /**
- * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * Cerberus Copyright (C) 2013 - 2025 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -68,6 +68,13 @@ public interface IAppServiceDAO {
      * @return
      */
     AnswerList<AppService> readByCriteria(int startPosition, int length, String columnName, String sort, String searchParameter, Map<String, List<String>> individualSearch, List<String> systems);
+
+    /**
+     *
+     * @param systems
+     * @return
+     */
+    Integer getNbServices(List<String> systems);
 
     /**
      * Get the {@link AppService} of the given key

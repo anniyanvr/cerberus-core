@@ -1,5 +1,5 @@
 /**
- * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * Cerberus Copyright (C) 2013 - 2025 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -47,7 +47,7 @@ public enum MessageGeneralEnum {
     VALIDATION_FAILED_SIKULI_COULDNOTCONNECT(63, "FA", "Could not contact Sikuli server on %SSIP% using port %SSPORT%. Possible causes are invalid address of the remote server or cerberus-extension-sikuli not started properly."),
     VALIDATION_FAILED_APPLICATION_NOT_FOUND(64, "FA", "Application '%APPLI%' does not exist."),
     VALIDATION_FAILED_COUNTRYENV_NOT_FOUND(65, "FA", "System '%SYSTEM%' Country '%COUNTRY%' environment '%ENV%' parameters does not exist."),
-    VALIDATION_FAILED_COUNTRYENVAPP_NOT_FOUND(66, "FA", "Country '%COUNTRY%' environment '%ENV%' application '%APPLI%' parameters does not exist."),
+    VALIDATION_FAILED_COUNTRYENVAPP_NOT_FOUND(66, "FA", "Country '%COUNTRY%' environment '%ENV%' application '%APPLI%' parameters does not exist or is not active."),
     VALIDATION_FAILED_TESTCASE_NOT_FOUND(67, "FA", "The test case ('%TEST%'-'%TESTCASE%') does not exist."),
     VALIDATION_FAILED_COULDNOTCREATE_RUNID(68, "FA", "RunID could not be created."),
     VALIDATION_FAILED_OUTPUTFORMAT_INVALID(69, "FA", "outputformat parameter value '%PARAM%' is not valid."),
@@ -82,7 +82,7 @@ public enum MessageGeneralEnum {
     EXECUTION_PE_LOADINGKAFKACONSUMERS(5, "PE", "Test is getting current KAFKA Partitions latest offset..."),
     EXECUTION_OK(1, "OK", "The test case finished successfully"),
     EXECUTION_KO(2, "KO", "The test case finished, but failed on validations."),
-    EXECUTION_FA(3, "FA", "The test case failed to be executed. More lickely due to an error in the test or in Cerberus configuration."),
+    EXECUTION_FA(3, "FA", "The test case failed to be executed. More likely due to an error in the test or in Cerberus configuration."),
     EXECUTION_FA_SERVLETVALIDATONS(14, "FA", "The test case failed to be submitted."),
     EXECUTION_FA_ACTION(4, "FA", "The test case failed to be executed because of an action."),
     EXECUTION_FA_SELENIUM(8, "FA", "The test case failed to be executed. Could not start Robot Server. %MES%."),
@@ -122,6 +122,7 @@ public enum MessageGeneralEnum {
     DATA_OPERATION_SUCCESS(000, MessageCodeEnum.GENERIC_CODE_SUCCESS.getCodeString(), "The requested operation was concluded with success."),
     DATA_OPERATION_WARNING(000, MessageCodeEnum.GENERIC_CODE_WARNING.getCodeString(), "The requested operation was concluded but with warnings."),
     DATA_OPERATION_ERROR(900, MessageCodeEnum.GENERIC_CODE_ERROR.getCodeString(), "An error occurred while executing the requested operation !"),
+    DATA_OPERATION_ERROR_WITH_DETAIL(900, MessageCodeEnum.GENERIC_CODE_ERROR.getCodeString(), "An error occurred while executing the requested operation ! %DETAIL%"),
     DATA_OPERATION_ERROR_WITH_REQUEST(900, MessageCodeEnum.GENERIC_CODE_ERROR.getCodeString(), "An error occurred while executing the requested operation ! request : %REQUEST%."),
     DATA_OPERATION_ERROR_DUPLICATE(900, MessageCodeEnum.GENERIC_CODE_ERROR.getCodeString(), "The %ITEM% that you are trying to %OPERATION% conflicts with an existing one! Please check for duplicates! %REASON%"),
     GENERIC_SUCCESS(000, MessageCodeEnum.GENERIC_CODE_SUCCESS.getCodeString(), "The requested operation was concluded with success."),

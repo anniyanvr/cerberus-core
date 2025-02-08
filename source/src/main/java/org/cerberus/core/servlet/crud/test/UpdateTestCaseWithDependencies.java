@@ -1,5 +1,5 @@
 /**
- * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * Cerberus Copyright (C) 2013 - 2025 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -61,6 +61,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import org.cerberus.core.crud.entity.LogEvent;
 
 /**
  * @author bcivel
@@ -79,10 +80,10 @@ public class UpdateTestCaseWithDependencies extends HttpServlet {
      * Processes requests for both HTTP <code>GET</code> and <code>POST</code>
      * methods.
      *
-     * @param request  servlet request
+     * @param request servlet request
      * @param response servlet response
-     * @throws ServletException                         if a servlet-specific error occurs
-     * @throws IOException                              if an I/O error occurs
+     * @throws ServletException if a servlet-specific error occurs
+     * @throws IOException if an I/O error occurs
      * @throws org.cerberus.core.exception.CerberusException
      */
     protected void processRequest(HttpServletRequest request, HttpServletResponse response)
@@ -120,7 +121,7 @@ public class UpdateTestCaseWithDependencies extends HttpServlet {
         /**
          * Checking all constrains before calling the services.
          */
-        if (StringUtil.isEmpty(testId) || StringUtil.isEmpty(testCaseId)) {
+        if (StringUtil.isEmptyOrNull(testId) || StringUtil.isEmptyOrNull(testCaseId)) {
             msg = new MessageEvent(MessageEventEnum.DATA_OPERATION_ERROR_EXPECTED);
             msg.setDescription(msg.getDescription().replace("%ITEM%", "Test Case")
                     .replace("%OPERATION%", "Update")
@@ -154,7 +155,7 @@ public class UpdateTestCaseWithDependencies extends HttpServlet {
                 msg = new MessageEvent(MessageEventEnum.DATA_OPERATION_ERROR_EXPECTED);
                 msg.setDescription(msg.getDescription().replace("%ITEM%", "TestCase")
                         .replace("%OPERATION%", "Update")
-                        .replace("%REASON%", "Not enought privilege to update the testcase. You mut belong to Test Privilege or even TestAdmin in case the test is in WORKING status."));
+                        .replace("%REASON%", "Not enought privilege to update the testcase. You mut belong to Test Privilege or even TestAdmin in case the test is in " + TestCase.TESTCASE_STATUS_WORKING + " status."));
                 ans.setResultMessage(msg);
 
             } else { // Test Case exist and we can update it so Global update start here
@@ -227,7 +228,7 @@ public class UpdateTestCaseWithDependencies extends HttpServlet {
                      * Update was successful. Adding Log entry.
                      */
                     ILogEventService logEventService = appContext.getBean(LogEventService.class);
-                    logEventService.createForPrivateCalls("/UpdateTestCaseWithDependencies", "UPDATE", "Update TestCase Script : ['" + testcase.getTest() + "'|'" + testcase.getTestcase() + "'] version : " + testcase.getVersion(), request);
+                    logEventService.createForPrivateCalls("/UpdateTestCaseWithDependencies", "UPDATE", LogEvent.STATUS_INFO, "Update TestCase Script : ['" + testcase.getTest() + "'|'" + testcase.getTestcase() + "'] version : " + testcase.getVersion(), request);
                 }
 
             }
@@ -256,7 +257,11 @@ public class UpdateTestCaseWithDependencies extends HttpServlet {
             String type = propJson.getString("type");
             String value = propJson.getString("value1");
             String value2 = propJson.getString("value2");
-            String length = propJson.getString("length");
+            String value3 = "";
+            if (propJson.has("value3")) {
+                value3 = propJson.getString("value3");
+            }
+            String length = String.valueOf(propJson.getInt("length"));
             int rowLimit = propJson.getInt("rowLimit");
             int retryNb = propJson.optInt("retryNb");
             int retryPeriod = propJson.optInt("retryPeriod");
@@ -277,6 +282,7 @@ public class UpdateTestCaseWithDependencies extends HttpServlet {
                             .database(database)
                             .value1(value)
                             .value2(value2)
+                            .value3(value3)
                             .length(length)
                             .rowLimit(rowLimit)
                             .cacheExpire(cacheExpire)
@@ -307,7 +313,7 @@ public class UpdateTestCaseWithDependencies extends HttpServlet {
             String conditionValue1 = step.getString("conditionValue1");
             String conditionValue2 = step.getString("conditionValue2");
             String conditionValue3 = step.getString("conditionValue3");
-            JSONArray conditionOptions = ParameterParserUtil.parseJSONArrayParamAndDecode(step.getString("conditionOptions"), new JSONArray(), "UTF8");
+            JSONArray conditionOptions = step.getJSONArray("conditionOptions");
             String description = step.getString("description");
             boolean isUsingLibraryStep = step.getBoolean("isUsingLibraryStep");
             String libraryStepTest = step.getString("libraryStepTest");
@@ -355,19 +361,25 @@ public class UpdateTestCaseWithDependencies extends HttpServlet {
             String conditionValue1 = tcsaJson.getString("conditionValue1");
             String conditionValue2 = tcsaJson.getString("conditionValue2");
             String conditionValue3 = tcsaJson.getString("conditionValue3");
-            JSONArray condOptionsArray = ParameterParserUtil.parseJSONArrayParamAndDecode(tcsaJson.getString("conditionOptions"), new JSONArray(), "UTF8");
+            JSONArray condOptionsArray = tcsaJson.getJSONArray("conditionOptions");
             String action = tcsaJson.getString("action");
             String value1 = tcsaJson.getString("object");
             String value2 = tcsaJson.getString("property");
             String value3 = tcsaJson.getString("value3");
             JSONArray optionsArray = tcsaJson.getJSONArray("options");
             boolean isFatal = tcsaJson.getBoolean("isFatal");
+            boolean doScreenshotBefore = tcsaJson.getBoolean("doScreenshotBefore");
+            boolean doScreenshotAfter = tcsaJson.getBoolean("doScreenshotAfter");
+            int waitBefore = tcsaJson.getInt("waitBefore");
+            int waitAfter = tcsaJson.getInt("waitAfter");
             String description = tcsaJson.getString("description");
             String screenshot = tcsaJson.getString("screenshotFileName");
             JSONArray controlArray = tcsaJson.getJSONArray("controls");
 
             if (!delete) {
-                TestCaseStepAction tcsa = testCaseStepActionFactory.create(test, testcase, stepId, actionId, sort, conditionOperator, conditionValue1, conditionValue2, conditionValue3, condOptionsArray, action, value1, value2, value3, optionsArray, isFatal, description, screenshot);
+                TestCaseStepAction tcsa = testCaseStepActionFactory.create(test, testcase, stepId, actionId, sort, conditionOperator, conditionValue1, conditionValue2, conditionValue3, condOptionsArray,
+                        action, value1, value2, value3, optionsArray, isFatal, description, screenshot,
+                        doScreenshotBefore, doScreenshotAfter, waitBefore, waitAfter);
                 tcsa.setControls(getTestCaseStepActionControlsFromParameter(request, appContext, test, testcase, controlArray));
                 testCaseStepAction.add(tcsa);
             }
@@ -391,7 +403,7 @@ public class UpdateTestCaseWithDependencies extends HttpServlet {
             String conditionValue1 = controlJson.isNull("conditionValue1") ? "" : controlJson.getString("conditionValue1");
             String conditionValue2 = controlJson.isNull("conditionValue2") ? "" : controlJson.getString("conditionValue2");
             String conditionValue3 = controlJson.isNull("conditionValue3") ? "" : controlJson.getString("conditionValue3");
-            JSONArray conditionOptions = ParameterParserUtil.parseJSONArrayParamAndDecode(controlJson.getString("conditionOptions"), new JSONArray(), "UTF8");
+            JSONArray conditionOptions = controlJson.getJSONArray("conditionOptions");
             //String type = controlJson.getString("objType");
             String controlValue = controlJson.getString("control");
             String value1 = controlJson.getString("value1");
@@ -399,24 +411,29 @@ public class UpdateTestCaseWithDependencies extends HttpServlet {
             String value3 = controlJson.isNull("value3") ? "" : controlJson.getString("value3");
             JSONArray options = controlJson.getJSONArray("options");
             boolean isFatal = controlJson.getBoolean("isFatal");
+            boolean doScreenshotBefore = controlJson.getBoolean("doScreenshotBefore");
+            boolean doScreenshotAfter = controlJson.getBoolean("doScreenshotAfter");
+            int waitBefore = controlJson.getInt("waitBefore");
+            int waitAfter = controlJson.getInt("waitAfter");
             String description = controlJson.getString("description");
             String screenshot = controlJson.getString("screenshotFileName");
             if (!delete) {
-                testCaseStepActionControl.add(testCaseStepActionControlFactory.create(test, testCase, stepId, actionId, controlId, sort, conditionOperator, conditionValue1, conditionValue2, conditionValue3, conditionOptions, controlValue, value1, value2, value3, options, isFatal, description, screenshot));
+                testCaseStepActionControl.add(testCaseStepActionControlFactory.create(test, testCase, stepId, actionId, controlId, sort,
+                        conditionOperator, conditionValue1, conditionValue2, conditionValue3, conditionOptions,
+                        controlValue, value1, value2, value3, options, isFatal, description, screenshot, doScreenshotBefore, doScreenshotAfter, waitBefore, waitAfter));
             }
         }
         return testCaseStepActionControl;
     }
 
 // <editor-fold defaultstate="collapsed" desc="HttpServlet methods. Click on the + sign on the left to edit the code.">
-
     /**
      * Handles the HTTP <code>GET</code> method.
      *
-     * @param request  servlet request
+     * @param request servlet request
      * @param response servlet response
      * @throws ServletException if a servlet-specific error occurs
-     * @throws IOException      if an I/O error occurs
+     * @throws IOException if an I/O error occurs
      */
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
@@ -433,10 +450,10 @@ public class UpdateTestCaseWithDependencies extends HttpServlet {
     /**
      * Handles the HTTP <code>POST</code> method.
      *
-     * @param request  servlet request
+     * @param request servlet request
      * @param response servlet response
      * @throws ServletException if a servlet-specific error occurs
-     * @throws IOException      if an I/O error occurs
+     * @throws IOException if an I/O error occurs
      */
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)

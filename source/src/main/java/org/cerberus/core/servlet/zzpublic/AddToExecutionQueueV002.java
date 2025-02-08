@@ -1,5 +1,5 @@
 /**
- * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * Cerberus Copyright (C) 2013 - 2025 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -38,6 +38,7 @@ import org.apache.logging.log4j.LogManager;
 import org.cerberus.core.crud.entity.Application;
 import org.cerberus.core.crud.entity.CampaignParameter;
 import org.cerberus.core.crud.entity.CountryEnvParam;
+import org.cerberus.core.crud.entity.LogEvent;
 import org.cerberus.core.crud.entity.TestCase;
 import org.cerberus.core.crud.entity.TestCaseCountry;
 import org.cerberus.core.crud.entity.TestCaseExecutionQueue;
@@ -181,7 +182,7 @@ public class AddToExecutionQueueV002 extends HttpServlet {
          * Adding Log entry.
          */
         ILogEventService logEventService = appContext.getBean(ILogEventService.class);
-        logEventService.createForPublicCalls("/AddToExecutionQueueV002", "CALL", "AddToExecutionQueueV002 called : " + request.getRequestURL(), request);
+        logEventService.createForPublicCalls("/AddToExecutionQueueV002", "CALL", LogEvent.STATUS_INFO, "AddToExecutionQueueV002 called : " + request.getRequestURL(), request);
 
         if (apiKeyService.authenticate(request, response)) {
 
@@ -322,7 +323,7 @@ public class AddToExecutionQueueV002 extends HttpServlet {
                 errorMessage.append("Error - No Country defined. You can either feed it with parameter '" + PARAMETER_COUNTRY + "' or add it into the campaign definition.\n");
                 error = true;
             }
-            if ((StringUtil.isEmpty(robot)) && (browsers == null || browsers.isEmpty())) {
+            if ((StringUtil.isEmptyOrNull(robot)) && (browsers == null || browsers.isEmpty())) {
                 errorMessage.append("Error - No Browser defined. You can either feed it with parameter '" + PARAMETER_BROWSER + "' or add it into the campaign definition.\n");
                 error = true;
             }
@@ -409,7 +410,7 @@ public class AddToExecutionQueueV002 extends HttpServlet {
                                             if (envMap.containsKey(app.getSystem() + LOCAL_SEPARATOR + country.getCountry() + LOCAL_SEPARATOR + environment)) {
 
                                                 // Create Tag only if not already done and defined.
-                                                if (!StringUtil.isEmpty(tag) && !tagAlreadyAdded) {
+                                                if (!StringUtil.isEmptyOrNull(tag) && !tagAlreadyAdded) {
                                                     // We create or update it.
                                                     ITagService tagService = appContext.getBean(ITagService.class);
                                                     tagService.createAuto(tag, campaign, user, envJSONArray, countryJSONArray);
@@ -467,11 +468,18 @@ public class AddToExecutionQueueV002 extends HttpServlet {
                     LOG.warn(ex);
                 }
 
+                Map<String, TestCaseExecutionQueue> testCasesInserted = new HashMap<>();
+                for (TestCaseExecutionQueue toInsert : toInserts) {
+                    if (!testCasesInserted.containsKey(inQueueService.getUniqKey(toInsert.getTest(), toInsert.getTestCase(), toInsert.getCountry(), toInsert.getEnvironment()))) {
+                        testCasesInserted.put(inQueueService.getUniqKey(toInsert.getTest(), toInsert.getTestCase(), toInsert.getCountry(), toInsert.getEnvironment()), toInsert);
+                    }
+                }
+
                 // Part 2: Try to insert all these test cases to the execution queue.
                 List<String> errorMessages = new ArrayList<>();
                 for (TestCaseExecutionQueue toInsert : toInserts) {
                     try {
-                        inQueueService.convert(inQueueService.create(toInsert, true, 0, TestCaseExecutionQueue.State.QUEUED));
+                        inQueueService.convert(inQueueService.create(toInsert, true, 0, TestCaseExecutionQueue.State.QUEUED, testCasesInserted));
                         nbExe++;
                         JSONObject value = new JSONObject();
                         value.put("queueId", toInsert.getId());

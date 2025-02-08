@@ -1,5 +1,5 @@
 /**
- * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * Cerberus Copyright (C) 2013 - 2025 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -53,6 +53,7 @@ public class Tag {
     private String comment;
     private String campaign;
     private Timestamp dateEndQueue;
+    private Timestamp dateStartExe;
     private int nbExe;
     private int nbExeUsefull;
     private int nbOK;
@@ -68,6 +69,7 @@ public class Tag {
     private int ciScore;
     private int ciScoreThreshold;
     private String ciResult;
+    private boolean falseNegative;
     private String environmentList;
     private String countryList;
     private String robotDecliList;
@@ -76,6 +78,7 @@ public class Tag {
     private String reqEnvironmentList;
     private String reqCountryList;
     private String browserstackBuildHash;
+    private String browserstackAppBuildHash;
     private String xRayTestExecution;
     private String xRayURL;
     private String xRayMessage;
@@ -110,6 +113,7 @@ public class Tag {
             result.put("campaign", this.campaign);
             result.put("description", this.description);
             result.put("browserstackBuildHash", this.browserstackBuildHash);
+            result.put("browserstackAppBuildHash", this.browserstackAppBuildHash);
             result.put("lambdaTestBuild", this.lambdaTestBuild);
         } catch (Exception ex) {
             LOG.error(ex.toString(), ex);
@@ -127,6 +131,7 @@ public class Tag {
             result.put("description", this.description);
             result.put("comment", this.comment);
             result.put("DateEndQueue", this.dateEndQueue);
+            result.put("DateStartExe", this.dateStartExe);
             result.put("nbExe", this.nbExe);
             result.put("nbExeUsefull", this.nbExeUsefull);
             result.put("nbOK", this.nbOK);
@@ -142,6 +147,7 @@ public class Tag {
             result.put("ciScore", this.ciScore);
             result.put("ciScoreThreshold", this.ciScoreThreshold);
             result.put("ciResult", this.ciResult);
+            result.put("falseNegative", this.falseNegative);
             result.put("environmentList", this.environmentList);
             result.put("countryList", this.countryList);
             result.put("robotDecliList", this.robotDecliList);
@@ -154,6 +160,7 @@ public class Tag {
             result.put("UsrModif", this.usrModif);
             result.put("DateModif", this.dateModif);
             result.put("browserstackBuildHash", this.browserstackBuildHash);
+            result.put("browserstackAppBuildHash", this.browserstackAppBuildHash);
             result.put("lambdaTestBuild", this.lambdaTestBuild);
             result.put("xRayTestExecution", this.xRayTestExecution);
             result.put("xRayURL", this.xRayURL);
@@ -182,15 +189,18 @@ public class Tag {
             cerberusURL = StringUtil.addSuffixIfNotAlready(cerberusURL, "/");
             result.put("link", cerberusURL + "ReportingExecutionByTag.jsp?Tag=" + URLEncoder.encode(this.tag, "UTF-8"));
             result.put("tag", this.tag);
-            if (this.dateEndQueue != null && this.dateCreated != null) {
-                result.put("tagDurationInMs", (this.dateEndQueue.getTime() - this.dateCreated.getTime()));
+            if (this.dateEndQueue != null && this.dateStartExe != null) {
+                result.put("tagDurationInMs", (this.dateEndQueue.getTime() - this.dateStartExe.getTime()));
             }
             result.put("CI", this.ciResult);
+            result.put("falseNegative", this.falseNegative);
             result.put("start", this.dateCreated);
+            result.put("startExe", this.dateStartExe);
             result.put("end", this.dateEndQueue);
             result.put("campaign", this.campaign);
             result.put("description", this.description);
             result.put("browserstackBuildHash", this.browserstackBuildHash);
+            result.put("browserstackAppBuildHash", this.browserstackAppBuildHash);
             result.put("lambdaTestBuild", this.lambdaTestBuild);
             JSONObject result1 = new JSONObject();
             result1.put("OK", this.nbOK);

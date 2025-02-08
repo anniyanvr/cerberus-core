@@ -1,5 +1,5 @@
 /**
- * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * Cerberus Copyright (C) 2013 - 2025 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -19,21 +19,24 @@
  */
 package org.cerberus.core.crud.entity;
 
-import lombok.*;
-
-import javax.persistence.Entity;
+import java.sql.Timestamp;
 import javax.persistence.Id;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.NoArgsConstructor;
+import lombok.ToString;
 
 /**
  * @author bcivel
  */
-@Entity
-@Getter
-@Setter
+@Data
 @Builder
 @EqualsAndHashCode
 @AllArgsConstructor
 @NoArgsConstructor
+@ToString
 public class CountryEnvironmentParameters {
 
     @Id
@@ -44,6 +47,8 @@ public class CountryEnvironmentParameters {
     private String environment;
     @Id
     private String application;
+    
+    private boolean isActive;
     private String ip;
     private String domain;
     private String url;
@@ -52,9 +57,15 @@ public class CountryEnvironmentParameters {
     private String var2;
     private String var3;
     private String var4;
+    private String secret1;
+    private String secret2;
     private String mobileActivity;
     private String mobilePackage;
     private int poolSize;
+    private String usrCreated;
+    private Timestamp dateCreated;
+    private String usrModif;
+    private Timestamp dateModif;
 
     public CountryEnvironmentParameters(String system, String country, String environment, String application) {
         this.system=system;

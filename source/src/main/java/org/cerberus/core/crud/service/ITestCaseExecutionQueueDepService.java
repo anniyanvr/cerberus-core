@@ -1,5 +1,5 @@
 /**
- * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * Cerberus Copyright (C) 2013 - 2025 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -20,7 +20,9 @@
 package org.cerberus.core.crud.service;
 
 import java.util.List;
+import java.util.Map;
 import org.cerberus.core.crud.entity.TestCaseExecution;
+import org.cerberus.core.crud.entity.TestCaseExecutionQueue;
 import org.cerberus.core.crud.entity.TestCaseExecutionQueueDep;
 import org.cerberus.core.exception.CerberusException;
 import org.cerberus.core.util.answer.Answer;
@@ -44,9 +46,14 @@ public interface ITestCaseExecutionQueueDepService {
      * @param tag
      * @param test
      * @param testcase
+     * @param queueToInsert Optionally that hashmap include all Execution of the
+     * context. This is used in order to avoid inserting a dependency on a
+     * testcase that is not included inside the campaign.
+     * @param withDep
+     *
      * @return
      */
-    AnswerItem<Integer> insertFromTestCaseDep(long queueId, String env, String country, String tag, String test, String testcase);
+    AnswerItem<Integer> insertFromTestCaseDep(long queueId, String env, String country, String tag, String test, String testcase, Map<String, TestCaseExecutionQueue> queueToInsert, boolean withDep);
 
     /**
      * Insert execution dependencies to queueid from existing ExeQueueId
@@ -64,14 +71,31 @@ public interface ITestCaseExecutionQueueDepService {
      * @param env
      * @param Country
      * @param tag
-     * @param type
      * @param test
      * @param testCase
      * @param comment
      * @param exeId
+     * @param queueId
      * @return
      */
-    AnswerItem<Integer> updateStatusToRelease(String env, String Country, String tag, String type, String test, String testCase, String comment, long exeId, long queueId);
+    AnswerItem<Integer> updateStatusToRelease(String env, String Country, String tag, String test, String testCase, String comment, long exeId, long queueId);
+
+    /**
+     *
+     * @param id
+     * @param comment
+     * @param exeId
+     * @param queueId
+     * @return
+     */
+    AnswerItem<Integer> updateStatusToRelease(long id, String comment, long exeId, long queueId);
+
+    /**
+     *
+     * @param id
+     * @return
+     */
+    AnswerItem<Integer> updateStatusToRelease(long id);
 
     /**
      *
@@ -118,11 +142,40 @@ public interface ITestCaseExecutionQueueDepService {
 
     /**
      *
-     * That method manage the dependency after the end of an execution.
+     * @return
+     */
+    AnswerList<TestCaseExecutionQueueDep> getWaitingDepReadytoRelease();
+
+    /**
+     *
+     * @param env
+     * @param Country
+     * @param tag
+     * @param test
+     * @param testCase
+     * @return
+     */
+    AnswerItem<Integer> insertNewTimingDep(String env, String Country, String tag, String test, String testCase, long exeID);
+
+    /**
+     *
+     * That method manage the dependency after the end of an execution. It will
+     * release all associated dependencies and check the associated queue
+     * execution if they can also be released to QUEUED status
      *
      * @param tCExecution
      */
     void manageDependenciesEndOfExecution(TestCaseExecution tCExecution);
+
+    /**
+     *
+     * That method manage the dependency after a queue dep has been inserted. It
+     * will release all associated dependencies and check the associated queue
+     * execution if they can also be released to QUEUED status
+     *
+     * @param executionQueueDep
+     */
+    void manageDependenciesNewOfQueueDep(TestCaseExecutionQueueDep executionQueueDep);
 
     /**
      *
@@ -131,6 +184,17 @@ public interface ITestCaseExecutionQueueDepService {
      * @param idQueue
      */
     void manageDependenciesEndOfQueueExecution(long idQueue);
+
+    /**
+     * That method manage the dependency that are based on TIMINGS. It will
+     * release all associated dependencies and check the associated queue
+     * execution if they can also be released to QUEUED status. It should be
+     * triggered periodically
+     *
+     * @return the number of queue execution that has been released and ready to
+     * be triggered.
+     */
+    int manageDependenciesCheckTimingWaiting();
 
     /**
      *

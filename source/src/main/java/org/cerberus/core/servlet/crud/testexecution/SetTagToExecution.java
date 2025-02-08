@@ -1,5 +1,5 @@
 /**
- * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * Cerberus Copyright (C) 2013 - 2025 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -69,7 +69,7 @@ public class SetTagToExecution extends HttpServlet {
             executionService.setTagToExecution(Long.valueOf(id), tag);
 
             // Create Tag when exist.
-            if (!StringUtil.isEmpty(tag)) {
+            if (!StringUtil.isEmptyOrNull(tag)) {
                 // We create or update it.
                 ITagService tagService = appContext.getBean(ITagService.class);
                 tagService.createAuto(tag, "", request.getRemoteUser(), null, null);

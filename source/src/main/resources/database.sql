@@ -4326,10 +4326,10 @@ ALTER TABLE `tag` CHANGE COLUMN `id` `id` INT(11) NOT NULL AUTO_INCREMENT ;
 ALTER TABLE `tag` DROP INDEX `IX_tag_01` , ADD UNIQUE INDEX `IX_tag_01` (`Tag` ASC);
 
 -- 1213
-INSERT INTO `tag` (`Tag`) (select distinct tag from testcaseexecution a where tag != "") ON DUPLICATE KEY UPDATE Tag=a.tag;
+INSERT INTO `tag` (`Tag`) (select distinct tag from testcaseexecution a where tag != '') ON DUPLICATE KEY UPDATE Tag=a.tag;
 
 -- 1214
-INSERT INTO `tag` (`Tag`) (select distinct tag from testcaseexecutionqueue a where tag != "") ON DUPLICATE KEY UPDATE Tag=a.tag;
+INSERT INTO `tag` (`Tag`) (select distinct tag from testcaseexecutionqueue a where tag != '') ON DUPLICATE KEY UPDATE Tag=a.tag;
 
 -- 1215
 DROP TABLE `tag`;
@@ -4342,16 +4342,16 @@ CREATE TABLE `tag` (  `id` INT(11) NOT NULL AUTO_INCREMENT,  `Tag` VARCHAR(50) N
 ALTER TABLE `tag` ADD CONSTRAINT `FK_tag_1` FOREIGN KEY (`Campaign`) REFERENCES `campaign` (`campaign`)  ON DELETE SET NULL  ON UPDATE CASCADE;
 
 -- 1218
-INSERT INTO `tag` (`Tag`) (select distinct tag from testcaseexecutionqueue a where tag != "")  ON DUPLICATE KEY UPDATE Tag=a.tag;
+INSERT INTO `tag` (`Tag`) (select distinct tag from testcaseexecutionqueue a where tag != '')  ON DUPLICATE KEY UPDATE Tag=a.tag;
 
 -- 1219
-INSERT INTO `tag` (`Tag`) (select distinct tag from testcaseexecution a where tag != "")  ON DUPLICATE KEY UPDATE Tag=a.tag;
+INSERT INTO `tag` (`Tag`) (select distinct tag from testcaseexecution a where tag != '')  ON DUPLICATE KEY UPDATE Tag=a.tag;
 
 -- 1220
-INSERT INTO `tag` (`Tag`) (select distinct tag from testcaseexecutionqueue a where tag != "")  ON DUPLICATE KEY UPDATE Tag=a.tag;
+INSERT INTO `tag` (`Tag`) (select distinct tag from testcaseexecutionqueue a where tag != '')  ON DUPLICATE KEY UPDATE Tag=a.tag;
 
 -- 1221
-INSERT INTO `tag` (`Tag`) (select distinct tag from testcaseexecution a where tag != "")  ON DUPLICATE KEY UPDATE Tag=a.tag;
+INSERT INTO `tag` (`Tag`) (select distinct tag from testcaseexecution a where tag != '')  ON DUPLICATE KEY UPDATE Tag=a.tag;
 
 -- 1222
 select 1 from DUAL;
@@ -5005,10 +5005,10 @@ ALTER TABLE `testcaseexecution` ADD COLUMN `TestCasePriority` INT(1) UNSIGNED NO
 ALTER TABLE `tag`  ADD COLUMN `CountryList` TEXT NULL AFTER `CIResult`, ADD COLUMN `EnvironmentList` TEXT NULL AFTER `CountryList`, ADD COLUMN `RobotDecliList` TEXT NULL AFTER `EnvironmentList`, ADD COLUMN `SystemList` TEXT NULL AFTER `RobotDecliList`, ADD COLUMN `ApplicationList` TEXT NULL AFTER `SystemList`, ADD COLUMN `ReqCountryList` TEXT NULL AFTER `ApplicationList`, ADD COLUMN `ReqEnvironmentList` TEXT NULL AFTER `ReqCountryList`;
 
 -- 1402
-UPDATE `parameter` SET description="Cerberus End of tag execution notification email body. %TAG%, %ENVIRONMENTLIST%, %COUNTRYLIST%, %APPLICATIONLIST%, %SYSTEMLIST%, %ROBOTDECLILIST%, %URLTAGREPORT%, %CAMPAIGN%, %TAGDURATION%, %TAGSTART%, %TAGEND%, %CIRESULT%, %CISCORE%, %CISCORETHRESHOLD%, %TAGGLOBALSTATUS% and %TAGTCDETAIL% can be used as variables." , value=replace(replace(value,'%CISCORETHRESHOLD%</td>','%CISCORETHRESHOLD%</td><td>%ENVIRONMENTLIST%</td><td>%COUNTRYLIST%</td>'),'Threshold</td>','Threshold</td><td>Environments</td><td>Countries</td>') where param='cerberus_notification_tagexecutionend_body';
+UPDATE `parameter` SET description='Cerberus End of tag execution notification email body. %TAG%, %ENVIRONMENTLIST%, %COUNTRYLIST%, %APPLICATIONLIST%, %SYSTEMLIST%, %ROBOTDECLILIST%, %URLTAGREPORT%, %CAMPAIGN%, %TAGDURATION%, %TAGSTART%, %TAGEND%, %CIRESULT%, %CISCORE%, %CISCORETHRESHOLD%, %TAGGLOBALSTATUS% and %TAGTCDETAIL% can be used as variables.' , value=replace(replace(value,'%CISCORETHRESHOLD%</td>','%CISCORETHRESHOLD%</td><td>%ENVIRONMENTLIST%</td><td>%COUNTRYLIST%</td>'),'Threshold</td>','Threshold</td><td>Environments</td><td>Countries</td>') where param='cerberus_notification_tagexecutionend_body';
 
 -- 1403
-UPDATE `parameter` SET description="Cerberus start of tag execution notification email body. %TAG%, %REQENVIRONMENTLIST%, %REQCOUNTRYLIST%, %URLTAGREPORT% and %CAMPAIGN% can be used as variables." , value=replace(value,'The Cerberus Tag Execution %TAG% from campaign %CAMPAIGN% has just started.','Tag <b>%TAG%</b> from campaign <b>%CAMPAIGN%</b> has just started for %REQENVIRONMENTLIST% on %REQCOUNTRYLIST%.') where param='cerberus_notification_tagexecutionstart_body';
+UPDATE `parameter` SET description='Cerberus start of tag execution notification email body. %TAG%, %REQENVIRONMENTLIST%, %REQCOUNTRYLIST%, %URLTAGREPORT% and %CAMPAIGN% can be used as variables.' , value=replace(value,'The Cerberus Tag Execution %TAG% from campaign %CAMPAIGN% has just started.','Tag <b>%TAG%</b> from campaign <b>%CAMPAIGN%</b> has just started for %REQENVIRONMENTLIST% on %REQCOUNTRYLIST%.') where param='cerberus_notification_tagexecutionstart_body';
 
 -- 1404
 INSERT INTO `parameter` (`system`, `param`, `value`, `description`)
@@ -5222,7 +5222,7 @@ UPDATE testcasestepactioncontrol SET Value3 = '' WHERE Value3 IS NULL;
 ALTER TABLE `testcase` DROP FOREIGN KEY `FK_testcase_03`, DROP COLUMN `Ticket`, DROP COLUMN `Project`, ADD COLUMN `Executor` VARCHAR(45) NOT NULL DEFAULT '' AFTER `Implementer`, CHANGE COLUMN `BugID` `BugID` TEXT NOT NULL, DROP INDEX `IX_testcase_04`  ;
 
 -- 1464
-UPDATE testcase SET bugID = CASE WHEN bugID = "" or bugID is null THEN "[]" ELSE concat('[{"id":"',bugID,'","desc":""}]') END;
+UPDATE testcase SET bugID = CASE WHEN bugID = '' or bugID is null THEN "[]" ELSE concat('[{"id":"',bugID,'","desc":""}]') END;
 
 -- 1465
 ALTER TABLE `test` ADD COLUMN `ParentTest` VARCHAR(45) NULL DEFAULT NULL AFTER `Active`;
@@ -5331,10 +5331,10 @@ INSERT INTO invariant (idname, value, sort, description, VeryShortDesc)
   VALUES('PROPERTYTYPE', 'getFromNetworkTraffic', 45, 'Get stats from Network Trafic JSON data structure.', 'Get Network Stats');
 
 -- 1492
-UPDATE testcasestepaction set Value2=concat("{'command': '", Value1, "', 'args': ['", Value2, "']}"), Value1="mobile: shell" where Action='executeCommand';
+UPDATE testcasestepaction set Value2=concat("{'command': '", Value1, "', 'args': ['", Value2, "']}"), Value1='mobile: shell' where Action='executeCommand';
 
 -- 1493
-UPDATE testcasecountryproperties set Value2=concat("{'command': '", Value1, "', 'args': ['']}"), Value1="mobile: shell" where Type='getFromCommand';
+UPDATE testcasecountryproperties set Value2=concat("{'command': '", Value1, "', 'args': ['']}"), Value1='mobile: shell' where Type='getFromCommand';
 
 -- 1494
 ALTER TABLE testcase CHANGE `Group` `Type` VARCHAR(45);
@@ -6212,3 +6212,396 @@ INSERT INTO `invariant` (`idname`, `value`, `sort`, `description`)
 INSERT INTO `invariant` (`idname`, `value`, `sort`, `description`, `VeryShortDesc`)
     VALUES ('CONTROL', 'verifyElementChecked', 4930, 'Verify the element (checkbox) is checked','verifyElementChecked'),
            ('CONTROL', 'verifyElementNotChecked', 4940, 'Verify the element (checkbox) is not checked','verifyElementNotChecked');
+
+-- 1751
+INSERT INTO `invariant` (`idname`, `value`, `sort`, `description`, `veryshortdesc`)
+  VALUES ('LANGUAGE', 'fa', 400, 'فارسی', 'فارسی');
+
+-- 1752
+INSERT INTO `parameter` (`system`, `param`, `value`, `description`)
+  VALUES ('', 'cerberus_instancelogo_url', 'https://vm.cerberus-testing.org/img/logo.png', 'URl that point to the instance logo. Use that parameter in order to personalize some screens and pdf report.'),
+    ('', 'cerberus_pdfcampaignreportdisplaycountry_boolean', 'true', 'Boolean in order to show or hide the country column on pdf campaign execution pdf report.');
+
+-- 1753
+INSERT INTO `invariant` (`idname`, `value`, `sort`, `description`, `veryshortdesc`)
+ VALUES ('ACTION', 'switchToContext', 5450, 'Switch to another application context', 'switchToContext');
+
+-- 1754
+ALTER TABLE tag MODIFY COLUMN Description TEXT NULL;
+
+-- 1755
+INSERT INTO `invariant` (`idname`, `value`, `sort`, `description`)
+  VALUES   ('CAMPAIGN_TCCRITERIA', 'TESTFOLDER', 50 , '');
+
+-- 1756
+INSERT INTO `invariant` (`idname`, `value`, `sort`, `description`)
+    VALUES   ('CONTROL','verifyElementTextNotContains',4210, 'verifyElementTextNotContains');
+
+-- 1757
+INSERT INTO `parameter` (`system`, `param`, `value`, `description`)
+  VALUES ('', 'cerberus_testdatalib_subdataDefaultValue', '', 'Default value when a subdata does not match with the datalib resultset (when the "cerberus_testdatalib_ignoreNonMatchedSubdata property" is set to true).'),
+         ('', 'cerberus_testdatalib_ignoreNonMatchedSubdata', 'false', 'If set to true, then allow subdata expression not to match the datalib resultset. Any non-matched subdata will be set by the "cerberus_testdatalib_subdataDefaultValue" property value.');
+
+-- 1758
+ALTER TABLE `countryenvironmentparameters` 
+    ADD COLUMN `UsrCreated` varchar(45) NOT NULL DEFAULT '',
+    ADD COLUMN `DateCreated` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    ADD COLUMN `UsrModif` varchar(45) NOT NULL DEFAULT '',
+    ADD COLUMN `DateModif` TIMESTAMP NOT NULL DEFAULT '1970-01-01 01:01:01';
+
+-- 1759
+DROP TABLE `dashboardEntry`, `dashboardGroupEntries`, `dashboardGroupEntriesApplication`, `dashboardGroupEntriesCampaign`, `dashboardReportItem`, `dashboardTypeReportItem` ;
+
+-- 1760
+CREATE TABLE `datafile` ( `ID` int(11) NOT NULL AUTO_INCREMENT,  `Fileid` varchar(150) NOT NULL,  `FileName` varchar(250) DEFAULT NULL,  `UsrCreated` varchar(45) DEFAULT NULL,  `DateCreated` timestamp NULL DEFAULT NULL,  `UsrModif` varchar(45) DEFAULT NULL,  `DateModif` timestamp NULL DEFAULT NULL,  PRIMARY KEY (`FileId`),  UNIQUE KEY `ID_UNIQUE` (`ID`) )
+  ENGINE=InnoDB AUTO_INCREMENT=13 DEFAULT CHARSET=utf8;
+
+-- 1761
+ALTER TABLE logevent 
+    MODIFY COLUMN remoteIP varchar(200) NULL,
+    MODIFY COLUMN localIP varchar(200) NULL,
+    ADD Status varchar(50) NULL AFTER `Action`;
+
+-- 1762
+ALTER TABLE testcasestepaction 
+    ADD doScreenshotBefore TINYINT DEFAULT 0 NULL AFTER ScreenshotFileName,
+    ADD doScreenshotAfter TINYINT DEFAULT 0 NULL AFTER doScreenshotBefore,
+    ADD waitBefore INT DEFAULT 0 NULL AFTER doScreenshotAfter,
+    ADD waitAfter INT DEFAULT 0 NULL AFTER waitBefore;
+
+-- 1763
+ALTER TABLE testcasestepactioncontrol 
+    ADD doScreenshotBefore TINYINT DEFAULT 0 NULL AFTER ScreenshotFileName,
+    ADD doScreenshotAfter TINYINT DEFAULT 0 NULL AFTER doScreenshotBefore,
+    ADD waitBefore INT DEFAULT 0 NULL AFTER doScreenshotAfter,
+    ADD waitAfter INT DEFAULT 0 NULL AFTER waitBefore;
+
+-- 1764-1766
+ALTER TABLE robotexecutor CHANGE executorProxyActive executorProxyType varchar(50) DEFAULT 'NONE' NOT NULL AFTER deviceLockUnlock;
+UPDATE robotexecutor set executorProxyType='NETWORKTRAFFIC' where executorProxyType='Y';
+UPDATE robotexecutor set executorProxyType='NONE' where executorProxyType='N';
+
+-- 1767
+INSERT INTO `invariant` (`idname`, `value`, `sort`, `description`)
+  VALUES   ('PROXYTYPE', 'NONE', 100, 'No Proxy..')
+  ,('PROXYTYPE', 'MANUAL', 200, 'Manual Proxy.')
+  ,('PROXYTYPE', 'NETWORKTRAFFIC', 300, 'Proxy with Network Traffic analysis and control.')
+  ,('INVARIANTPUBLIC', 'PROXYTYPE', '950', 'Robot Executor Proxy type.');
+
+-- 1768
+INSERT INTO `parameter` (`system`, `param`, `value`, `description`)
+  VALUES ('', 'cerberus_pdfcampaignreportdisplayciresult_boolean', 'true', 'Boolean in order to show or hide the cicd campaign result on pdf campaign execution pdf report.');
+
+-- 1769
+ALTER TABLE countryenvparam_log MODIFY Creator VARCHAR(45);
+
+-- 1770
+INSERT INTO `parameter` (`system`, `param`, `value`, `description`)
+  VALUES ('', 'cerberus_appium_scroll_endTopScreenPercentageScreenHeight', '0.125', 'Float value between 0 and 1 that represents the percentage of the screen height where the scroll ends. 0 for the top of the screen, 0.5 for the middle. (default to : 0.125)')
+  ,('', 'cerberus_appium_scroll_startBottomPercentageScreenHeight', '0.8', 'Float value between 0 and 1 that represents the percentage of the screen height where the scroll starts. 0.5 for the middle of the screen, 1 for the bottom. (default to : 0.8)');
+
+-- 1771
+ALTER TABLE countryenvironmentparameters MODIFY COLUMN URLLOGIN varchar(300) DEFAULT '' NOT NULL;
+
+-- 1772
+ALTER TABLE application MODIFY COLUMN SubSystem varchar(200) DEFAULT '' NOT NULL;
+
+-- 1773
+ALTER TABLE `tag` ADD COLUMN `BrowserstackAppBuildHash` VARCHAR(100) NOT NULL DEFAULT '' AFTER `BrowserstackBuildHash`;
+
+-- 1774
+UPDATE testcasecountryproperties SET `Length` = 1 where `Length` = 0;
+
+-- 1775
+UPDATE testcasestepaction SET Value1 = Value2, Value2 = '' where action = 'scrollTo' and Value1 = '' and Value2 != '';
+
+-- 1776
+ALTER TABLE `tag` ADD COLUMN `DateStartExe` TIMESTAMP NOT NULL DEFAULT '1970-01-01 01:01:01' AFTER `Campaign`;
+
+-- 1777
+UPDATE `tag` SET `DateStartExe` = `DateCreated`;
+
+-- 1778
+INSERT INTO `invariant` (`idname`, `value`, `sort`, `description`)
+  VALUES   ('SRVBODYTYPE', 'none', 200, '')
+  ,('SRVBODYTYPE', 'raw', 300, '')
+  ,('SRVBODYTYPE', 'form-data', 400, '')
+  ,('SRVBODYTYPE', 'form-urlencoded', 500, '')
+  ,('INVARIANTPRIVATE', 'SRVBODYTYPE', '950', 'Service Body type.');
+
+-- 1779
+UPDATE invariant SET idname='INVARIANTPRIVATE' WHERE idname='INVARIANTPUBLIC' AND value='PROXYTYPE';
+
+-- 1780-1785
+ALTER TABLE `appservice` ADD COLUMN `BodyType` VARCHAR(60) NOT NULL DEFAULT '' AFTER `AttachementURL`;
+UPDATE appservice a  SET a.bodytype = 'raw' where `Type` ='REST' and ServiceRequest != '';
+UPDATE appservice a  SET a.bodytype = 'form-data' where `Type` ='REST' and Description like '%[form-data]%';
+UPDATE appservice a  SET a.bodytype = 'form-urlencoded' where `Type` ='REST' and ServiceRequest = '' and a.bodytype = '';
+ALTER TABLE appservice CHANGE `Group` Collection varchar(100) DEFAULT '' NULL;
+ALTER TABLE `appservice` ADD COLUMN `SimulationParameters` TEXT AFTER `Collection`;
+
+-- 1786-1789
+UPDATE invariant SET sort=15 WHERE idname='TESTDATATYPE' AND value='CSV';
+UPDATE invariant SET value='FILE' WHERE idname='TESTDATATYPE' AND value='CSV';
+UPDATE testdatalib  SET `Type` = 'FILE' where `Type` ='CSV';
+UPDATE parameter  SET `param` = 'cerberus_testdatalibfile_path' where `param` ='cerberus_testdatalibcsv_path';
+
+-- 1790
+INSERT INTO `parameter` (`system`, `param`, `value`, `description`)
+  VALUES ('', 'cerberus_reportbytag_nblinestotriggerautohide_int', '50', 'If Report by Tag has more that this value of test case lines, it will automaticaly hide the full OK execution without any pending bug defined.');
+
+-- 1791-1796
+ALTER TABLE testcaseexecution MODIFY COLUMN `Start` timestamp(3)  NULL;
+ALTER TABLE testcaseexecution MODIFY COLUMN `End` timestamp(3) NULL;
+ALTER TABLE testcasestepactionexecution MODIFY COLUMN `Start` timestamp(3) NULL;
+ALTER TABLE testcasestepactionexecution MODIFY COLUMN `End` timestamp(3) NULL;
+ALTER TABLE testcasestepactioncontrolexecution MODIFY COLUMN `Start` timestamp(3) NULL;
+ALTER TABLE testcasestepactioncontrolexecution MODIFY COLUMN `End` timestamp(3) NULL;
+
+-- 1797
+INSERT INTO `parameter` (`system`, `param`, `value`, `description`)
+  VALUES ('', 'cerberus_featureflipping_tagstatistics_enable', 'false', 'Temporary parameter used during development of new statistics dashboard.');
+
+-- 1798
+ALTER TABLE testdatalib ADD IgnoreFirstLine BOOLEAN NOT NULL AFTER `Separator`;
+
+-- 1799
+INSERT INTO `parameter` (`system`, `param`, `value`, `description`)
+  VALUES ('', 'cerberus_homepage_nbdisplayedscheduledtag', '3', 'Number of scheduled not yet executed tag displayed inside homepage.');
+
+-- 1800
+CREATE TABLE `tagstatistic` (
+    `Id` INT NOT NULL AUTO_INCREMENT,
+    `Tag` VARCHAR(255) NOT NULL,
+    `Country` VARCHAR(45) NOT NULL,
+    `Environment` VARCHAR(45) NOT NULL,
+    `Campaign` VARCHAR(200) NOT NULL,
+    `CampaignGroup1` VARCHAR(45),
+    `SystemList` text NOT NULL,
+    `ApplicationList` text NOT NULL,
+    `DateStartExe` TIMESTAMP NOT NULL,
+    `DateEndExe` TIMESTAMP NOT NULL,
+    `NbExe` INT DEFAULT 0,
+    `NbExeUsefull` INT DEFAULT 0,
+    `NbOK` int DEFAULT 0,
+    `NbKO` int DEFAULT 0,
+    `NbFA` int DEFAULT 0,
+    `NbNA` int DEFAULT 0,
+    `NbNE` int DEFAULT 0,
+    `NbWE` int DEFAULT 0,
+    `NbPE` int DEFAULT 0,
+    `NbQU` int DEFAULT 0,
+    `NbQE` int DEFAULT 0,
+    `NbCA` int DEFAULT 0,
+    `UsrCreated` VARCHAR(45) NOT NULL DEFAULT '',
+    `DateCreated` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `UsrModif` VARCHAR(45) NOT NULL DEFAULT '',
+    `DateModif` timestamp NOT NULL DEFAULT '1970-01-01 01:01:01',
+    PRIMARY KEY (`Id`),
+    UNIQUE KEY `tag_stat_unique` (`Tag`, `Country`, `Environment`))
+    ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8;
+
+-- 1801
+ALTER TABLE application 
+    CHANGE svnurl RepoUrl varchar(150) NULL,
+    ADD BugTrackerConnector varchar(100) NULL AFTER RepoUrl,
+    ADD BugTrackerParam1 varchar(100) NULL AFTER BugTrackerConnector,
+    ADD BugTrackerParam2 varchar(100) NULL AFTER BugTrackerParam1,
+    ADD BugTrackerParam3 varchar(100) NULL AFTER BugTrackerParam2;
+
+-- 1802
+INSERT INTO `invariant` (`idname`, `value`, `sort`, `description`)
+  VALUES   ('BUGTRACKERCONNECTOR', 'REDIRECT', 100, 'Redirection to Bug Tracker..')
+  ,('INVARIANTPRIVATE', 'BUGTRACKERCONNECTOR', '910', 'Type of the Bug tracker.');
+
+-- 1803
+UPDATE application SET BugTrackerConnector = 'REDIRECT';
+
+-- 1804-1805
+ALTER TABLE testcaseexecutionqueuedep 
+    ADD DepDate TIMESTAMP NULL AFTER DepEvent,
+    ADD DepTCDelay INT DEFAULT 0 NULL AFTER DepTestCase;
+ALTER TABLE testcasedep 
+    ADD DependencyTCDelay INTEGER DEFAULT 0 NULL AFTER DependencyTestcase;
+
+-- 1806
+INSERT INTO `parameter` (`system`, `param`, `value`, `description`)
+  VALUES ('', 'cerberus_notification_tagexecutionend_googlechat_maxexelines', '20', 'Maximum number of lines of execution displayed inside the end of campaign execution googlechat notification (default to 20).');
+
+-- 1807
+ALTER TABLE `tagstatistic` MODIFY `Campaign` VARCHAR(200);
+
+-- 1808-1811
+ALTER TABLE `tagstatistic` DROP INDEX `tag_stat_unique`;
+ALTER TABLE `tagstatistic` ADD CONSTRAINT `IX_tagstatistic_01` UNIQUE (`Tag`, `Country`, `Environment`);
+ALTER TABLE `tagstatistic` ADD CONSTRAINT `FK_tagstatistic_01` FOREIGN KEY (`Campaign`) REFERENCES `campaign` (`Campaign`) ON UPDATE CASCADE ON DELETE SET NULL;
+ALTER TABLE `tagstatistic` ADD CONSTRAINT `FK_tagstatistic_02` FOREIGN KEY (`Tag`) REFERENCES `tag` (`Tag`) ON UPDATE CASCADE ON DELETE CASCADE;
+
+-- 1812-1813
+ALTER TABLE tag ADD FalseNegative BOOLEAN DEFAULT false NULL AFTER CIResult;
+ALTER TABLE testcaseexecution ADD FalseNegative BOOLEAN DEFAULT false NULL AFTER ControlStatus;
+
+-- 1814-1817
+ALTER TABLE robot CHANGE COLUMN `active` `IsActive` VARCHAR(45);
+UPDATE robot SET `IsActive` = 1 WHERE `IsActive` = 'Y';
+UPDATE robot SET `IsActive` = 0 WHERE `IsActive` != '1';
+ALTER TABLE robot MODIFY `IsActive` BOOLEAN DEFAULT 1;
+
+-- 1818-1821
+ALTER TABLE robotexecutor CHANGE COLUMN `active` `IsActive` VARCHAR(45);
+UPDATE robotexecutor SET `IsActive` = 1 WHERE `IsActive` = 'Y';
+UPDATE robotexecutor SET `IsActive` = 0 WHERE `IsActive` != '1';
+ALTER TABLE robotexecutor MODIFY `IsActive` BOOLEAN DEFAULT 1;
+
+-- 1822-1825
+ALTER TABLE robotexecutor CHANGE COLUMN `deviceLockUnlock` `IsDeviceLockUnlock` VARCHAR(45);
+UPDATE robotexecutor SET `IsDeviceLockUnlock` = 1 WHERE `IsDeviceLockUnlock` = 'Y';
+UPDATE robotexecutor SET `IsDeviceLockUnlock` = 0 WHERE `IsDeviceLockUnlock` != '1';
+ALTER TABLE robotexecutor MODIFY `IsDeviceLockUnlock` BOOLEAN DEFAULT 0;
+
+-- 1826
+ALTER TABLE countryenvironmentparameters 
+    ADD Secret1 varchar(200) DEFAULT '' NOT NULL AFTER Var4,
+    ADD Secret2 varchar(200) DEFAULT '' NOT NULL AFTER Secret1,
+    ADD `IsActive` BOOLEAN DEFAULT 1 AFTER Application;
+
+-- 1827
+INSERT INTO `parameter` (`system`, `param`, `value`, `description`)
+  VALUES ('', 'cerberus_jiracloud_url', '', 'JIRA Cloud Site URL. Ex : http://yourcompany.atlassian.net/'),
+    ('', 'cerberus_jiradc_url', '', 'JIRA DC Site URL. Ex : http://yourcompany.atlassian.net/');
+
+-- 1828
+INSERT INTO `invariant` (`idname`, `value`, `sort`, `description`, `VeryShortDesc`) VALUES 
+    ('EXTERNALPROVIDER', 'Jira-Cloud', '150', 'JIRA Cloud', ''),
+    ('EXTERNALPROVIDER', 'Jira-DC', '160', 'JIRA DC', '');
+
+-- 1829
+ALTER TABLE appservice 
+    ADD AuthType varchar(200) DEFAULT 'none' NOT NULL AFTER SimulationParameters,
+    ADD AuthUser varchar(500) DEFAULT '' NOT NULL AFTER AuthType,
+    ADD AuthPassword varchar(500) DEFAULT '' NOT NULL AFTER AuthUser,
+    ADD `AuthAddTo` varchar(500) DEFAULT '' NOT NULL AFTER AuthPassword;
+
+-- 1830
+INSERT INTO `invariant` (`idname`, `value`, `sort`, `description`)
+  VALUES   
+   ('AUTHTYPE', 'none', 100, 'No Authorization')
+  ,('AUTHTYPE', 'API Key', 150, 'API Key Authorization')
+  ,('AUTHTYPE', 'Bearer Token', 200, 'Bearer Token Authorization')
+  ,('AUTHTYPE', 'Basic Auth', 250, 'Basic Authorization')
+  ,('INVARIANTPRIVATE', 'AUTHTYPE', '1000', 'Authorization Type')
+  ,('AUTHADDTO', 'Query String', 100, 'Authorization Parameters in Query String')
+  ,('AUTHADDTO', 'Header', 150, 'Authorization Parameters in http headers')
+  ,('INVARIANTPRIVATE', 'AUTHADDTO', '1050', 'Authorization API Key Parameter Method');
+
+-- 1831
+INSERT INTO `parameter` (`system`, `param`, `value`, `description`)
+  VALUES ('', 'cerberus_jiracloud_apiuser', '', 'JIRA Cloud User that will be used to create JIRA issues. Ex : myuser@gmail.com'),
+    ('', 'cerberus_jiracloud_apiuser_apitoken', '', 'JIRA Cloud User API Token that will be used to create JIRA issues.');
+
+-- 1832
+INSERT INTO `parameter` (`system`, `param`, `value`, `description`)
+  VALUES ('', 'cerberus_autobugcreation_enable', 'false', 'Activate the automatic creation of a bug following an execution.');
+
+-- 1833
+INSERT IGNORE INTO `invariant` (`idname`, `value`, `sort`, `description`, `VeryShortDesc`) VALUES 
+    ('PRIORITY', '0', 0, 'No Priority defined', '');
+
+-- 1834
+UPDATE application set BugTrackerConnector = '' WHERE BugTrackerConnector = 'REDIRECT';
+
+-- 1835
+INSERT INTO `invariant` (`idname`, `value`, `sort`, `description`)
+  VALUES   ('BUGTRACKERCONNECTOR', 'GITHUB', 200, 'Github Bug Tracker connector')
+        ,('BUGTRACKERCONNECTOR', 'NONE', 50, 'No Server to Server connector')
+        ,('BUGTRACKERCONNECTOR', 'JIRA', 100, 'JIRA Bug Tracker connector') ;
+
+-- 1836
+DELETE FROM invariant WHERE idname ='BUGTRACKERCONNECTOR' and value='REDIRECT';
+
+-- 1837
+INSERT INTO `parameter` (`system`, `param`, `value`, `description`)
+  VALUES ('', 'cerberus_github_apitoken', '', 'Github Personal Access Token that will be used to create issues from API.');
+
+-- 1838 - 1839 ADD VALUE3
+ALTER TABLE `testcasecountryproperties`
+  ADD COLUMN `Value3` TEXT NULL DEFAULT NULL AFTER `Value2`;
+ALTER TABLE `testcaseexecutiondata`
+  ADD COLUMN `Value3Init` TEXT NULL DEFAULT NULL AFTER `Value2Init`,
+  ADD COLUMN `Value3` TEXT NULL DEFAULT NULL AFTER `Value2`;
+
+-- 1840 - 1846 UPDATE PROPERTIES ACCORDINGLY WITH NEW PROPERTY FEATURE
+UPDATE `testcasecountryproperties` SET `Value3` = 'value' , `nature` = 'STATIC'  WHERE `type` = 'getFromHTML';
+UPDATE `testcasecountryproperties` SET  `Type` = 'getFromHTML' , `Value3` = 'value' , `nature` = 'STATIC'  WHERE `type` = 'getFromHTMLVisible';
+UPDATE `testcasecountryproperties` SET  `Type` = 'getFromHTML' , `Value3` = 'coordinate' , `nature` = 'STATIC'  WHERE `type` = 'getElementPosition';
+UPDATE `testcasecountryproperties` SET  `Type` = 'getFromHTML' , `Value3` = 'attribute' , `nature` = 'STATIC'  WHERE `type` = 'getAttributeFromHTML';
+UPDATE `testcasecountryproperties` SET  `Type` = 'getFromXml' , `Value3` = 'raw' , `nature` = 'STATIC'  WHERE `type` = 'getRawFromXml';
+UPDATE `testcasecountryproperties` SET  `Value3` = 'valueList' , `nature` = 'STATIC'  WHERE `type` = 'getFromJson';
+UPDATE `testcasecountryproperties` SET  `Type` = 'getFromJson' , `Value3` = 'rawList' , `nature` = 'STATIC'  WHERE `type` = 'getRawFromJson';
+
+-- 1847 - 1848 RANK VALUE DEFAULT TO 0 INSTEAD OF 1
+ALTER TABLE `testcasecountryproperties` CHANGE COLUMN `Rank` `Rank` INT NOT NULL DEFAULT '0' ;
+UPDATE `testcasecountryproperties` SET  `Rank` = 0  WHERE `Rank` = 1;
+
+-- 1849 1856 REMOVE  DEPRECATED PROPERTIES
+DELETE FROM `invariant` WHERE (`idname` = 'PROPERTYTYPE') and (`value` = 'executeSoapFromLib');
+DELETE FROM `invariant` WHERE (`idname` = 'PROPERTYTYPE') and (`value` = 'executeSqlFromLib');
+DELETE FROM `invariant` WHERE (`idname` = 'PROPERTYTYPE') and (`value` = 'getDifferencesFromXml');
+DELETE FROM `invariant` WHERE (`idname` = 'PROPERTYTYPE') and (`value` = 'getAttributeFromHtml');
+DELETE FROM `invariant` WHERE (`idname` = 'PROPERTYTYPE') and (`value` = 'getElementPosition');
+DELETE FROM `invariant` WHERE (`idname` = 'PROPERTYTYPE') and (`value` = 'getFromHtmlVisible');
+DELETE FROM `invariant` WHERE (`idname` = 'PROPERTYTYPE') and (`value` = 'getRawFromJson');
+DELETE FROM `invariant` WHERE (`idname` = 'PROPERTYTYPE') and (`value` = 'getRawFromXml');
+
+-- 1857 ADD COLUMN ACCEPTNOTIFICATIONS ON ROBOT
+ALTER TABLE `robot` ADD COLUMN `AcceptNotifications` TINYINT(1) NULL DEFAULT 0 AFTER `ProfileFolder`;
+
+-- 1858
+INSERT INTO `parameter` (`system`, `param`, `value`, `description`)
+  VALUES ('', 'cerberus_executionloghar_enable', 'false', 'Enable saving of har file at the end of non OK executions.');
+
+-- 1859
+UPDATE parameter SET description='Enable saving of har file at the end of executions (robotlog=2 for all executions or robotlog=1 for all non OK executions).' WHERE param='cerberus_executionloghar_enable';
+
+-- 1860-1868
+ALTER TABLE testcaseexecution MODIFY COLUMN `Start` timestamp(3)  NOT NULL DEFAULT CURRENT_TIMESTAMP(3);
+UPDATE testcaseexecution SET `End`='1970-01-01 01:01:01.000' WHERE `End`=null;
+ALTER TABLE testcaseexecution MODIFY COLUMN `End` timestamp(3) NOT NULL DEFAULT '1970-01-01 01:01:01.000';
+ALTER TABLE testcasestepactionexecution MODIFY COLUMN `Start` timestamp(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3);
+UPDATE testcasestepactionexecution SET `End`='1970-01-01 01:01:01.000' WHERE `End`=null;
+ALTER TABLE testcasestepactionexecution MODIFY COLUMN `End` timestamp(3) NOT NULL DEFAULT '1970-01-01 01:01:01.000';
+ALTER TABLE testcasestepactioncontrolexecution MODIFY COLUMN `Start` timestamp(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3);
+UPDATE testcasestepactioncontrolexecution SET `End`='1970-01-01 01:01:01.000' WHERE `End`=null;
+ALTER TABLE testcasestepactioncontrolexecution MODIFY COLUMN `End` timestamp(3) NOT NULL DEFAULT '1970-01-01 01:01:01.000';
+
+-- 1869
+DELETE FROM `parameter` WHERE `param` in ('cerberus_apikey_value1','cerberus_apikey_value2','cerberus_apikey_value3','cerberus_apikey_value4','cerberus_apikey_value5') ;
+
+-- 1870
+UPDATE application SET BugTrackerConnector='NONE' where BugTrackerConnector ='';
+
+-- 1871-1872
+UPDATE application SET `System`=REPLACE(`System`, '%40', '@');
+UPDATE testcase SET `UsrModif`=REPLACE(REPLACE(`UsrModif`, '&#64;', '@'), '%40', '@'), `UsrCreated`=REPLACE(REPLACE(`UsrCreated`, '&#64;', '@'), '%40', '@');
+
+-- 1873
+UPDATE testcasecountryproperties SET `Type` = 'getFromHtml' WHERE `Type` = 'getFromHTML';
+
+-- 1874
+UPDATE robot SET lbexemethod='BYRANKING' WHERE lbexemethod='';
+
+-- 1875-1877
+ALTER TABLE myversion MODIFY COLUMN Value BIGINT NULL;
+INSERT INTO myversion (`Key`,Value) VALUES ('scheduler_active_instance_version',0);
+INSERT INTO myversion (`Key`,Value) VALUES ('documentation_database_last_refresh',0);
+
+-- 1878
+INSERT IGNORE INTO `invariant` (`idname`, `value`, `sort`, `description`)
+  VALUES   ('CAPABILITY', 'unhandledPromptBehavior', 10, 'Defines how the driver should respond when a non-alert action is taken while an alert is present. Possible values : dismiss, accept, ignore, dismiss and notify, accept and notify');
+
+-- 1879
+INSERT INTO `invariant` (`idname`, `value`, `sort`, `description`, `VeryShortDesc`) VALUES ('EXTERNALPROVIDER', 'TestLink', '120', 'Test Link', '');
+
+-- 1880-1881
+UPDATE testcasedep SET `Type`='TCEXEENDOK' where `Type`='TCEXEEND';
+UPDATE testcaseexecutionqueuedep SET `Type`='TCEXEENDOK' where `Type`='TCEXEEND';

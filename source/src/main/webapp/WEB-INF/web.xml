@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
 
-    Cerberus Copyright (C) 2013 - 2017 cerberustesting
+    Cerberus Copyright (C) 2013 - 2025 cerberustesting
     DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 
     This file is part of Cerberus.
@@ -142,6 +142,7 @@
             <url-pattern>/ReportingExecutionByTag.jsp</url-pattern>
             <url-pattern>/ReportingExecutionOverTime.jsp</url-pattern>
             <url-pattern>/ReportingCampaignOverTime.jsp</url-pattern>
+            <url-pattern>/ReportingCampaignStatistics.jsp</url-pattern>
             <url-pattern>/TestCaseExecutionQueueList.jsp</url-pattern>
             <url-pattern>/Test.jsp</url-pattern>
             <url-pattern>/TestCaseScript.jsp</url-pattern>
@@ -336,7 +337,7 @@
         <web-resource-collection>
             <web-resource-name>jsp</web-resource-name>
             <description>jsp</description>
-            <url-pattern>/Application.jsp</url-pattern>
+            <url-pattern>/ApplicationList.jsp</url-pattern>
             <url-pattern>/AppServiceList.jsp</url-pattern>
             <url-pattern>/ApplicationObjectList.jsp</url-pattern>
             <url-pattern>/BuildContent.jsp</url-pattern>
@@ -541,6 +542,7 @@
             <web-resource-name>jsp</web-resource-name>
             <description>jsp</description>
             <url-pattern>/Homepage.jsp</url-pattern>
+            <url-pattern>/ImpactAnalysis.jsp</url-pattern>
             <url-pattern>/RobotList.jsp</url-pattern>
         </web-resource-collection>
         <web-resource-collection>

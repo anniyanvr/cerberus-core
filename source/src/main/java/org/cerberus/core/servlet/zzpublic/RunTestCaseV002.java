@@ -1,5 +1,5 @@
 /**
- * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * Cerberus Copyright (C) 2013 - 2025 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -33,6 +33,7 @@ import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import org.cerberus.core.crud.entity.LogEvent;
 import org.cerberus.core.crud.entity.TestCase;
 import org.cerberus.core.crud.entity.TestCaseExecution;
 import org.cerberus.core.crud.entity.TestCaseExecutionQueue;
@@ -127,7 +128,7 @@ public class RunTestCaseV002 extends HttpServlet {
              * Adding Log entry.
              */
             ILogEventService logEventService = appContext.getBean(ILogEventService.class);
-            logEventService.createForPublicCalls("/RunTestCaseV002", "CALL", "RunTestCaseV002 called : " + request.getRequestURL(), request);
+            logEventService.createForPublicCalls("/RunTestCaseV002", "CALL", LogEvent.STATUS_INFO, "RunTestCaseV002 called : " + request.getRequestURL(), request);
 
             if (apiKeyService.authenticate(request, response)) {
 
@@ -168,7 +169,7 @@ public class RunTestCaseV002 extends HttpServlet {
                 String outputFormat = ParameterParserUtil.parseStringParamAndSanitize(request.getParameter(PARAMETER_OUTPUT_FORMAT), "compact");
                 int screenshot = ParameterParserUtil.parseIntegerParam(request.getParameter(PARAMETER_SCREENSHOT), 1);
                 int video = ParameterParserUtil.parseIntegerParam(request.getParameter(PARAMETER_VIDEO), 0);
-                int verbose = ParameterParserUtil.parseIntegerParam(request.getParameter(PARAMETER_VERBOSE), 0);
+                int verbose = ParameterParserUtil.parseIntegerParam(request.getParameter(PARAMETER_VERBOSE), 1);
                 timeout = ParameterParserUtil.parseStringParamAndSanitize(request.getParameter(PARAMETER_TIMEOUT), "");
                 synchroneous = ParameterParserUtil.parseBooleanParam(request.getParameter(PARAMETER_SYNCHRONEOUS), false);
                 getPageSource = ParameterParserUtil.parseIntegerParam(request.getParameter(PARAMETER_PAGE_SOURCE), 1);
@@ -226,30 +227,30 @@ public class RunTestCaseV002 extends HttpServlet {
 
                 // -- Checking the parameter validity. --
                 // test, testcase and country parameters are mandatory
-                if (StringUtil.isEmpty(test)) {
+                if (StringUtil.isEmptyOrNull(test)) {
                     errorMessage += "Error - Parameter Test is mandatory. ";
                     error = true;
                 }
-                if (StringUtil.isEmpty(testCase)) {
+                if (StringUtil.isEmptyOrNull(testCase)) {
                     errorMessage += "Error - Parameter TestCase is mandatory. ";
                     error = true;
                 }
-                if (!StringUtil.isEmpty(tag) && tag.length() > 255) {
+                if (!StringUtil.isEmptyOrNull(tag) && tag.length() > 255) {
                     errorMessage += "Error - Parameter Tag value is too big. Tag cannot be larger than 255 Characters. Currently has : " + tag.length();
                     error = true;
                 }
-                if (StringUtil.isEmpty(country)) {
+                if (StringUtil.isEmptyOrNull(country)) {
                     errorMessage += "Error - Parameter Country is mandatory. ";
                     error = true;
                 }
                 // environment is mandatory when manualURL is not activated.
-                if (StringUtil.isEmpty(environment) && ((manualURL == 0) || (manualURL == 2))) {
+                if (StringUtil.isEmptyOrNull(environment) && ((manualURL == 0) || (manualURL == 2))) {
                     errorMessage += "Error - Parameter Environment is mandatory (or activate the manualURL parameter). ";
                     error = true;
                 }
                 // myenv is mandatory when manualURL is activated.
-                if (StringUtil.isEmpty(myEnvData) && ((manualURL == 1) || (manualURL == 2))) {
-                    if (StringUtil.isEmpty(environment)) {
+                if (StringUtil.isEmptyOrNull(myEnvData) && ((manualURL == 1) || (manualURL == 2))) {
+                    if (StringUtil.isEmptyOrNull(environment)) {
                         errorMessage += "Error - Parameter myenvdata is mandatory (when manualURL parameter is activated). ";
                         error = true;
                     } else {
@@ -284,7 +285,7 @@ public class RunTestCaseV002 extends HttpServlet {
                 }
 
                 // Create Tag when exist.
-                if (!StringUtil.isEmpty(tag)) {
+                if (!StringUtil.isEmptyOrNull(tag)) {
                     // We create or update it.
                     ITagService tagService = appContext.getBean(ITagService.class);
                     List<String> envList = new ArrayList<>();

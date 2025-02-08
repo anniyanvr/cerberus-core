@@ -1,5 +1,5 @@
 /**
- * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * Cerberus Copyright (C) 2013 - 2025 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -29,6 +29,8 @@ import com.mongodb.client.MongoClients;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoCursor;
 import com.mongodb.client.MongoDatabase;
+import com.mongodb.client.MongoIterable;
+import java.util.Iterator;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.cerberus.core.crud.entity.AppService;
@@ -45,7 +47,6 @@ import org.cerberus.core.util.answer.AnswerItem;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.util.Iterator;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import org.bson.Document;
 import org.cerberus.core.service.mongodb.IMongodbService;
@@ -79,7 +80,7 @@ public class MongodbService implements IMongodbService {
         MessageEvent message = null;
         AnswerItem<AppService> result = new AnswerItem<>();
 
-        AppService serviceMONGODB = factoryAppService.create("", AppService.TYPE_MONGODB, method, "", "", "", "", "", "", "", "", "", "", "", true, "", "", false, "", false, "", false, "", null,
+        AppService serviceMONGODB = factoryAppService.create("", AppService.TYPE_MONGODB, method, "", "", "", "", "", "", "", "", "", "", "", "", true, "", "", false, "", false, "", false, "", null,
                 "", null, "", null, null);
         serviceMONGODB.setProxy(false);
         serviceMONGODB.setProxyHost(null);
@@ -100,12 +101,59 @@ public class MongodbService implements IMongodbService {
                 .build())) {
 
             LOG.debug("Connection : " + operation);
+
+            // Check connexion format.
+            if (!operation.contains(".") || operation.startsWith(".") || operation.endsWith(".")) {
+                result.setItem(serviceMONGODB);
+                message = new MessageEvent(MessageEventEnum.ACTION_FAILED_CALLSERVICE_MONGO_COLLECTIONFORMAT);
+                message.resolveDescription("SERVICEURL", servicePath);
+                message.resolveDescription("COLLECTIONPATH", operation);
+                result.setResultMessage(message);
+                return result;
+            }
+
             String MDBdtb = operation.split("\\.")[0];
             String MDBColl = operation.split("\\.")[1];
             LOG.debug("Connection : " + MDBdtb + " / " + MDBColl);
+
+            // Does the database exist.
+            MongoIterable<String> listDTB = mongoClient.listDatabaseNames();
+            StringBuilder databaseExist = new StringBuilder();
+            listDTB.forEach(databaseName -> {
+                if (databaseName.equals(MDBdtb)) {
+                    databaseExist.append(databaseName);
+                }
+            });
+            if (databaseExist.toString().isEmpty()) {
+                result.setItem(serviceMONGODB);
+                message = new MessageEvent(MessageEventEnum.ACTION_FAILED_CALLSERVICE_MONGO_DATABASENOTEXIST);
+                message.resolveDescription("SERVICEURL", servicePath);
+                message.resolveDescription("DATABASE", MDBdtb);
+                result.setResultMessage(message);
+                return result;
+            }
+
             MongoDatabase database = mongoClient.getDatabase(MDBdtb);
+
+            // Does the collection exist.
+            MongoIterable<String> listCOL = database.listCollectionNames();
+            StringBuilder collectionExist = new StringBuilder();
+            listCOL.forEach(collectionName -> {
+                if (collectionName.equals(MDBColl)) {
+                    collectionExist.append(collectionName);
+                }
+            });
+            if (collectionExist.toString().isEmpty()) {
+                result.setItem(serviceMONGODB);
+                message = new MessageEvent(MessageEventEnum.ACTION_FAILED_CALLSERVICE_MONGO_COLLECTIONNOTEXIST);
+                message.resolveDescription("SERVICEURL", servicePath);
+                message.resolveDescription("COLLECTION", MDBColl);
+                result.setResultMessage(message);
+                return result;
+            }
+
             MongoCollection<Document> collection = database.getCollection(MDBColl);
-            
+
 //            Bson projectionFields = Projections.fields(
 //                    Projections.include("title", "imdb"),
 //                    Projections.excludeId());
@@ -117,42 +165,36 @@ public class MongodbService implements IMongodbService {
 //                    .projection(projectionFields)
 //                    .sort(Sorts.descending("imdb.rating"))
 //                    .first();
-
-            BasicDBObject whereQuery = new BasicDBObject();
-
-            JSONObject requestObject = new JSONObject(requestString);
-
-            @SuppressWarnings("unchecked")
-            Iterator<String> keys = requestObject.keys();
-
-            while (keys.hasNext()) {
-                String key = keys.next();
-//                if (requestObject.get(key) instanceof String) {
-                whereQuery.put(key, requestObject.get(key));
-//                }
-            }
-            LOG.debug("Parsed : " + requestObject);
-            LOG.debug("Parsed : " + whereQuery);
-
-            MongoCursor<Document> cursor = collection.find(whereQuery)
-                    //                    .projection(projectionFields)
-                    .iterator();
-            try {
-                int i = 0;
-                while (cursor.hasNext() && i < 5) {
-                    LOG.debug("Results found.");
-                    mongoDBResult = cursor.next().toJson();
-                    i++;
-                    mongoDBResultArray.put(new JSONObject(mongoDBResult));
-                    LOG.debug(mongoDBResult);
+//            BasicDBObject whereQuery = new BasicDBObject();
+//            JSONObject requestObject = new JSONObject(requestString);
+//            @SuppressWarnings("unchecked")
+//            Iterator<String> keys = requestObject.keys();
+//            while (keys.hasNext()) {
+//                String key = keys.next();
+////                if (requestObject.get(key) instanceof String) {
+//                whereQuery.put(key, requestObject.get(key));
+////                }
+//            }
+//            LOG.debug("Parsed : " + requestObject);
+//            LOG.debug("Parsed : " + whereQuery);
+//            MongoCursor<Document> cursor = collection.find(whereQuery)            
+            try (
+                    MongoCursor<Document> cursor = collection.find(BasicDBObject.parse(requestString))
+                            //                    .projection(projectionFields)
+                            .iterator()) {
+                        int i = 0;
+                        while (cursor.hasNext() && i < 5) {
+                            LOG.debug("Results found.");
+                            mongoDBResult = cursor.next().toJson();
+                            i++;
+                            mongoDBResultArray.put(new JSONObject(mongoDBResult));
+                            LOG.debug(mongoDBResult);
 //                    System.out.println(cursor.next().toJson());
-                }
-                serviceMONGODB.setResponseHTTPBody(mongoDBResultArray.toString());
-                serviceMONGODB.setResponseNb(i);
+                        }
+                        serviceMONGODB.setResponseHTTPBody(mongoDBResultArray.toString());
+                        serviceMONGODB.setResponseNb(i);
 
-            } finally {
-                cursor.close();
-            }
+                    }
 
         } catch (MongoTimeoutException ex) {
             LOG.info("Exception when performing the MONGODB Call. " + ex.toString());

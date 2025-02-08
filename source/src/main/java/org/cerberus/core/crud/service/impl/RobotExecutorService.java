@@ -1,5 +1,5 @@
 /**
- * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * Cerberus Copyright (C) 2013 - 2025 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -23,9 +23,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.logging.Level;
-import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.cerberus.core.crud.dao.IRobotExecutorDAO;
 import org.cerberus.core.crud.entity.Robot;
 import org.cerberus.core.crud.entity.RobotExecutor;
@@ -111,7 +110,7 @@ public class RobotExecutorService implements IRobotExecutorService {
         List<String> robotList = new ArrayList<>();
         for (Map.Entry<String, List<RobotExecutor>> entry : robot_executors.entrySet()) {
             String key = entry.getKey();
-            if (!StringUtil.isEmpty(key)) {
+            if (!StringUtil.isEmptyOrNull(key)) {
                 robotList.add(key);
             }
         }
@@ -125,15 +124,15 @@ public class RobotExecutorService implements IRobotExecutorService {
                     robotList2.add(myrobot);
                     AnswerList<RobotExecutor> rbtExecutor;
                     if (Robot.LOADBALANCINGEXECUTORMETHOD_ROUNDROBIN.equals(myrobotobj.getLbexemethod())) {
-                        rbtExecutor = robotExecutorDAO.readByVariousByCriteria(robotList2, "Y", 0, 0, "datelastexesubmitted", "asc", null, null);
+                        rbtExecutor = robotExecutorDAO.readByVariousByCriteria(robotList2, "1", 0, 0, "datelastexesubmitted", "asc", null, null);
                     } else {
-                        rbtExecutor = robotExecutorDAO.readByVariousByCriteria(robotList2, "Y", 0, 0, "rank", "asc", null, null);
+                        rbtExecutor = robotExecutorDAO.readByVariousByCriteria(robotList2, "1", 0, 0, "rank", "asc", null, null);
                     }
                     robot_executors.put(myrobot, rbtExecutor.getDataList());
                 }
             }
         } catch (CerberusException ex) {
-            java.util.logging.Logger.getLogger(RobotExecutorService.class.getName()).log(Level.SEVERE, null, ex);
+            LOG.error(ex,ex);
         }
 
 //        List<RobotExecutor> robotExeList = new ArrayList<>();

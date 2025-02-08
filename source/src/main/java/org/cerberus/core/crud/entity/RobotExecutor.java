@@ -1,5 +1,5 @@
 /**
- * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * Cerberus Copyright (C) 2013 - 2025 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -37,7 +37,7 @@ public class RobotExecutor {
     private Integer ID;
     private String robot;
     private String executor;
-    private String active;
+    private boolean isActive;
     private Integer rank;
     private String host;
     private String port;
@@ -47,10 +47,10 @@ public class RobotExecutor {
     private String deviceUdid;
     private String deviceName;
     private Integer devicePort;
-    private String deviceLockUnlock;
+    private boolean isDeviceLockUnlock;
     private String description;
     private long dateLastExeSubmitted;
-    private String executorProxyActive;
+    private String executorProxyType;
     private String executorExtensionHost;
     private Integer executorExtensionPort;
     private String executorProxyHost;
@@ -59,6 +59,13 @@ public class RobotExecutor {
     private Timestamp DateCreated;
     private String UsrModif;
     private Timestamp DateModif;
+
+    /**
+     * Static PROXY TYPE String.
+     */
+    public static final String PROXY_TYPE_NONE = "NONE"; // No Proxy. Browser will connect directly on Internet
+    public static final String PROXY_TYPE_MANUAL = "MANUAL"; // A Manual proxy is configured on executorProxyHost and executorProxyPort
+    public static final String PROXY_TYPE_NETWORKTRAFFIC = "NETWORKTRAFFIC"; // Proxy will be configured to Cerberus robot proxy component --> Network traffic features will be activated.
 
     public Integer getNodeProxyPort() {
         return nodeProxyPort;
@@ -100,12 +107,12 @@ public class RobotExecutor {
         this.dateLastExeSubmitted = dateLastExeSubmitted;
     }
 
-    public String getActive() {
-        return active;
+    public boolean isActive() {
+        return isActive;
     }
 
-    public void setActive(String active) {
-        this.active = active;
+    public void setIsActive(boolean isActive) {
+        this.isActive = isActive;
     }
 
     public Integer getRank() {
@@ -240,32 +247,29 @@ public class RobotExecutor {
         this.executorProxyPort = executorProxyPort;
     }
 
-    public String getExecutorProxyActive() {
-        return executorProxyActive;
+    public String getExecutorProxyType() {
+        return executorProxyType;
     }
 
-    public void setExecutorProxyActive(String executorProxyActive) {
-        this.executorProxyActive = executorProxyActive;
+    public void setExecutorProxyType(String executorProxyType) {
+        this.executorProxyType = executorProxyType;
     }
 
-    /**
-     * From here are data outside database model.
-     */
     public void setDateModif(Timestamp DateModif) {
         this.DateModif = DateModif;
     }
 
-    public String getDeviceLockUnlock() {
-        return deviceLockUnlock;
+    public boolean isDeviceLockUnlock() {
+        return isDeviceLockUnlock;
     }
 
-    public void setDeviceLockUnlock(String deviceLockUnlock) {
-        this.deviceLockUnlock = deviceLockUnlock;
+    public void setIsDeviceLockUnlock(boolean isDeviceLockUnlock) {
+        this.isDeviceLockUnlock = isDeviceLockUnlock;
     }
 
     public String getHostWithCredential() {
         String credential = "";
-        if (!StringUtil.isEmpty(this.getHostUser())) {
+        if (!StringUtil.isEmptyOrNull(this.getHostUser())) {
             credential = this.getHostUser() + ":" + this.getHostPassword() + "@";
         }
 
@@ -303,7 +307,8 @@ public class RobotExecutor {
         hash = 67 * hash + (this.hostPassword != null ? this.hostPassword.hashCode() : 0);
         hash = 67 * hash + (this.deviceUdid != null ? this.deviceUdid.hashCode() : 0);
         hash = 67 * hash + (this.deviceName != null ? this.deviceName.hashCode() : 0);
-        hash = 67 * hash + (this.active != null ? this.active.hashCode() : 0);
+        hash = 67 * hash + (this.isActive ? 1 : 0);
+        hash = 67 * hash + (this.isDeviceLockUnlock ? 1 : 0);
         hash = 67 * hash + (this.description != null ? this.description.hashCode() : 0);
         return hash;
     }
@@ -348,16 +353,16 @@ public class RobotExecutor {
         if ((this.devicePort == null) ? (other.devicePort != null) : !this.devicePort.equals(other.devicePort)) {
             return false;
         }
-        if ((this.active == null) ? (other.active != null) : !this.active.equals(other.active)) {
+        if (this.isActive != other.isActive) {
             return false;
         }
         if ((this.description == null) ? (other.description != null) : !this.description.equals(other.description)) {
             return false;
         }
-        if ((this.deviceLockUnlock == null) ? (other.deviceLockUnlock != null) : !this.deviceLockUnlock.equals(other.deviceLockUnlock)) {
+        if (this.isDeviceLockUnlock != other.isDeviceLockUnlock) {
             return false;
         }
-        if ((this.executorProxyActive == null) ? (other.executorProxyActive != null) : !this.executorProxyActive.equals(other.executorProxyActive)) {
+        if ((this.executorProxyType == null) ? (other.executorProxyType != null) : !this.executorProxyType.equals(other.executorProxyType)) {
             return false;
         }
         if ((this.executorExtensionHost == null) ? (other.executorExtensionHost != null) : !this.executorExtensionHost.equals(other.executorExtensionHost)) {
@@ -388,22 +393,22 @@ public class RobotExecutor {
             result.put("ID", this.getID());
             result.put("UsrCreated", this.getUsrCreated());
             result.put("UsrModif", this.getUsrModif());
-            result.put("active", this.getActive());
+            result.put("isActive", this.isActive());
             result.put("description", this.getDescription());
             result.put("deviceName", this.getDeviceName());
             result.put("deviceUdid", this.getDeviceUuid());
             result.put("devicePort", this.getDevicePort());
-            result.put("deviceLockUnlock", "Y".equals(this.getDeviceLockUnlock()));
+            result.put("isDeviceLockUnlock", this.isDeviceLockUnlock());
             result.put("executorExtensionHost", this.getExecutorExtensionHost());
             result.put("executorExtensionPort", this.getExecutorExtensionPort());
             result.put("executorProxyHost", this.getExecutorProxyHost());
             result.put("executorProxyPort", this.getExecutorProxyPort());
-            result.put("executorProxyActive", "Y".equals(this.getExecutorProxyActive()));
+            result.put("executorProxyType", this.getExecutorProxyType());
             result.put("executor", this.getExecutor());
             result.put("host", this.getHost());
             if (secured) {
                 if (this.getHostPassword() != null && !this.getHostPassword().isEmpty()) {
-                    result.put("hostPassword", "XXXXXXXXXX");
+                    result.put("hostPassword", StringUtil.SECRET_STRING);
                 } else {
                     result.put("hostPassword", "");
                 }

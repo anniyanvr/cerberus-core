@@ -1,5 +1,5 @@
 /**
- * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * Cerberus Copyright (C) 2013 - 2025 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -34,6 +34,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.cerberus.core.crud.entity.LogEvent;
 import org.cerberus.core.crud.entity.Robot;
 import org.cerberus.core.crud.entity.RobotCapability;
 import org.cerberus.core.crud.entity.RobotExecutor;
@@ -100,7 +101,7 @@ public class CreateRobot extends HttpServlet {
         String platform = ParameterParserUtil.parseStringParamAndDecodeAndSanitize(request.getParameter("platform"), null, charset);
         String browser = ParameterParserUtil.parseStringParamAndDecodeAndSanitize(request.getParameter("browser"), null, charset);
         String version = ParameterParserUtil.parseStringParamAndDecodeAndSanitize(request.getParameter("version"), "", charset);
-        String active = ParameterParserUtil.parseStringParamAndDecodeAndSanitize(request.getParameter("active"), "Y", charset);
+        boolean isActive = ParameterParserUtil.parseBooleanParam(request.getParameter("isActive"), true);
         String description = ParameterParserUtil.parseStringParamAndDecode(request.getParameter("description"), "", charset);
         String userAgent = ParameterParserUtil.parseStringParamAndDecodeAndSanitize(request.getParameter("useragent"), "", charset);
         String screenSize = ParameterParserUtil.parseStringParamAndDecodeAndSanitize(request.getParameter("screensize"), "", charset);
@@ -108,6 +109,7 @@ public class CreateRobot extends HttpServlet {
         String robotDecli = ParameterParserUtil.parseStringParamAndDecode(request.getParameter("robotDecli"), "", charset);
         String lbexemethod = ParameterParserUtil.parseStringParamAndDecodeAndSanitize(request.getParameter("lbexemethod"), "", charset);
         String type = ParameterParserUtil.parseStringParamAndDecodeAndSanitize(request.getParameter("type"), "", charset);
+        Integer acceptNotifications = ParameterParserUtil.parseIntegerParamAndDecode(request.getParameter("acceptNotifications"), 0, charset);
         String extraParam = ParameterParserUtil.parseStringParamAndDecode(request.getParameter("extraParam"), "", charset);
         boolean isAcceptInsecureCerts = ParameterParserUtil.parseBooleanParamAndDecode(request.getParameter("isAcceptInsecureCerts"), true, charset);
 
@@ -151,13 +153,13 @@ public class CreateRobot extends HttpServlet {
         /**
          * Checking all constrains before calling the services.
          */
-        if (StringUtil.isEmpty(robot)) {
+        if (StringUtil.isEmptyOrNull(robot)) {
             msg = new MessageEvent(MessageEventEnum.DATA_OPERATION_ERROR_EXPECTED);
             msg.setDescription(msg.getDescription().replace("%ITEM%", "Robot")
                     .replace("%OPERATION%", "Create")
                     .replace("%REASON%", "Robot name is missing."));
             ans.setResultMessage(msg);
-        } else if (StringUtil.isEmpty(platform)) {
+        } else if (StringUtil.isEmptyOrNull(platform)) {
             msg = new MessageEvent(MessageEventEnum.DATA_OPERATION_ERROR_EXPECTED);
             msg.setDescription(msg.getDescription().replace("%ITEM%", "Robot")
                     .replace("%OPERATION%", "Create")
@@ -194,7 +196,7 @@ public class CreateRobot extends HttpServlet {
             IRobotService robotService = appContext.getBean(IRobotService.class);
             IFactoryRobot robotFactory = appContext.getBean(IFactoryRobot.class);
 
-            Robot robotData = robotFactory.create(robotid, robot, platform, browser, version, active, lbexemethod, description, userAgent, screenSize, profileFolder, extraParam, isAcceptInsecureCerts,capabilities, executors, robotDecli, type);
+            Robot robotData = robotFactory.create(robotid, robot, platform, browser, version, isActive, lbexemethod, description, userAgent, screenSize, profileFolder, acceptNotifications, extraParam, isAcceptInsecureCerts, capabilities, executors, robotDecli, type);
             ans = robotService.create(robotData);
 
             if (ans.isCodeEquals(MessageEventEnum.DATA_OPERATION_OK.getCode())) {
@@ -202,7 +204,7 @@ public class CreateRobot extends HttpServlet {
                  * Object created. Adding Log entry.
                  */
                 ILogEventService logEventService = appContext.getBean(LogEventService.class);
-                logEventService.createForPrivateCalls("/CreateRobot", "CREATE", "Create Robot : ['" + robot + "']", request);
+                logEventService.createForPrivateCalls("/CreateRobot", "CREATE", LogEvent.STATUS_INFO, "Create Robot : ['" + robot + "']", request);
             }
         }
 
@@ -231,7 +233,7 @@ public class CreateRobot extends HttpServlet {
             boolean delete = reJson.getBoolean("toDelete");
             Integer id = reJson.getInt("ID");
             String executor = reJson.getString("executor");
-            String active = reJson.getString("active");
+            boolean isActive = reJson.getBoolean("isActive");
             Integer rank = reJson.getInt("rank");
             String host = reJson.getString("host");
             String port = reJson.getString("port");
@@ -239,30 +241,30 @@ public class CreateRobot extends HttpServlet {
             String deviceName = reJson.getString("deviceName");
             String deviceUdid = reJson.getString("deviceUdid");
             Integer devicePort = null;
-            if (reJson.has("devicePort") && !StringUtil.isEmpty(reJson.getString("devicePort"))) {
+            if (reJson.has("devicePort") && !StringUtil.isEmptyOrNull(reJson.getString("devicePort"))) {
                 devicePort = reJson.getInt("devicePort");
             }
             String executorProxyHost = "";
-            if (reJson.has("executorProxyHost") && !StringUtil.isEmpty(reJson.getString("executorProxyHost"))) {
+            if (reJson.has("executorProxyHost") && !StringUtil.isEmptyOrNull(reJson.getString("executorProxyHost"))) {
                 executorProxyHost = reJson.getString("executorProxyHost");
             }
             Integer executorProxyPort = null;
-            if (reJson.has("executorProxyPort") && !StringUtil.isEmpty(reJson.getString("executorProxyPort"))) {
+            if (reJson.has("executorProxyPort")) {
                 executorProxyPort = reJson.getInt("executorProxyPort");
             }
-            String executorProxyActive = reJson.getBoolean("executorProxyActive") ? "Y" : "N";
+            String executorProxyType = reJson.getString("executorProxyType");
             Integer executorExtensionPort = null;
             String executorExtensionHost = "";
-            if (reJson.has("executorExtensionHost") && !StringUtil.isEmpty(reJson.getString("executorExtensionHost"))) {
+            if (reJson.has("executorExtensionHost") && !StringUtil.isEmptyOrNull(reJson.getString("executorExtensionHost"))) {
                 executorExtensionHost = reJson.getString("executorExtensionHost");
             }
-            if (reJson.has("executorExtensionPort") && !StringUtil.isEmpty(reJson.getString("executorExtensionPort"))) {
+            if (reJson.has("executorExtensionPort")) {
                 executorExtensionPort = reJson.getInt("executorExtensionPort");
             }
             String description = reJson.getString("description");
 
             String host_password = reJson.getString("hostPassword");
-            if (host_password.equals("XXXXXXXXXX")) {
+            if (host_password.equals(StringUtil.SECRET_STRING)) {
                 host_password = "";
                 for (RobotExecutor robotExecutor : reList1) {
                     if (robotExecutor.getID() == id) {
@@ -273,7 +275,7 @@ public class CreateRobot extends HttpServlet {
             }
 
             if (!delete) {
-                RobotExecutor reo = reFactory.create(i, robot, executor, active, rank, host, port, host_user, host_password, 0, deviceUdid, deviceName, devicePort, "", executorExtensionHost, executorExtensionPort, executorProxyHost, executorProxyPort, executorProxyActive, description, "", null, "", null);
+                RobotExecutor reo = reFactory.create(i, robot, executor, isActive, rank, host, port, host_user, host_password, 0, deviceUdid, deviceName, devicePort, false, executorExtensionHost, executorExtensionPort, executorProxyHost, executorProxyPort, executorProxyType, description, "", null, "", null);
                 reList.add(reo);
             }
         }
@@ -297,7 +299,7 @@ public class CreateRobot extends HttpServlet {
         } catch (CerberusException ex) {
             LOG.warn(ex);
         } catch (JSONException ex) {
-            LOG.warn(ex);
+            LOG.warn(ex, ex);
         }
     }
 
@@ -317,7 +319,7 @@ public class CreateRobot extends HttpServlet {
         } catch (CerberusException ex) {
             LOG.warn(ex);
         } catch (JSONException ex) {
-            LOG.warn(ex);
+            LOG.warn(ex, ex);
         }
     }
 

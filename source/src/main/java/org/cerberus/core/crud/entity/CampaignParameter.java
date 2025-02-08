@@ -1,5 +1,5 @@
 /**
- * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * Cerberus Copyright (C) 2013 - 2025 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -52,6 +52,7 @@ public class CampaignParameter implements Serializable {
     public static final String SYSTEM_PARAMETER = "SYSTEM";
     public static final String APPLICATION_PARAMETER = "APPLICATION";
     public static final String TYPE_PARAMETER = "TYPE";
+    public static final String TYPE_TESTFOLDER = "TESTFOLDER";
     public static final String BROWSER_PARAMETER = "BROWSER";
 
     private Integer campaignparameterID;

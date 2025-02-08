@@ -1,5 +1,5 @@
 /**
- * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * Cerberus Copyright (C) 2013 - 2025 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -35,28 +35,28 @@ public interface IFactoryRobotExecutor {
      * @param host Host of the Robot
      * @param port port of the Robot
      * @param rank
-     * @param active Robot active
+     * @param isActive Robot active
      * @param description description of the Robot
      * @param hostUser
      * @param nodeProxyPort
      * @param hostPassword
      * @param deviceName
      * @param devicePort
-     * @param deviceLockUnlock
+     * @param isDeviceLockUnlock
      * @param executorExtensionHost
      * @param executorExtensionPort
      * @param executorProxyHost
      * @param executorProxyPort
      * @param deviceUdid
      * @param UsrCreated
-     * @param executorProxyActive
+     * @param executorProxyType
      * @param DateCreated
      * @param UsrModif
      * @param DateModif
      * @return
      */
-    RobotExecutor create(Integer ID, String robot, String executor, String active, 
+    RobotExecutor create(Integer ID, String robot, String executor, boolean isActive, 
             Integer rank, String host, String port, String hostUser, String hostPassword, Integer nodeProxyPort, String deviceUdid,
-            String deviceName, Integer devicePort, String deviceLockUnlock, String executorExtensionHost, Integer executorExtensionPort, String executorProxyHost, Integer executorProxyPort, String executorProxyActive, 
+            String deviceName, Integer devicePort, boolean isDeviceLockUnlock, String executorExtensionHost, Integer executorExtensionPort, String executorProxyHost, Integer executorProxyPort, String executorProxyType, 
             String description, String UsrCreated, Timestamp DateCreated, String UsrModif, Timestamp DateModif);
 }

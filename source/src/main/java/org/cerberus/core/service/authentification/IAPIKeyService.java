@@ -1,5 +1,5 @@
 /**
- * Cerberus Copyright (C) 2013 - 2017 cerberustesting
+ * Cerberus Copyright (C) 2013 - 2025 cerberustesting
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This file is part of Cerberus.
@@ -47,6 +47,14 @@ public interface IAPIKeyService {
      */
     public boolean authenticate(Principal principal, String apiKey);
 
+    /**
+     *
+     * @param principal
+     * @param apiKey
+     * @return null if not authenticated and login if authenticated.
+     */
+    public String authenticateLogin(Principal principal, String apiKey);
+    
     /**
      *
      * @return
